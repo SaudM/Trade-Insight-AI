@@ -38,9 +38,13 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     };
     
     useEffect(() => {
-        handleAnalysis();
+        if (tradeLogs.length > 0) {
+            handleAnalysis();
+        } else {
+            setIsLoading(false);
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [tradeLogs]);
 
     return (
         <div className="flex flex-col h-full">

@@ -41,9 +41,13 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     };
     
     useEffect(() => {
-        handleAnalysis();
+        if (tradeLogs.length > 0) {
+            handleAnalysis();
+        } else {
+            setIsLoading(false);
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [tradeLogs]);
 
 
     return (

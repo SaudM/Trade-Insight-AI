@@ -10,7 +10,7 @@ import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
-import { subMonths, startOfMonth } from 'date-fns';
+import { startOfMonth } from 'date-fns';
 
 export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     const [isLoading, setIsLoading] = useState(true);
@@ -46,9 +46,13 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     };
     
     useEffect(() => {
-        handleAnalysis();
+        if (tradeLogs.length > 0) {
+            handleAnalysis();
+        } else {
+            setIsLoading(false);
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [tradeLogs]);
 
     return (
         <div className="flex flex-col h-full">
