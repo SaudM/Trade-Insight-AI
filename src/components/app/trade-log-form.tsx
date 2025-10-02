@@ -42,12 +42,12 @@ const tradeLogSchema = z.object({
   positionSize: z.string().min(1, '仓位大小是必填项'),
   tradeResult: z.string().refine(val => !isNaN(parseFloat(val)), { message: "必须是数字" }),
   mindsetState: z.string().min(1, '心态状态是必填项'),
-  entryReason: z.string(),
-  exitReason: z.string(),
+  entryReason: z.string().optional(),
+  exitReason: z.string().optional(),
   lessonsLearned: z.string().min(1, '心得体会是必填项'),
 }).refine(data => {
     if (['Buy', 'Long', 'Short'].includes(data.direction)) {
-        return !!data.entryReason;
+        return !!data.entryReason && data.entryReason.length > 0;
     }
     return true;
 }, {
@@ -55,7 +55,7 @@ const tradeLogSchema = z.object({
     path: ['entryReason'],
 }).refine(data => {
     if (['Sell', 'Close'].includes(data.direction)) {
-        return !!data.exitReason;
+        return !!data.exitReason && data.exitReason.length > 0;
     }
     return true;
 }, {
@@ -83,7 +83,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
       symbol: '',
       direction: 'Buy',
       positionSize: '',
-      tradeResult: '',
+      tradeResult: '0',
       mindsetState: '',
       entryReason: '',
       exitReason: '',
@@ -103,7 +103,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
         symbol: '',
         direction: 'Buy',
         positionSize: '',
-        tradeResult: '',
+        tradeResult: '0',
         mindsetState: '',
         entryReason: '',
         exitReason: '',
@@ -228,36 +228,35 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
               </FormItem>
             )}
           />
-          {isEntry && (
-            <FormField
-              control={form.control}
-              name="entryReason"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>入场理由</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="您为什么进行这笔交易？" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-          {isExit && (
-            <FormField
-              control={form.control}
-              name="exitReason"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>出场理由</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="您为什么结束这笔交易？" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          
+          <FormField
+            control={form.control}
+            name="entryReason"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>入场理由 {isEntry && <span className="text-destructive">*</span>}</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="您为什么进行这笔交易？" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="exitReason"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>出场理由 {isExit && <span className="text-destructive">*</span>}</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="您为什么结束这笔交易？" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="lessonsLearned"

@@ -12,7 +12,7 @@ import { useState } from 'react';
 
 type TradeLogViewProps = {
     tradeLogs: TradeLog[];
-    addTradeLog: (log: Omit<TradeLog, 'id'>) => void;
+    addTradeLog: (log: Omit<TradeLog, 'id' | 'userId'>) => void;
     updateTradeLog: (log: TradeLog) => void;
     deleteTradeLog: (id: string) => void;
 };
@@ -31,8 +31,8 @@ export function TradeLogView({ tradeLogs, addTradeLog, updateTradeLog, deleteTra
         setIsFormOpen(true);
     };
 
-    const handleFormSubmit = (log: Omit<TradeLog, 'id'> | TradeLog) => {
-        if ('id' in log) {
+    const handleFormSubmit = (log: Omit<TradeLog, 'id' | 'userId'> | TradeLog) => {
+        if ('id' in log && log.id) {
             updateTradeLog(log as TradeLog);
         } else {
             addTradeLog(log);

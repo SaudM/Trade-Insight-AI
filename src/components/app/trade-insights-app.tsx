@@ -9,47 +9,68 @@ import { DailyAnalysisView } from '@/components/app/daily-analysis-view';
 import { WeeklyAnalysisView } from '@/components/app/weekly-analysis-view';
 import { MonthlyAnalysisView } from '@/components/app/monthly-analysis-view';
 import type { TradeLog, View } from '@/lib/types';
-import { sampleTradeLogs } from '@/lib/data';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export function TradeInsightsApp() {
   const [activeView, setActiveView] = useState<View>('dashboard');
-  const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const { user, firestore } = useFirebase();
+  const { toast } = useToast();
+  
+  const tradeLogsRef = useMemoFirebase(
+    () => user ? collection(firestore, 'users', user.uid, 'tradeLogs') : null,
+    [user, firestore]
+  );
+  
+  const tradeLogsQuery = useMemoFirebase(
+    () => tradeLogsRef ? query(tradeLogsRef, orderBy('tradeTime', 'desc')) : null,
+    [tradeLogsRef]
+  );
+
+  const { data: tradeLogs, isLoading: isLoadingLogs } = useCollection<TradeLog>(tradeLogsQuery);
+  
   const [timePeriod, setTimePeriod] = useState<'today' | '7d' | '30d' | 'all'>('all');
 
-  useEffect(() => {
-    setIsMounted(true);
+  const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId'>) => {
+    if (!tradeLogsRef) return;
     try {
-      const savedLogs = localStorage.getItem('tradeLogs');
-      setTradeLogs(savedLogs ? JSON.parse(savedLogs) : sampleTradeLogs);
+      await addDoc(tradeLogsRef, { ...log, userId: user!.uid, createdAt: serverTimestamp() });
+      toast({ title: "交易笔记已添加" });
     } catch (error) {
-      console.error("无法从localStorage解析交易日志", error);
-      setTradeLogs(sampleTradeLogs);
+      console.error(error);
+      toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的交易笔记。" });
     }
-  }, []);
-
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('tradeLogs', JSON.stringify(tradeLogs));
-    }
-  }, [tradeLogs, isMounted]);
-
-  const addTradeLog = (log: Omit<TradeLog, 'id'>) => {
-    const newLog: TradeLog = { ...log, id: new Date().toISOString() };
-    setTradeLogs(prev => [newLog, ...prev]);
   };
 
-  const updateTradeLog = (updatedLog: TradeLog) => {
-    setTradeLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log));
+  const updateTradeLog = async (updatedLog: TradeLog) => {
+    if (!user) return;
+    try {
+      const logRef = doc(firestore, 'users', user.uid, 'tradeLogs', updatedLog.id);
+      await updateDoc(logRef, { ...updatedLog });
+      toast({ title: "交易笔记已更新" });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: "更新失败", description: "无法更新您的交易笔记。" });
+    }
   };
 
-  const deleteTradeLog = (id: string) => {
-    setTradeLogs(prev => prev.filter(log => log.id !== id));
+  const deleteTradeLog = async (id: string) => {
+    if (!user) return;
+    try {
+      const logRef = doc(firestore, 'users', user.uid, 'tradeLogs', id);
+      await deleteDoc(logRef);
+      toast({ title: "交易笔记已删除" });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: "删除失败", description: "无法删除您的交易笔记。" });
+    }
   };
   
   const filteredTradeLogs = useMemo(() => {
-    if (!isMounted) return [];
+    if (!tradeLogs) return [];
     const now = new Date();
     if (timePeriod === 'today') {
         return tradeLogs.filter(log => isSameDay(new Date(log.tradeTime), now));
@@ -63,21 +84,24 @@ export function TradeInsightsApp() {
         return tradeLogs.filter(log => new Date(log.tradeTime) >= thirtyDaysAgo);
     }
     return tradeLogs;
-  }, [tradeLogs, timePeriod, isMounted]);
+  }, [tradeLogs, timePeriod]);
 
   const renderView = () => {
-    if (!isMounted) {
+    if (isLoadingLogs) {
       return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-xl text-muted-foreground">加载中...</div>
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
       );
     }
+    
+    const logs = tradeLogs || [];
+
     switch (activeView) {
       case 'dashboard':
         return <Dashboard tradeLogs={filteredTradeLogs} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
       case 'tradelog':
-        return <TradeLogView tradeLogs={tradeLogs} addTradeLog={addTradeLog} updateTradeLog={updateTradeLog} deleteTradeLog={deleteTradeLog} />;
+        return <TradeLogView tradeLogs={logs} addTradeLog={addTradeLog} updateTradeLog={updateTradeLog} deleteTradeLog={deleteTradeLog} />;
       case 'daily':
         return <DailyAnalysisView tradeLogs={filteredTradeLogs} />;
       case 'weekly':

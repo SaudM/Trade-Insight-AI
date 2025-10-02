@@ -1,0 +1,179 @@
+"use client";
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  updateProfile,
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { Loader2 } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
+
+const signupSchema = z.object({
+  name: z.string().min(1, { message: "请输入您的姓名" }),
+  email: z.string().email({ message: "请输入有效的邮箱地址" }),
+  password: z.string().min(6, { message: "密码至少需要6位" }),
+});
+
+type SignupFormValues = z.infer<typeof signupSchema>;
+
+export function SignupForm() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const auth = getAuth();
+  const firestore = useFirestore();
+
+  const form = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
+  });
+
+  const createUserInFirestore = async (user: any, name: string) => {
+    const userRef = doc(firestore, "users", user.uid);
+    await setDoc(userRef, {
+      id: user.uid,
+      email: user.email,
+      name: name,
+      createdAt: new Date().toISOString(),
+    });
+  };
+
+  async function onSubmit(values: SignupFormValues) {
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      await updateProfile(userCredential.user, { displayName: values.name });
+      await createUserInFirestore(userCredential.user, values.name);
+      router.push('/');
+    } catch (error: any) {
+      console.error(error);
+      const errorCode = error.code;
+      let message = '注册失败，请重试。';
+      if (errorCode === 'auth/email-already-in-use') {
+        message = '该邮箱地址已被注册。';
+      }
+      toast({
+        variant: 'destructive',
+        title: '注册出错',
+        description: message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setIsGoogleLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      await createUserInFirestore(result.user, result.user.displayName || 'Google User');
+      router.push('/');
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Google登录失败',
+        description: '无法通过Google登录，请稍后重试。',
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>姓名</FormLabel>
+                <FormControl>
+                  <Input placeholder="您的姓名" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>邮箱</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="you@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>密码</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="********" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" disabled={isLoading || isGoogleLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            注册
+          </Button>
+        </form>
+      </Form>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <Separator />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            或使用
+          </span>
+        </div>
+      </div>
+      <Button variant="outline" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+        {isGoogleLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <FcGoogle className="mr-2 h-4 w-4" />
+        )}
+        使用Google注册
+      </Button>
+    </div>
+  );
+}
