@@ -11,8 +11,19 @@ import {
 import type { TradeLog } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const getDirectionBadge = (direction: TradeLog['direction']) => {
     switch (direction) {
@@ -32,7 +43,7 @@ const getDirectionBadge = (direction: TradeLog['direction']) => {
 }
 
 
-export function TradeLogTable({ tradeLogs }: { tradeLogs: TradeLog[] }) {
+export function TradeLogTable({ tradeLogs, deleteTradeLog }: { tradeLogs: TradeLog[], deleteTradeLog: (id: string) => void }) {
     const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
     if (tradeLogs.length === 0) {
@@ -102,6 +113,30 @@ export function TradeLogTable({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                                                 <p className="text-muted-foreground">{log.exitReason}</p>
                                             </div>
                                             )}
+                                            <div className="md:col-span-2 flex justify-end">
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" size="sm">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            删除
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>您确定吗？</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                此操作无法撤销。这将永久删除此交易日志。
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>取消</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => deleteTradeLog(log.id)}>
+                                                                确定
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
                                         </div>
                                     </TableCell>
                                 </TableRow>

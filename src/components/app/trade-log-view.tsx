@@ -13,9 +13,10 @@ import { useState } from 'react';
 type TradeLogViewProps = {
     tradeLogs: TradeLog[];
     addTradeLog: (log: Omit<TradeLog, 'id'>) => void;
+    deleteTradeLog: (id: string) => void;
 };
 
-export function TradeLogView({ tradeLogs, addTradeLog }: TradeLogViewProps) {
+export function TradeLogView({ tradeLogs, addTradeLog, deleteTradeLog }: TradeLogViewProps) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     
     return (
@@ -39,7 +40,7 @@ export function TradeLogView({ tradeLogs, addTradeLog }: TradeLogViewProps) {
             </AppHeader>
             <ScrollArea className="flex-1">
               <main className="p-4 md:p-6 lg:p-8">
-                  <TradeLogTable tradeLogs={tradeLogs} />
+                  <TradeLogTable tradeLogs={tradeLogs} deleteTradeLog={deleteTradeLog} />
               </main>
             </ScrollArea>
         </div>

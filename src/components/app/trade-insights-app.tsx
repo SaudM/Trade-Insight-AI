@@ -39,6 +39,10 @@ export function TradeInsightsApp() {
     const newLog: TradeLog = { ...log, id: new Date().toISOString() };
     setTradeLogs(prev => [newLog, ...prev]);
   };
+
+  const deleteTradeLog = (id: string) => {
+    setTradeLogs(prev => prev.filter(log => log.id !== id));
+  };
   
   const filteredTradeLogs = useMemo(() => {
     if (!isMounted) return [];
@@ -69,7 +73,7 @@ export function TradeInsightsApp() {
       case 'dashboard':
         return <Dashboard tradeLogs={filteredTradeLogs} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
       case 'tradelog':
-        return <TradeLogView tradeLogs={tradeLogs} addTradeLog={addTradeLog} />;
+        return <TradeLogView tradeLogs={tradeLogs} addTradeLog={addTradeLog} deleteTradeLog={deleteTradeLog} />;
       case 'daily':
         return <DailyAnalysisView tradeLogs={filteredTradeLogs} />;
       case 'weekly':
