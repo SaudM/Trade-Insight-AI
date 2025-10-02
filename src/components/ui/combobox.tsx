@@ -65,16 +65,15 @@ export function Combobox({
                 <CommandItem
                   key={option.value}
                   value={option.label}
-                  onSelect={(currentValue) => {
-                    const selected = options.find(o => o.label.toLowerCase() === currentValue.toLowerCase());
-                    onChange(selected ? selected.value : "")
+                  onSelect={() => {
+                    onChange(option.value)
                     setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      value?.toLowerCase() === option.value.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option.label}
