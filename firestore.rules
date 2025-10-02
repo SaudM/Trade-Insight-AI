@@ -1,0 +1,151 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for a multi-tenant application.
+ *
+ * Data Structure:
+ * All data is nested under `/users/{userId}`, providing strong data isolation between users.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own data.
+ * - Listing of user documents is allowed only for the owner.
+ *
+ * Authorization Independence:
+ * Rules are designed to avoid costly `get()` calls by relying on path-based ownership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Enforces read and write access to user profile information, accessible only by the user.
+     * @path /users/{userId}
+     * @allow (create) User with matching auth UID creates their profile.
+     * @allow (get, list, update, delete) Authenticated user with matching UID can access or modify their profile.
+     * @deny (create, get, list, update, delete) Any other user attempts to access this data.
+     * @principle Enforces document ownership for all read and write operations.
+     */
+    match /users/{userId} {
+      // Helper function to check if the authenticated user is the owner of the document.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create their own profile if the userId matches their auth UID.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+
+      // Allow a user to get, list, update, and delete their own profile if they are authenticated and the userId matches their auth UID.
+      allow get, list: if isOwner(userId);
+      allow update, delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces read and write access to trade log entries, accessible only by the user.
+     * @path /users/{userId}/tradeLogs/{tradeLogId}
+     * @allow (create) Authenticated user with matching UID creates a trade log entry under their profile.
+     * @allow (get, list, update, delete) Authenticated user with matching UID can access or modify their own trade log entries.
+     * @deny (create, get, list, update, delete) Any other user attempts to access this data.
+     * @principle Enforces document ownership for all read and write operations.
+     */
+    match /users/{userId}/tradeLogs/{tradeLogId} {
+      // Helper function to check if the authenticated user is the owner of the trade log entry.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a trade log entry under their profile if they are authenticated and the userId matches their auth UID.
+      allow create: if isOwner(userId);
+
+      // Allow a user to get, list, update, and delete their own trade log entries if they are authenticated and the userId matches their auth UID.
+      allow get, list: if isOwner(userId);
+      allow update, delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces read and write access to daily analysis reports, accessible only by the user.
+     * @path /users/{userId}/dailyAnalyses/{dailyAnalysisId}
+     * @allow (create) Authenticated user with matching UID creates a daily analysis report under their profile.
+     * @allow (get, list, update, delete) Authenticated user with matching UID can access or modify their own daily analysis reports.
+     * @deny (create, get, list, update, delete) Any other user attempts to access this data.
+     * @principle Enforces document ownership for all read and write operations.
+     */
+    match /users/{userId}/dailyAnalyses/{dailyAnalysisId} {
+      // Helper function to check if the authenticated user is the owner of the daily analysis report.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a daily analysis report under their profile if they are authenticated and the userId matches their auth UID.
+      allow create: if isOwner(userId);
+
+      // Allow a user to get, list, update, and delete their own daily analysis reports if they are authenticated and the userId matches their auth UID.
+      allow get, list: if isOwner(userId);
+      allow update, delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces read and write access to weekly review reports, accessible only by the user.
+     * @path /users/{userId}/weeklyReviews/{weeklyReviewId}
+     * @allow (create) Authenticated user with matching UID creates a weekly review report under their profile.
+     * @allow (get, list, update, delete) Authenticated user with matching UID can access or modify their own weekly review reports.
+     * @deny (create, get, list, update, delete) Any other user attempts to access this data.
+     * @principle Enforces document ownership for all read and write operations.
+     */
+    match /users/{userId}/weeklyReviews/{weeklyReviewId} {
+      // Helper function to check if the authenticated user is the owner of the weekly review report.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a weekly review report under their profile if they are authenticated and the userId matches their auth UID.
+      allow create: if isOwner(userId);
+
+      // Allow a user to get, list, update, and delete their own weekly review reports if they are authenticated and the userId matches their auth UID.
+      allow get, list: if isOwner(userId);
+      allow update, delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces read and write access to weekly improvement plans, associated with a specific weekly review, accessible only by the user.
+     * @path /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan
+     * @allow (create) Authenticated user with matching UID creates a weekly improvement plan under their profile and weekly review.
+     * @allow (get, list, update, delete) Authenticated user with matching UID can access or modify their own weekly improvement plans.
+     * @deny (create, get, list, update, delete) Any other user attempts to access this data.
+     * @principle Enforces document ownership for all read and write operations.
+     */
+    match /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan {
+      // Helper function to check if the authenticated user is the owner of the weekly improvement plan.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a weekly improvement plan under their profile and weekly review if they are authenticated and the userId matches their auth UID.
+      allow create: if isOwner(userId);
+
+      // Allow a user to get, list, update, and delete their own weekly improvement plans if they are authenticated and the userId matches their auth UID.
+      allow get, list: if isOwner(userId);
+      allow update, delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces read and write access to monthly summary reports, accessible only by the user.
+     * @path /users/{userId}/monthlySummaries/{monthlySummaryId}
+     * @allow (create) Authenticated user with matching UID creates a monthly summary report under their profile.
+     * @allow (get, list, update, delete) Authenticated user with matching UID can access or modify their own monthly summary reports.
+     * @deny (create, get, list, update, delete) Any other user attempts to access this data.
+     * @principle Enforces document ownership for all read and write operations.
+     */
+    match /users/{userId}/monthlySummaries/{monthlySummaryId} {
+      // Helper function to check if the authenticated user is the owner of the monthly summary report.
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow a user to create a monthly summary report under their profile if they are authenticated and the userId matches their auth UID.
+      allow create: if isOwner(userId);
+
+      // Allow a user to get, list, update, and delete their own monthly summary reports if they are authenticated and the userId matches their auth UID.
+      allow get, list: if isOwner(userId);
+      allow update, delete: if isOwner(userId) && resource != null;
+    }
+  }
+}
