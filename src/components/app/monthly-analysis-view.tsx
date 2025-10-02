@@ -21,17 +21,13 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         setIsLoading(true);
         setAnalysis(null);
         try {
-            // The logs are already filtered by the dashboard view.
-            // We just need to separate them into current and previous.
             const now = new Date();
             const startOfCurrentMonth = startOfMonth(now);
-            const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
             
             const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime) >= startOfCurrentMonth);
-            const previousMonthLogs = tradeLogs.filter(log => {
-                const logDate = new Date(log.tradeTime);
-                return logDate >= startOfPreviousMonth && logDate < startOfCurrentMonth;
-            });
+            
+            // For previous month, we look at logs from before the start of the current month within the provided `tradeLogs`
+            const previousMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime) < startOfCurrentMonth);
 
             if (currentMonthLogs.length === 0) {
                 toast({ title: "本月无交易。", description: "请确保所选时间范围内有本月的交易记录。" });

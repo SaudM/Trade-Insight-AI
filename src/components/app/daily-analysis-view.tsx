@@ -21,7 +21,7 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         setAnalysis(null);
         try {
             if (tradeLogs.length === 0) {
-                toast({ title: "无交易记录可供分析。", description: "请先添加一些交易日志。" });
+                toast({ title: "无交易记录可供分析。", description: "请先在仪表盘中选择一个带有交易的时间周期。" });
                 setIsLoading(false);
                 return;
             }
