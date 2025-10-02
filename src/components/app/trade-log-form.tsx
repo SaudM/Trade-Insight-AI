@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { TradeLog } from '@/lib/types';
+import { Combobox } from '@/components/ui/combobox';
+import { stocks } from '@/lib/stocks';
 
 const tradeLogSchema = z.object({
   tradeTime: z.string().min(1, '交易时间是必填项'),
@@ -119,10 +121,16 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             control={form.control}
             name="symbol"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>交易标的</FormLabel>
                 <FormControl>
-                  <Input placeholder="例如, AAPL" {...field} />
+                  <Combobox
+                    options={stocks}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="搜索股票..."
+                    emptyText="未找到股票。"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
