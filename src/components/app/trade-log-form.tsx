@@ -33,14 +33,31 @@ import type { TradeLog } from '@/lib/types';
 const tradeLogSchema = z.object({
   tradeTime: z.string().min(1, '交易时间是必填项'),
   symbol: z.string().min(1, '交易标的是必填项'),
-  direction: z.enum(['Buy', 'Sell', 'Long', 'Short']),
+  direction: z.enum(['Buy', 'Sell', 'Long', 'Short', 'Close']),
   positionSize: z.string().min(1, '仓位大小是必填项'),
   tradeResult: z.string().refine(val => !isNaN(parseFloat(val)), { message: "必须是数字" }),
   mindsetState: z.string().min(1, '心态状态是必填项'),
-  entryReason: z.string().min(1, '入场理由是必填项'),
-  exitReason: z.string().min(1, '出场理由是必填项'),
+  entryReason: z.string(),
+  exitReason: z.string(),
   lessonsLearned: z.string().min(1, '心得体会是必填项'),
+}).refine(data => {
+    if (['Buy', 'Long', 'Short'].includes(data.direction)) {
+        return !!data.entryReason;
+    }
+    return true;
+}, {
+    message: '入场理由是必填项',
+    path: ['entryReason'],
+}).refine(data => {
+    if (['Sell', 'Close'].includes(data.direction)) {
+        return !!data.exitReason;
+    }
+    return true;
+}, {
+    message: '出场理由是必填项',
+    path: ['exitReason'],
 });
+
 
 type TradeLogFormValues = z.infer<typeof tradeLogSchema>;
 
@@ -66,6 +83,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
   });
 
   const direction = form.watch('direction');
+
+  const isEntry = ['Buy', 'Long', 'Short'].includes(direction);
+  const isExit = ['Sell', 'Close'].includes(direction);
 
   function onSubmit(values: TradeLogFormValues) {
     addTradeLog(values);
@@ -122,9 +142,10 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="Buy">买入</SelectItem>
-                    <SelectItem value="Sell">卖出</SelectItem>
                     <SelectItem value="Long">做多</SelectItem>
                     <SelectItem value="Short">做空</SelectItem>
+                    <SelectItem value="Sell">卖出</SelectItem>
+                    <SelectItem value="Close">平仓</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -170,7 +191,7 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
               </FormItem>
             )}
           />
-          {direction && (
+          {isEntry && (
             <FormField
               control={form.control}
               name="entryReason"
@@ -185,19 +206,21 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
               )}
             />
           )}
-          <FormField
-            control={form.control}
-            name="exitReason"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>出场理由</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="您为什么结束这笔交易？" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isExit && (
+            <FormField
+              control={form.control}
+              name="exitReason"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>出场理由</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="您为什么结束这笔交易？" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="lessonsLearned"

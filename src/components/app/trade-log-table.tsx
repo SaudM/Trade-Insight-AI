@@ -17,6 +17,24 @@ import {
 } from "@/components/ui/accordion"
 import React from "react"
 
+const getDirectionBadge = (direction: TradeLog['direction']) => {
+    switch (direction) {
+        case 'Buy':
+            return <Badge variant="default" className="capitalize">买入</Badge>;
+        case 'Long':
+            return <Badge variant="default" className="capitalize">做多</Badge>;
+        case 'Sell':
+            return <Badge variant="destructive" className="capitalize">卖出</Badge>;
+        case 'Short':
+            return <Badge variant="destructive" className="capitalize">做空</Badge>;
+        case 'Close':
+            return <Badge variant="secondary" className="capitalize">平仓</Badge>;
+        default:
+            return <Badge variant="outline" className="capitalize">{direction}</Badge>;
+    }
+}
+
+
 export function TradeLogTable({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     if (tradeLogs.length === 0) {
         return <div className="text-center text-muted-foreground py-16">还没有交易记录。点击“添加交易”开始吧。</div>
@@ -45,9 +63,7 @@ export function TradeLogTable({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                             <TableCell>{new Date(log.tradeTime).toLocaleString()}</TableCell>
                             <TableCell className="font-medium">{log.symbol}</TableCell>
                             <TableCell>
-                                <Badge variant={['Buy', 'Long'].includes(log.direction) ? 'default' : 'destructive'} className="capitalize">
-                                    {log.direction === 'Buy' ? '买入' : log.direction === 'Sell' ? '卖出' : log.direction === 'Long' ? '做多' : '做空'}
-                                </Badge>
+                                {getDirectionBadge(log.direction)}
                             </TableCell>
                             <TableCell>{log.positionSize}</TableCell>
                             <TableCell className={`text-right font-semibold ${parseFloat(log.tradeResult) >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -69,14 +85,18 @@ export function TradeLogTable({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                                       <p className="font-semibold">心得体会</p>
                                       <p className="text-muted-foreground">{log.lessonsLearned}</p>
                                     </div>
-                                    <div className="space-y-1">
-                                      <p className="font-semibold">入场理由</p>
-                                      <p className="text-muted-foreground">{log.entryReason}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <p className="font-semibold">出场理由</p>
-                                      <p className="text-muted-foreground">{log.exitReason}</p>
-                                    </div>
+                                    {log.entryReason && (
+                                      <div className="space-y-1">
+                                        <p className="font-semibold">入场理由</p>
+                                        <p className="text-muted-foreground">{log.entryReason}</p>
+                                      </div>
+                                    )}
+                                    {log.exitReason && (
+                                      <div className="space-y-1">
+                                        <p className="font-semibold">出场理由</p>
+                                        <p className="text-muted-foreground">{log.exitReason}</p>
+                                      </div>
+                                    )}
                                   </div>
                               </AccordionContent>
                           </TableCell>
