@@ -36,10 +36,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           <SidebarMenuButton
             onClick={() => setActiveView('tradelog')}
             isActive={activeView === 'tradelog'}
-            tooltip={{children: '交易日志'}}
+            tooltip={{children: '交易笔记'}}
           >
             <Book />
-            <span>交易日志</span>
+            <span>交易笔记</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

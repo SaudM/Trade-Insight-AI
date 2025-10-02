@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { TradeLogTable } from './trade-log-table';
 import { TradeLogForm } from './trade-log-form';
-import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState } from 'react';
 
@@ -48,7 +48,7 @@ export function TradeLogView({ tradeLogs, addTradeLog, updateTradeLog, deleteTra
     
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="交易日志">
+            <AppHeader title="交易笔记">
                 <Button onClick={handleAddClick}>
                     <PlusCircle className="mr-2" />
                     添加交易

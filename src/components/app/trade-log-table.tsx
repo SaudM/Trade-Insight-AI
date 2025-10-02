@@ -129,7 +129,7 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>您确定吗？</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                此操作无法撤销。这将永久删除此交易日志。
+                                                                此操作无法撤销。这将永久删除此交易笔记。
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>

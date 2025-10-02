@@ -126,7 +126,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="font-headline">{isEditing ? '编辑交易日志' : '添加新的交易日志'}</DialogTitle>
+        <DialogTitle className="font-headline">{isEditing ? '编辑交易笔记' : '添加新的交易笔记'}</DialogTitle>
         <DialogDescription>
           {isEditing ? '修改您的交易详情。' : '记录您的交易详情，以便分析和改进。'}
         </DialogDescription>

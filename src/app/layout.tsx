@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: '交易洞察AI',
-  description: '由AI驱动的交易日志，助您持续进步。',
+  description: '由AI驱动的交易笔记，助您持续进步。',
 };
 
 export default function RootLayout({
