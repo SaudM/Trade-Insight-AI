@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,8 +32,10 @@ import {
 import type { TradeLog } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
 import { stocks } from '@/lib/stocks';
+import { useEffect } from 'react';
 
 const tradeLogSchema = z.object({
+  id: z.string().optional(),
   tradeTime: z.string().min(1, '交易时间是必填项'),
   symbol: z.string().min(1, '交易标的是必填项'),
   direction: z.enum(['Buy', 'Sell', 'Long', 'Short', 'Close']),
@@ -64,14 +67,18 @@ const tradeLogSchema = z.object({
 type TradeLogFormValues = z.infer<typeof tradeLogSchema>;
 
 type TradeLogFormProps = {
-  addTradeLog: (log: Omit<TradeLog, 'id'>) => void;
-  onFormSubmit: () => void;
+  tradeLog?: TradeLog | null;
+  onSubmit: (log: Omit<TradeLog, 'id'> | TradeLog) => void;
+  onCancel: () => void;
 };
 
-export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
+export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps) {
   const form = useForm<TradeLogFormValues>({
     resolver: zodResolver(tradeLogSchema),
-    defaultValues: {
+    defaultValues: tradeLog ? {
+      ...tradeLog,
+      tradeTime: new Date(tradeLog.tradeTime).toISOString().substring(0, 16),
+    } : {
       tradeTime: new Date().toISOString().substring(0, 16),
       symbol: '',
       direction: 'Buy',
@@ -84,26 +91,48 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (tradeLog) {
+      form.reset({
+        ...tradeLog,
+        tradeTime: new Date(tradeLog.tradeTime).toISOString().substring(0, 16),
+      });
+    } else {
+      form.reset({
+        tradeTime: new Date().toISOString().substring(0, 16),
+        symbol: '',
+        direction: 'Buy',
+        positionSize: '',
+        tradeResult: '',
+        mindsetState: '',
+        entryReason: '',
+        exitReason: '',
+        lessonsLearned: '',
+      });
+    }
+  }, [tradeLog, form]);
+
   const direction = form.watch('direction');
 
   const isEntry = ['Buy', 'Long', 'Short'].includes(direction);
   const isExit = ['Sell', 'Close'].includes(direction);
 
-  function onSubmit(values: TradeLogFormValues) {
-    addTradeLog(values);
-    onFormSubmit();
+  function handleFormSubmit(values: TradeLogFormValues) {
+    onSubmit(values);
   }
+
+  const isEditing = !!tradeLog;
 
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="font-headline">添加新的交易日志</DialogTitle>
+        <DialogTitle className="font-headline">{isEditing ? '编辑交易日志' : '添加新的交易日志'}</DialogTitle>
         <DialogDescription>
-          记录您的交易详情，以便分析和改进。
+          {isEditing ? '修改您的交易详情。' : '记录您的交易详情，以便分析和改进。'}
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           <FormField
             control={form.control}
             name="tradeTime"
@@ -245,7 +274,10 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
         </form>
       </Form>
       <DialogFooter>
-        <Button type="submit" onClick={form.handleSubmit(onSubmit)}>保存交易</Button>
+        <DialogClose asChild>
+          <Button type="button" variant="outline" onClick={onCancel}>取消</Button>
+        </DialogClose>
+        <Button type="submit" onClick={form.handleSubmit(handleFormSubmit)}>保存交易</Button>
       </DialogFooter>
     </>
   );

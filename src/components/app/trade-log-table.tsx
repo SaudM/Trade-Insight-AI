@@ -11,7 +11,7 @@ import {
 import type { TradeLog } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     AlertDialog,
@@ -43,7 +43,7 @@ const getDirectionBadge = (direction: TradeLog['direction']) => {
 }
 
 
-export function TradeLogTable({ tradeLogs, deleteTradeLog }: { tradeLogs: TradeLog[], deleteTradeLog: (id: string) => void }) {
+export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { tradeLogs: TradeLog[], handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) {
     const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
     if (tradeLogs.length === 0) {
@@ -113,7 +113,11 @@ export function TradeLogTable({ tradeLogs, deleteTradeLog }: { tradeLogs: TradeL
                                                 <p className="text-muted-foreground">{log.exitReason}</p>
                                             </div>
                                             )}
-                                            <div className="md:col-span-2 flex justify-end">
+                                            <div className="md:col-span-2 flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => handleEdit(log)}>
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    编辑
+                                                </Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <Button variant="destructive" size="sm">

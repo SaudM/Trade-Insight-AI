@@ -40,6 +40,10 @@ export function TradeInsightsApp() {
     setTradeLogs(prev => [newLog, ...prev]);
   };
 
+  const updateTradeLog = (updatedLog: TradeLog) => {
+    setTradeLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log));
+  };
+
   const deleteTradeLog = (id: string) => {
     setTradeLogs(prev => prev.filter(log => log.id !== id));
   };
@@ -73,7 +77,7 @@ export function TradeInsightsApp() {
       case 'dashboard':
         return <Dashboard tradeLogs={filteredTradeLogs} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
       case 'tradelog':
-        return <TradeLogView tradeLogs={tradeLogs} addTradeLog={addTradeLog} deleteTradeLog={deleteTradeLog} />;
+        return <TradeLogView tradeLogs={tradeLogs} addTradeLog={addTradeLog} updateTradeLog={updateTradeLog} deleteTradeLog={deleteTradeLog} />;
       case 'daily':
         return <DailyAnalysisView tradeLogs={filteredTradeLogs} />;
       case 'weekly':
