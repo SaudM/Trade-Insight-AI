@@ -1,19 +1,20 @@
 "use client"
 
 import { useMemo, useState } from 'react';
-import type { TradeLog } from '@/lib/types';
+import type { TradeLog, View } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppHeader } from './header';
 import { PLChart } from './pl-chart';
 import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
-import { TrendingUp, TrendingDown, Percent, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Percent, Wallet, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
+import { Separator } from '../ui/separator';
 
 type TimePeriod = 'today' | '7d' | '30d' | 'all';
 
-export function Dashboard({ tradeLogs }: { tradeLogs: TradeLog[] }) {
+export function Dashboard({ tradeLogs, setActiveView }: { tradeLogs: TradeLog[]; setActiveView: (view: View) => void; }) {
     const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
 
     const filteredTradeLogs = useMemo(() => {
@@ -39,14 +40,38 @@ export function Dashboard({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
     const totalPL = filteredTradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
 
+    const handleGenerateReport = () => {
+        switch (timePeriod) {
+            case 'today':
+                setActiveView('daily');
+                break;
+            case '7d':
+                setActiveView('weekly');
+                break;
+            case '30d':
+                setActiveView('monthly');
+                break;
+            default:
+                // Maybe show a toast or disable button if 'all' is selected
+                break;
+        }
+    }
+
     return (
         <div className="flex flex-col h-full">
             <AppHeader title="仪表盘">
-                <div className="flex items-center gap-2 rounded-md bg-muted p-1">
-                    <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')}>今日</Button>
-                    <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')}>7天</Button>
-                    <Button variant={timePeriod === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('30d')}>30天</Button>
-                    <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')}>全部</Button>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 rounded-md bg-muted p-1">
+                        <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')}>今日</Button>
+                        <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')}>7天</Button>
+                        <Button variant={timePeriod === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('30d')}>30天</Button>
+                        <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')}>全部</Button>
+                    </div>
+                    <Separator orientation="vertical" className="h-6" />
+                     <Button onClick={handleGenerateReport} disabled={timePeriod === 'all'}>
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        生成分析报告
+                    </Button>
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">

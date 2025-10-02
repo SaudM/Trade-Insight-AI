@@ -48,7 +48,7 @@ export function TradeInsightsApp() {
     }
     switch (activeView) {
       case 'dashboard':
-        return <Dashboard tradeLogs={tradeLogs} />;
+        return <Dashboard tradeLogs={tradeLogs} setActiveView={setActiveView} />;
       case 'tradelog':
         return <TradeLogView tradeLogs={tradeLogs} addTradeLog={addTradeLog} />;
       case 'daily':
@@ -58,7 +58,7 @@ export function TradeInsightsApp() {
       case 'monthly':
         return <MonthlyAnalysisView tradeLogs={tradeLogs} />;
       default:
-        return <Dashboard tradeLogs={tradeLogs} />;
+        return <Dashboard tradeLogs={tradeLogs} setActiveView={setActiveView} />;
     }
   };
 

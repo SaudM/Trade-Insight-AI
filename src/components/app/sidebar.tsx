@@ -45,31 +45,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('daily')}
-            isActive={activeView === 'daily'}
-            tooltip={{children: '每日分析'}}
+            isActive={activeView === 'daily' || activeView === 'weekly' || activeView === 'monthly'}
+            tooltip={{children: 'AI分析'}}
           >
             <Sun />
-            <span>每日分析</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={() => setActiveView('weekly')}
-            isActive={activeView === 'weekly'}
-            tooltip={{children: '每周回顾'}}
-          >
-            <Calendar />
-            <span>每周回顾</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={() => setActiveView('monthly')}
-            isActive={activeView === 'monthly'}
-            tooltip={{children: '月度总结'}}
-          >
-            <CalendarDays />
-            <span>月度总结</span>
+            <span>AI 分析</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
