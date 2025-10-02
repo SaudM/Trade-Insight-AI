@@ -1,6 +1,5 @@
 "use client"
 
-import { useMemo, useState } from 'react';
 import type { TradeLog, View } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppHeader } from './header';
@@ -9,36 +8,24 @@ import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
 import { TrendingUp, TrendingDown, Percent, Wallet, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { subDays, startOfDay, isSameDay } from 'date-fns';
 import { Separator } from '../ui/separator';
 
 type TimePeriod = 'today' | '7d' | '30d' | 'all';
 
-export function Dashboard({ tradeLogs, setActiveView }: { tradeLogs: TradeLog[]; setActiveView: (view: View) => void; }) {
-    const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
+type DashboardProps = {
+    tradeLogs: TradeLog[];
+    setActiveView: (view: View) => void;
+    timePeriod: TimePeriod;
+    setTimePeriod: (period: TimePeriod) => void;
+}
 
-    const filteredTradeLogs = useMemo(() => {
-        const now = new Date();
-        if (timePeriod === 'today') {
-            return tradeLogs.filter(log => isSameDay(new Date(log.tradeTime), now));
-        }
-        if (timePeriod === '7d') {
-            const sevenDaysAgo = startOfDay(subDays(now, 7));
-            return tradeLogs.filter(log => new Date(log.tradeTime) >= sevenDaysAgo);
-        }
-        if (timePeriod === '30d') {
-            const thirtyDaysAgo = startOfDay(subDays(now, 30));
-            return tradeLogs.filter(log => new Date(log.tradeTime) >= thirtyDaysAgo);
-        }
-        return tradeLogs;
-    }, [tradeLogs, timePeriod]);
-
-
-    const totalTrades = filteredTradeLogs.length;
-    const profitableTrades = filteredTradeLogs.filter(log => parseFloat(log.tradeResult) > 0).length;
+export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod }: DashboardProps) {
+    
+    const totalTrades = tradeLogs.length;
+    const profitableTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) > 0).length;
     const lossTrades = totalTrades - profitableTrades;
     const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
-    const totalPL = filteredTradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
+    const totalPL = tradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
 
     const handleGenerateReport = () => {
         switch (timePeriod) {
@@ -121,7 +108,7 @@ export function Dashboard({ tradeLogs, setActiveView }: { tradeLogs: TradeLog[];
                       </Card>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                      <PLChart tradeLogs={filteredTradeLogs} />
+                      <PLChart tradeLogs={tradeLogs} />
                       <WinLossRatioChart profitableTrades={profitableTrades} lossTrades={lossTrades} />
                   </div>
               </main>

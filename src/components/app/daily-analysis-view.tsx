@@ -20,16 +20,13 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         setIsLoading(true);
         setAnalysis(null);
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const todaysLogs = tradeLogs.filter(log => new Date(log.tradeTime).toISOString().split('T')[0] === today);
-            
-            if (todaysLogs.length === 0) {
-                toast({ title: "今日无交易记录。", description: "请添加今天的交易以获取分析。" });
+            if (tradeLogs.length === 0) {
+                toast({ title: "无交易记录可供分析。", description: "请先添加一些交易日志。" });
                 setIsLoading(false);
                 return;
             }
 
-            const logsString = todaysLogs.map(log => 
+            const logsString = tradeLogs.map(log => 
               `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
             ).join('\n');
             
@@ -97,9 +94,9 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                    <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                         <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                        <h2 className="text-2xl font-headline font-semibold">今日无交易记录</h2>
+                        <h2 className="text-2xl font-headline font-semibold">无交易记录</h2>
                         <p className="mt-2 max-w-md text-muted-foreground">
-                            请添加今天的交易以获取分析。
+                            请在仪表盘选择一个时间周期并生成报告。
                         </p>
                     </div>
                 )}

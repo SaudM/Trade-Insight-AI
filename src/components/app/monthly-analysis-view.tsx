@@ -10,7 +10,7 @@ import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
-import { subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { subMonths, startOfMonth } from 'date-fns';
 
 export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     const [isLoading, setIsLoading] = useState(true);
@@ -21,23 +21,20 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         setIsLoading(true);
         setAnalysis(null);
         try {
+            // The logs are already filtered by the dashboard view.
+            // We just need to separate them into current and previous.
             const now = new Date();
             const startOfCurrentMonth = startOfMonth(now);
-            const endOfCurrentMonth = endOfMonth(now);
             const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
-            const endOfPreviousMonth = endOfMonth(subMonths(now, 1));
-
-            const currentMonthLogs = tradeLogs.filter(log => {
-                const logDate = new Date(log.tradeTime);
-                return logDate >= startOfCurrentMonth && logDate <= endOfCurrentMonth;
-            });
+            
+            const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime) >= startOfCurrentMonth);
             const previousMonthLogs = tradeLogs.filter(log => {
                 const logDate = new Date(log.tradeTime);
-                return logDate >= startOfPreviousMonth && logDate <= endOfPreviousMonth;
+                return logDate >= startOfPreviousMonth && logDate < startOfCurrentMonth;
             });
 
             if (currentMonthLogs.length === 0) {
-                toast({ title: "本月无交易。", description: "记录一些交易以获取月度分析。" });
+                toast({ title: "本月无交易。", description: "请确保所选时间范围内有本月的交易记录。" });
                 setIsLoading(false);
                 return;
             }
@@ -105,9 +102,9 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                      <h2 className="text-2xl font-headline font-semibold">本月无交易</h2>
+                      <h2 className="text-2xl font-headline font-semibold">无交易记录</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                          记录一些交易以获取月度总结。
+                          请在仪表盘选择一个时间周期并生成报告。
                       </p>
                   </div>
                 )}

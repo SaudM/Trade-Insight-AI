@@ -10,7 +10,6 @@ import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Repeat, Trophy, Scaling, HeartPulse, ListChecks } from 'lucide-react';
-import { subDays, startOfDay } from 'date-fns';
 
 export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     const [isLoading, setIsLoading] = useState(true);
@@ -21,16 +20,13 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         setIsLoading(true);
         setAnalysis(null);
         try {
-            const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-            const weeklyLogs = tradeLogs.filter(log => new Date(log.tradeTime) >= sevenDaysAgo);
-
-            if (weeklyLogs.length === 0) {
-                toast({ title: "过去7天内没有交易。", description: "记录一些交易以获取每周分析。" });
+            if (tradeLogs.length === 0) {
+                toast({ title: "此时间段内没有交易。", description: "请选择一个有交易记录的时间段以进行分析。" });
                 setIsLoading(false);
                 return;
             }
 
-            const logsString = JSON.stringify(weeklyLogs, null, 2);
+            const logsString = JSON.stringify(tradeLogs, null, 2);
             const result = await weeklyPatternDiscovery({ tradingLogs: logsString });
             setAnalysis(result);
         } catch (error) {
@@ -94,9 +90,9 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                      <h2 className="text-2xl font-headline font-semibold">近7日无交易</h2>
+                      <h2 className="text-2xl font-headline font-semibold">无交易记录</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                          记录一些交易以获取每周回顾。
+                          请在仪表盘选择一个时间周期并生成报告。
                       </p>
                   </div>
                 )}
