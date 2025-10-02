@@ -69,7 +69,7 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                     />
                      <AiAnalysisCard 
                       title="缺点"
-                      icon={Zap}
+                      icon={HeartPulse}
                       isLoading={isLoading}
                       content={analysis.weaknesses}
                     />

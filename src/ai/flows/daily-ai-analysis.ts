@@ -33,19 +33,19 @@ const prompt = ai.definePrompt({
   name: 'dailyTradeAnalysisPrompt',
   input: {schema: DailyTradeAnalysisInputSchema},
   output: {schema: DailyTradeAnalysisOutputSchema},
-  prompt: `You are an expert trading analyst. Analyze the trader\'s daily trade log to provide insights.
+  prompt: `You are an expert trading analyst. Analyze the trader\'s daily trade log to provide insights. The logs are in Chinese.
 
 Trade Log:
 {{{tradeLogs}}}
 
-Instructions:
-1. Summarize the day\'s trading activity.
+Instructions (provide output in Chinese):
+1. Summarize the day's trading activity.
 2. Identify key strengths in the trading process.
 3. Point out weaknesses in the trading process, focusing on decision-making and execution.
-4. Analyze how the trader\'s emotional state impacted their decisions.
+4. Analyze how the trader's emotional state impacted their decisions.
 5. Provide specific, actionable suggestions for improving future trading performance.
 
-Output the result in JSON format.
+Output the result in JSON format with Chinese values.
 `,
 });
 
