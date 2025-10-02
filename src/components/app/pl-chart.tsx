@@ -5,16 +5,28 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
+import { isSameDay, format } from 'date-fns';
 
 export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
+  
+  const isSingleDay = useMemo(() => {
+    if (tradeLogs.length < 2) return true;
+    const firstDate = new Date(tradeLogs[0].tradeTime);
+    return tradeLogs.every(log => isSameDay(new Date(log.tradeTime), firstDate));
+  }, [tradeLogs]);
+
   const chartData = useMemo(() => {
     return tradeLogs
-      .map(log => ({
-        date: new Date(log.tradeTime).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
-        pl: parseFloat(log.tradeResult),
-      }))
-      .reverse();
-  }, [tradeLogs]);
+      .map(log => {
+        const date = new Date(log.tradeTime);
+        return {
+          date: isSingleDay ? format(date, 'HH:mm') : format(date, 'MM-dd'),
+          fullDate: format(date, 'yyyy-MM-dd HH:mm'),
+          pl: parseFloat(log.tradeResult),
+        }
+      })
+      .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
+  }, [tradeLogs, isSingleDay]);
 
   return (
     <Card>
@@ -35,7 +47,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                     return (
                       <ChartTooltipContent
                         className="w-40"
-                        label={payload[0].payload.date}
+                        label={payload[0].payload.fullDate}
                         payload={payload.map(p => ({...p, value: p.value?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}))}
                       />
                     );

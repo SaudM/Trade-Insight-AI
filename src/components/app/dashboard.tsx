@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo, useState } from 'react';
 import type { TradeLog } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppHeader } from './header';
@@ -7,17 +8,47 @@ import { PLChart } from './pl-chart';
 import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
 import { TrendingUp, TrendingDown, Percent, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { subDays, startOfDay, isSameDay } from 'date-fns';
+
+type TimePeriod = 'today' | '7d' | '30d' | 'all';
 
 export function Dashboard({ tradeLogs }: { tradeLogs: TradeLog[] }) {
-    const totalTrades = tradeLogs.length;
-    const profitableTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) > 0).length;
+    const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
+
+    const filteredTradeLogs = useMemo(() => {
+        const now = new Date();
+        if (timePeriod === 'today') {
+            return tradeLogs.filter(log => isSameDay(new Date(log.tradeTime), now));
+        }
+        if (timePeriod === '7d') {
+            const sevenDaysAgo = startOfDay(subDays(now, 7));
+            return tradeLogs.filter(log => new Date(log.tradeTime) >= sevenDaysAgo);
+        }
+        if (timePeriod === '30d') {
+            const thirtyDaysAgo = startOfDay(subDays(now, 30));
+            return tradeLogs.filter(log => new Date(log.tradeTime) >= thirtyDaysAgo);
+        }
+        return tradeLogs;
+    }, [tradeLogs, timePeriod]);
+
+
+    const totalTrades = filteredTradeLogs.length;
+    const profitableTrades = filteredTradeLogs.filter(log => parseFloat(log.tradeResult) > 0).length;
     const lossTrades = totalTrades - profitableTrades;
     const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
-    const totalPL = tradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
+    const totalPL = filteredTradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
 
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="仪表盘" />
+            <AppHeader title="仪表盘">
+                <div className="flex items-center gap-2 rounded-md bg-muted p-1">
+                    <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')}>今日</Button>
+                    <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')}>7天</Button>
+                    <Button variant={timePeriod === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('30d')}>30天</Button>
+                    <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')}>全部</Button>
+                </div>
+            </AppHeader>
             <ScrollArea className="flex-1">
               <main className="p-4 md:p-6 lg:p-8 space-y-8">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -65,7 +96,7 @@ export function Dashboard({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                       </Card>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                      <PLChart tradeLogs={tradeLogs} />
+                      <PLChart tradeLogs={filteredTradeLogs} />
                       <WinLossRatioChart profitableTrades={profitableTrades} lossTrades={lossTrades} />
                   </div>
               </main>
