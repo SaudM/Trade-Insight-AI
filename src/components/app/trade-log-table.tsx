@@ -36,11 +36,11 @@ export function TradeLogTable({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                     <TableHead className="w-12"></TableHead>
                 </TableRow>
             </TableHeader>
-            <TableBody asChild>
+            <TableBody>
               <Accordion type="single" collapsible className="w-full">
                   {tradeLogs.map(log => (
                     <AccordionItem value={log.id} key={log.id} asChild>
-                      <>
+                      <React.Fragment>
                         <TableRow className="hover:bg-muted/50 data-[state=open]:bg-muted">
                             <TableCell>{new Date(log.tradeTime).toLocaleString()}</TableCell>
                             <TableCell className="font-medium">{log.symbol}</TableCell>
@@ -81,7 +81,7 @@ export function TradeLogTable({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                               </AccordionContent>
                           </TableCell>
                         </TableRow>
-                      </>
+                      </React.Fragment>
                     </AccordionItem>
                   ))}
               </Accordion>
