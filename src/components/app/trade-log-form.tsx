@@ -156,8 +156,8 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                   <Combobox
                     options={stocks}
                     value={field.value}
-                    onChange={field.onChange}
-                    placeholder="搜索股票..."
+                    onChange={(value) => field.onChange(value)}
+                    placeholder="搜索或输入股票..."
                     emptyText="未找到股票。"
                   />
                 </FormControl>
