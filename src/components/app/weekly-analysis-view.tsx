@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { TradeLog } from '@/lib/types';
 import { AppHeader } from './header';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Repeat, Trophy, Scaling, HeartPulse, ListChecks } from 'lucide-react';
 import { subDays, startOfDay } from 'date-fns';
 
 export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [analysis, setAnalysis] = useState<WeeklyPatternDiscoveryOutput | null>(null);
     const { toast } = useToast();
 
@@ -40,58 +40,63 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             setIsLoading(false);
         }
     };
+    
+    useEffect(() => {
+        handleAnalysis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="flex flex-col h-full">
             <AppHeader title="每周回顾">
                 <Button onClick={handleAnalysis} disabled={isLoading}>
                     <Wand2 className="mr-2" />
-                    {isLoading ? '分析中...' : '生成每周回顾'}
+                    {isLoading ? '分析中...' : '重新生成回顾'}
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
               <main className="p-4 md:p-6 lg:p-8 space-y-6">
-                {analysis ? (
+                {(isLoading || analysis) ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 
                       title="成功模式"
                       icon={Trophy}
                       isLoading={isLoading}
-                      content={analysis.successPatterns}
+                      content={analysis?.successPatterns ?? null}
                     />
                     <AiAnalysisCard 
                       title="错误模式"
                       icon={Repeat}
                       isLoading={isLoading}
-                      content={analysis.errorPatterns}
+                      content={analysis?.errorPatterns ?? null}
                     />
                     <AiAnalysisCard 
                       title="仓位大小评估"
                       icon={Scaling}
                       isLoading={isLoading}
-                      content={analysis.positionSizingAssessment}
+                      content={analysis?.positionSizingAssessment ?? null}
                     />
                     <AiAnalysisCard 
                       title="情绪关联性"
                       icon={HeartPulse}
                       isLoading={isLoading}
-                      content={analysis.emotionCorrelation}
+                      content={analysis?.emotionCorrelation ?? null}
                     />
                     <div className="lg:col-span-2">
                       <AiAnalysisCard 
                         title="每周改进计划"
                         icon={ListChecks}
                         isLoading={isLoading}
-                        content={analysis.improvementPlan}
+                        content={analysis?.improvementPlan ?? null}
                       />
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                      <h2 className="text-2xl font-headline font-semibold">准备好进行每周回顾了吗？</h2>
+                      <h2 className="text-2xl font-headline font-semibold">近7日无交易</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                          点击“生成每周回顾”按钮，发现您过去7天交易中的模式并获取改进计划。
+                          记录一些交易以获取每周回顾。
                       </p>
                   </div>
                 )}

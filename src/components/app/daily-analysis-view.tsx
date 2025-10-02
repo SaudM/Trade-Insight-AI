@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { TradeLog } from '@/lib/types';
 import { AppHeader } from './header';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainCircuit, Zap, HeartPulse, Lightbulb } from 'lucide-react';
 
 export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [analysis, setAnalysis] = useState<DailyTradeAnalysisOutput | null>(null);
     const { toast } = useToast();
 
@@ -42,58 +42,64 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             setIsLoading(false);
         }
     };
+    
+    useEffect(() => {
+        handleAnalysis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
 
     return (
         <div className="flex flex-col h-full">
             <AppHeader title="每日分析">
                 <Button onClick={handleAnalysis} disabled={isLoading}>
                     <Wand2 className="mr-2" />
-                    {isLoading ? '分析中...' : '生成每日报告'}
+                    {isLoading ? '分析中...' : '重新生成报告'}
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
               <main className="p-4 md:p-6 lg:p-8 space-y-6">
-                {analysis ? (
+                {(isLoading || analysis) ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 
                       title="摘要"
                       icon={BrainCircuit}
                       isLoading={isLoading}
-                      content={analysis.summary}
+                      content={analysis?.summary ?? null}
                     />
                      <AiAnalysisCard 
                       title="优点"
                       icon={Zap}
                       isLoading={isLoading}
-                      content={analysis.strengths}
+                      content={analysis?.strengths ?? null}
                     />
                      <AiAnalysisCard 
                       title="缺点"
                       icon={HeartPulse}
                       isLoading={isLoading}
-                      content={analysis.weaknesses}
+                      content={analysis?.weaknesses ?? null}
                     />
                     <AiAnalysisCard 
                       title="情绪影响"
                       icon={HeartPulse}
                       isLoading={isLoading}
-                      content={analysis.emotionalImpactAnalysis}
+                      content={analysis?.emotionalImpactAnalysis ?? null}
                     />
                     <div className="lg:col-span-2">
                       <AiAnalysisCard 
                         title="改进建议"
                         icon={Lightbulb}
                         isLoading={isLoading}
-                        content={analysis.improvementSuggestions}
+                        content={analysis?.improvementSuggestions ?? null}
                       />
                     </div>
                   </div>
                 ) : (
                    <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                         <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                        <h2 className="text-2xl font-headline font-semibold">准备好获取您的每日洞察了吗？</h2>
+                        <h2 className="text-2xl font-headline font-semibold">今日无交易记录</h2>
                         <p className="mt-2 max-w-md text-muted-foreground">
-                            点击“生成每日报告”按钮，获取由AI驱动的今日交易分析。
+                            请添加今天的交易以获取分析。
                         </p>
                     </div>
                 )}
