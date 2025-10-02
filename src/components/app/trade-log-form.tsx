@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -63,6 +64,8 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
       lessonsLearned: '',
     },
   });
+
+  const direction = form.watch('direction');
 
   function onSubmit(values: TradeLogFormValues) {
     addTradeLog(values);
@@ -167,19 +170,21 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="entryReason"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>入场理由</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="您为什么进行这笔交易？" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {direction && (
+            <FormField
+              control={form.control}
+              name="entryReason"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>入场理由</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="您为什么进行这笔交易？" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="exitReason"
