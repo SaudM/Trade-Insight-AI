@@ -24,20 +24,20 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             const todaysLogs = tradeLogs.filter(log => new Date(log.tradeTime).toISOString().split('T')[0] === today);
             
             if (todaysLogs.length === 0) {
-                toast({ title: "No trades logged today.", description: "Please add some trades for today to get an analysis." });
+                toast({ title: "今日无交易记录。", description: "请添加今天的交易以获取分析。" });
                 setIsLoading(false);
                 return;
             }
 
             const logsString = todaysLogs.map(log => 
-              `Time: ${log.tradeTime}, Symbol: ${log.symbol}, Direction: ${log.direction}, Size: ${log.positionSize}, P/L: ${log.tradeResult}, Entry: ${log.entryReason}, Exit: ${log.exitReason}, Mindset: ${log.mindsetState}, Lessons: ${log.lessonsLearned}`
+              `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
             ).join('\n');
             
             const result = await analyzeDailyTrades({ tradeLogs: logsString });
             setAnalysis(result);
         } catch (error) {
-            console.error("Failed to get daily analysis:", error);
-            toast({ variant: 'destructive', title: "Analysis Failed", description: "Could not generate AI analysis. Please try again." });
+            console.error("无法获取每日分析:", error);
+            toast({ variant: 'destructive', title: "分析失败", description: "无法生成AI分析。请重试。" });
         } finally {
             setIsLoading(false);
         }
@@ -45,10 +45,10 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
 
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="Daily Analysis">
+            <AppHeader title="每日分析">
                 <Button onClick={handleAnalysis} disabled={isLoading}>
                     <Wand2 className="mr-2" />
-                    {isLoading ? 'Analyzing...' : 'Generate Daily Report'}
+                    {isLoading ? '分析中...' : '生成每日报告'}
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
@@ -56,32 +56,32 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 {analysis ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 
-                      title="Summary"
+                      title="摘要"
                       icon={BrainCircuit}
                       isLoading={isLoading}
                       content={analysis.summary}
                     />
                      <AiAnalysisCard 
-                      title="Strengths"
+                      title="优点"
                       icon={Zap}
                       isLoading={isLoading}
                       content={analysis.strengths}
                     />
                      <AiAnalysisCard 
-                      title="Weaknesses"
+                      title="缺点"
                       icon={Zap}
                       isLoading={isLoading}
                       content={analysis.weaknesses}
                     />
                     <AiAnalysisCard 
-                      title="Emotional Impact"
+                      title="情绪影响"
                       icon={HeartPulse}
                       isLoading={isLoading}
                       content={analysis.emotionalImpactAnalysis}
                     />
                     <div className="lg:col-span-2">
                       <AiAnalysisCard 
-                        title="Improvement Suggestions"
+                        title="改进建议"
                         icon={Lightbulb}
                         isLoading={isLoading}
                         content={analysis.improvementSuggestions}
@@ -91,9 +91,9 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                    <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                         <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                        <h2 className="text-2xl font-headline font-semibold">Ready for your Daily Insights?</h2>
+                        <h2 className="text-2xl font-headline font-semibold">准备好获取您的每日洞察了吗？</h2>
                         <p className="mt-2 max-w-md text-muted-foreground">
-                            Click the &quot;Generate Daily Report&quot; button to get an AI-powered analysis of your trades from today.
+                            点击“生成每日报告”按钮，获取由AI驱动的今日交易分析。
                         </p>
                     </div>
                 )}

@@ -20,12 +20,12 @@ export function TradeLogView({ tradeLogs, addTradeLog }: TradeLogViewProps) {
     
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="Trade Log">
+            <AppHeader title="交易日志">
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogTrigger asChild>
                         <Button>
                             <PlusCircle className="mr-2" />
-                            Add Trade
+                            添加交易
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-3xl">

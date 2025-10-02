@@ -24,7 +24,7 @@ export function AiAnalysisCard({ title, icon: Icon, isLoading, content }: AiAnal
     }
 
     if (!content) {
-      return <p className="text-sm text-muted-foreground">No analysis available. Generate a report to see insights.</p>;
+      return <p className="text-sm text-muted-foreground">暂无分析。请生成报告以查看洞察。</p>;
     }
 
     if (typeof content === 'string') {

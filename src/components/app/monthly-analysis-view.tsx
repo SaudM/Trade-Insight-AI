@@ -37,7 +37,7 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             });
 
             if (currentMonthLogs.length === 0) {
-                toast({ title: "No trades this month.", description: "Log some trades to get a monthly analysis." });
+                toast({ title: "本月无交易。", description: "记录一些交易以获取月度分析。" });
                 setIsLoading(false);
                 return;
             }
@@ -45,8 +45,8 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             const result = await monthlyPerformanceReview({ currentMonthLogs, previousMonthLogs });
             setAnalysis(result);
         } catch (error) {
-            console.error("Failed to get monthly analysis:", error);
-            toast({ variant: 'destructive', title: "Analysis Failed", description: "Could not generate AI analysis. Please try again." });
+            console.error("无法获取月度分析:", error);
+            toast({ variant: 'destructive', title: "分析失败", description: "无法生成AI分析。请重试。" });
         } finally {
             setIsLoading(false);
         }
@@ -54,43 +54,43 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
 
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="Monthly Summary">
+            <AppHeader title="月度总结">
                 <Button onClick={handleAnalysis} disabled={isLoading}>
                     <Wand2 className="mr-2" />
-                    {isLoading ? 'Analyzing...' : 'Generate Monthly Summary'}
+                    {isLoading ? '分析中...' : '生成月度总结'}
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
-              <main className="p-4 md:p-6 lg:p-8 space-y-6">
+              <main className="p-4 md-p-6 lg:p-8 space-y-6">
                 {analysis ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 
-                      title="Comparison Summary"
+                      title="对比总结"
                       icon={GitCompareArrows}
                       isLoading={isLoading}
                       content={analysis.comparisonSummary}
                     />
                     <AiAnalysisCard 
-                      title="Persistent Issues"
+                      title="持续性问题"
                       icon={AlertTriangle}
                       isLoading={isLoading}
                       content={analysis.persistentIssues}
                     />
                     <AiAnalysisCard 
-                      title="Strategy Execution Evaluation"
+                      title="策略执行评估"
                       icon={Target}
                       isLoading={isLoading}
                       content={analysis.strategyExecutionEvaluation}
                     />
                     <AiAnalysisCard 
-                      title="Key Lessons"
+                      title="关键心得"
                       icon={BookCheck}
                       isLoading={isLoading}
                       content={analysis.keyLessons}
                     />
                     <div className="lg:col-span-2">
                       <AiAnalysisCard 
-                        title="System Iteration Suggestions"
+                        title="系统迭代建议"
                         icon={Telescope}
                         isLoading={isLoading}
                         content={analysis.iterationSuggestions}
@@ -100,9 +100,9 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                      <h2 className="text-2xl font-headline font-semibold">Ready for your Monthly Summary?</h2>
+                      <h2 className="text-2xl font-headline font-semibold">准备好进行月度总结了吗？</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                          Click the &quot;Generate Monthly Summary&quot; button for a high-level review comparing your performance to the previous month.
+                          点击“生成月度总结”按钮，获取一份将您本月表现与上月进行对比的高阶评估。
                       </p>
                   </div>
                 )}

@@ -10,7 +10,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   const chartData = useMemo(() => {
     return tradeLogs
       .map(log => ({
-        date: new Date(log.tradeTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: new Date(log.tradeTime).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
         pl: parseFloat(log.tradeResult),
       }))
       .reverse();
@@ -19,8 +19,8 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Profit/Loss Over Time</CardTitle>
-        <CardDescription>Visualizing your daily trading performance.</CardDescription>
+        <CardTitle className="font-headline">盈亏随时间变化</CardTitle>
+        <CardDescription>可视化您的每日交易表现。</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={{}} className="h-64 w-full">
@@ -36,7 +36,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                       <ChartTooltipContent
                         className="w-40"
                         label={payload[0].payload.date}
-                        payload={payload.map(p => ({...p, value: p.value?.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}))}
+                        payload={payload.map(p => ({...p, value: p.value?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}))}
                       />
                     );
                   }

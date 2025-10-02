@@ -25,7 +25,7 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             const weeklyLogs = tradeLogs.filter(log => new Date(log.tradeTime) >= sevenDaysAgo);
 
             if (weeklyLogs.length === 0) {
-                toast({ title: "No trades in the last 7 days.", description: "Log some trades to get a weekly analysis." });
+                toast({ title: "过去7天内没有交易。", description: "记录一些交易以获取每周分析。" });
                 setIsLoading(false);
                 return;
             }
@@ -34,8 +34,8 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             const result = await weeklyPatternDiscovery({ tradingLogs: logsString });
             setAnalysis(result);
         } catch (error) {
-            console.error("Failed to get weekly analysis:", error);
-            toast({ variant: 'destructive', title: "Analysis Failed", description: "Could not generate AI analysis. Please try again." });
+            console.error("无法获取每周分析:", error);
+            toast({ variant: 'destructive', title: "分析失败", description: "无法生成AI分析。请重试。" });
         } finally {
             setIsLoading(false);
         }
@@ -43,10 +43,10 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
 
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="Weekly Review">
+            <AppHeader title="每周回顾">
                 <Button onClick={handleAnalysis} disabled={isLoading}>
                     <Wand2 className="mr-2" />
-                    {isLoading ? 'Analyzing...' : 'Generate Weekly Review'}
+                    {isLoading ? '分析中...' : '生成每周回顾'}
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
@@ -54,32 +54,32 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 {analysis ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 
-                      title="Success Patterns"
+                      title="成功模式"
                       icon={Trophy}
                       isLoading={isLoading}
                       content={analysis.successPatterns}
                     />
                     <AiAnalysisCard 
-                      title="Error Patterns"
+                      title="错误模式"
                       icon={Repeat}
                       isLoading={isLoading}
                       content={analysis.errorPatterns}
                     />
                     <AiAnalysisCard 
-                      title="Position Sizing Assessment"
+                      title="仓位大小评估"
                       icon={Scaling}
                       isLoading={isLoading}
                       content={analysis.positionSizingAssessment}
                     />
                     <AiAnalysisCard 
-                      title="Emotion Correlation"
+                      title="情绪关联性"
                       icon={HeartPulse}
                       isLoading={isLoading}
                       content={analysis.emotionCorrelation}
                     />
                     <div className="lg:col-span-2">
                       <AiAnalysisCard 
-                        title="Weekly Improvement Plan"
+                        title="每周改进计划"
                         icon={ListChecks}
                         isLoading={isLoading}
                         content={analysis.improvementPlan}
@@ -89,9 +89,9 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                      <h2 className="text-2xl font-headline font-semibold">Ready for your Weekly Review?</h2>
+                      <h2 className="text-2xl font-headline font-semibold">准备好进行每周回顾了吗？</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                          Click the &quot;Generate Weekly Review&quot; button to discover patterns and get an improvement plan based on your last 7 days of trading.
+                          点击“生成每周回顾”按钮，发现您过去7天交易中的模式并获取改进计划。
                       </p>
                   </div>
                 )}

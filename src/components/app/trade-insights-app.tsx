@@ -22,7 +22,7 @@ export function TradeInsightsApp() {
       const savedLogs = localStorage.getItem('tradeLogs');
       setTradeLogs(savedLogs ? JSON.parse(savedLogs) : sampleTradeLogs);
     } catch (error) {
-      console.error("Failed to parse trade logs from localStorage", error);
+      console.error("无法从localStorage解析交易日志", error);
       setTradeLogs(sampleTradeLogs);
     }
   }, []);
@@ -42,7 +42,7 @@ export function TradeInsightsApp() {
     if (!isMounted) {
       return (
         <div className="flex items-center justify-center h-full">
-          <div className="text-xl text-muted-foreground">Loading...</div>
+          <div className="text-xl text-muted-foreground">加载中...</div>
         </div>
       );
     }

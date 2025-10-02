@@ -30,15 +30,15 @@ import {
 import type { TradeLog } from '@/lib/types';
 
 const tradeLogSchema = z.object({
-  tradeTime: z.string().min(1, 'Trade time is required'),
-  symbol: z.string().min(1, 'Symbol is required'),
+  tradeTime: z.string().min(1, '交易时间是必填项'),
+  symbol: z.string().min(1, '交易标的是必填项'),
   direction: z.enum(['Buy', 'Sell', 'Long', 'Short']),
-  positionSize: z.string().min(1, 'Position size is required'),
-  tradeResult: z.string().refine(val => !isNaN(parseFloat(val)), { message: "Must be a number" }),
-  mindsetState: z.string().min(1, 'Mindset state is required'),
-  entryReason: z.string().min(1, 'Entry reason is required'),
-  exitReason: z.string().min(1, 'Exit reason is required'),
-  lessonsLearned: z.string().min(1, 'Lessons learned are required'),
+  positionSize: z.string().min(1, '仓位大小是必填项'),
+  tradeResult: z.string().refine(val => !isNaN(parseFloat(val)), { message: "必须是数字" }),
+  mindsetState: z.string().min(1, '心态状态是必填项'),
+  entryReason: z.string().min(1, '入场理由是必填项'),
+  exitReason: z.string().min(1, '出场理由是必填项'),
+  lessonsLearned: z.string().min(1, '心得体会是必填项'),
 });
 
 type TradeLogFormValues = z.infer<typeof tradeLogSchema>;
@@ -72,9 +72,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="font-headline">Add New Trade Log</DialogTitle>
+        <DialogTitle className="font-headline">添加新的交易日志</DialogTitle>
         <DialogDescription>
-          Record the details of your trade for analysis and improvement.
+          记录您的交易详情，以便分析和改进。
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
@@ -84,7 +84,7 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="tradeTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Trade Time</FormLabel>
+                <FormLabel>交易时间</FormLabel>
                 <FormControl>
                   <Input type="datetime-local" {...field} />
                 </FormControl>
@@ -97,9 +97,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="symbol"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Symbol</FormLabel>
+                <FormLabel>交易标的</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., AAPL" {...field} />
+                  <Input placeholder="例如, AAPL" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -110,18 +110,18 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="direction"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Direction</FormLabel>
+                <FormLabel>方向</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select direction" />
+                      <SelectValue placeholder="选择方向" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Buy">Buy</SelectItem>
-                    <SelectItem value="Sell">Sell</SelectItem>
-                    <SelectItem value="Long">Long</SelectItem>
-                    <SelectItem value="Short">Short</SelectItem>
+                    <SelectItem value="Buy">买入</SelectItem>
+                    <SelectItem value="Sell">卖出</SelectItem>
+                    <SelectItem value="Long">做多</SelectItem>
+                    <SelectItem value="Short">做空</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -133,9 +133,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="positionSize"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Position Size</FormLabel>
+                <FormLabel>仓位大小</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., 100 shares or 1 lot" {...field} />
+                  <Input placeholder="例如, 100股 或 1手" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -146,9 +146,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="tradeResult"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>P/L ($)</FormLabel>
+                <FormLabel>盈亏 (¥)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 500 or -250" {...field} />
+                  <Input type="number" placeholder="例如, 500 或 -250" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -159,9 +159,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="mindsetState"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Mindset / Emotional State</FormLabel>
+                <FormLabel>心态/情绪状态</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Confident, Anxious, FOMO" {...field} />
+                  <Input placeholder="例如, 自信, 焦虑, 害怕错过(FOMO)" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -172,9 +172,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="entryReason"
             render={({ field }) => (
               <FormItem className="md:col-span-2">
-                <FormLabel>Entry Reason</FormLabel>
+                <FormLabel>入场理由</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Why did you enter this trade?" {...field} />
+                  <Textarea placeholder="您为什么进行这笔交易？" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -185,9 +185,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="exitReason"
             render={({ field }) => (
               <FormItem className="md:col-span-2">
-                <FormLabel>Exit Reason</FormLabel>
+                <FormLabel>出场理由</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Why did you exit this trade?" {...field} />
+                  <Textarea placeholder="您为什么结束这笔交易？" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -198,9 +198,9 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
             name="lessonsLearned"
             render={({ field }) => (
               <FormItem className="md:col-span-2">
-                <FormLabel>Lessons Learned</FormLabel>
+                <FormLabel>心得体会</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="What did you learn from this trade?" {...field} />
+                  <Textarea placeholder="您从这笔交易中学到了什么？" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -209,7 +209,7 @@ export function TradeLogForm({ addTradeLog, onFormSubmit }: TradeLogFormProps) {
         </form>
       </Form>
       <DialogFooter>
-        <Button type="submit" onClick={form.handleSubmit(onSubmit)}>Save Trade</Button>
+        <Button type="submit" onClick={form.handleSubmit(onSubmit)}>保存交易</Button>
       </DialogFooter>
     </>
   );

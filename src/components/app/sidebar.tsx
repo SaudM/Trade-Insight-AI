@@ -18,7 +18,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
             <div className="flex items-center justify-center size-9 bg-primary rounded-lg text-primary-foreground">
                 <BarChart className="h-5 w-5" />
             </div>
-            <h1 className="font-headline text-xl font-semibold text-primary">Trade Insights AI</h1>
+            <h1 className="font-headline text-xl font-semibold text-primary">交易洞察AI</h1>
         </div>
       </SidebarHeader>
       <SidebarMenu className="flex-1">
@@ -26,50 +26,50 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           <SidebarMenuButton
             onClick={() => setActiveView('dashboard')}
             isActive={activeView === 'dashboard'}
-            tooltip={{children: 'Dashboard'}}
+            tooltip={{children: '仪表盘'}}
           >
             <LayoutDashboard />
-            <span>Dashboard</span>
+            <span>仪表盘</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('tradelog')}
             isActive={activeView === 'tradelog'}
-            tooltip={{children: 'Trade Log'}}
+            tooltip={{children: '交易日志'}}
           >
             <Book />
-            <span>Trade Log</span>
+            <span>交易日志</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('daily')}
             isActive={activeView === 'daily'}
-            tooltip={{children: 'Daily Analysis'}}
+            tooltip={{children: '每日分析'}}
           >
             <Sun />
-            <span>Daily Analysis</span>
+            <span>每日分析</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('weekly')}
             isActive={activeView === 'weekly'}
-            tooltip={{children: 'Weekly Review'}}
+            tooltip={{children: '每周回顾'}}
           >
             <Calendar />
-            <span>Weekly Review</span>
+            <span>每周回顾</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('monthly')}
             isActive={activeView === 'monthly'}
-            tooltip={{children: 'Monthly Summary'}}
+            tooltip={{children: '月度总结'}}
           >
             <CalendarDays />
-            <span>Monthly Summary</span>
+            <span>月度总结</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

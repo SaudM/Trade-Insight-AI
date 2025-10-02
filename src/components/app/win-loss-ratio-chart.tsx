@@ -12,8 +12,8 @@ type WinLossRatioChartProps = {
 
 export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatioChartProps) {
   const data = useMemo(() => [
-    { name: 'Profitable', value: profitableTrades, fill: 'hsl(var(--success))' },
-    { name: 'Loss', value: lossTrades, fill: 'hsl(var(--destructive))' },
+    { name: '盈利', value: profitableTrades, fill: 'hsl(var(--success))' },
+    { name: '亏损', value: lossTrades, fill: 'hsl(var(--destructive))' },
   ], [profitableTrades, lossTrades]);
 
   const totalTrades = profitableTrades + lossTrades;
@@ -21,8 +21,8 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Win/Loss Ratio</CardTitle>
-        <CardDescription>Your performance at a glance.</CardDescription>
+        <CardTitle className="font-headline">胜/败比</CardTitle>
+        <CardDescription>您的表现一目了然。</CardDescription>
       </CardHeader>
       <CardContent className="flex justify-center">
         {totalTrades > 0 ? (
@@ -61,7 +61,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
           </ChartContainer>
         ) : (
           <div className="flex h-64 items-center justify-center text-muted-foreground">
-            No trade data available.
+            暂无交易数据。
           </div>
         )}
       </CardContent>
