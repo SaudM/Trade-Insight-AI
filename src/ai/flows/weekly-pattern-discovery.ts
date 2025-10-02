@@ -21,15 +21,15 @@ export type WeeklyPatternDiscoveryInput = z.infer<
 
 const WeeklyPatternDiscoveryOutputSchema = z.object({
   errorPatterns:
-    z.string().describe('Recurring error patterns identified in the trading logs.'),
+    z.string().describe('Recurring error patterns identified in the trading logs in Chinese.'),
   successPatterns:
-    z.string().describe('Successful strategies identified in the trading logs.'),
+    z.string().describe('Successful strategies identified in the trading logs in Chinese.'),
   positionSizingAssessment:
-    z.string().describe('Assessment of position sizing effectiveness.'),
+    z.string().describe('Assessment of position sizing effectiveness in Chinese.'),
   emotionCorrelation:
-    z.string().describe('Correlation between emotional states and trading outcomes.'),
+    z.string().describe('Correlation between emotional states and trading outcomes in Chinese.'),
   improvementPlan:
-    z.string().describe('A weekly improvement plan with actionable steps.'),
+    z.string().describe('A weekly improvement plan with actionable steps in Chinese.'),
 });
 
 export type WeeklyPatternDiscoveryOutput = z.infer<
@@ -46,7 +46,7 @@ const weeklyPatternDiscoveryPrompt = ai.definePrompt({
   name: 'weeklyPatternDiscoveryPrompt',
   input: {schema: WeeklyPatternDiscoveryInputSchema},
   output: {schema: WeeklyPatternDiscoveryOutputSchema},
-  prompt: `You are a trading performance analyst. Analyze the provided trading logs to identify patterns, assess position sizing, and correlate emotional states with trading outcomes.
+  prompt: `You are a trading performance analyst. Analyze the provided trading logs to identify patterns, assess position sizing, and correlate emotional states with trading outcomes. Provide your entire analysis in Chinese.
 
   Trading Logs: {{{tradingLogs}}}
 

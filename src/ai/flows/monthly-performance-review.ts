@@ -15,7 +15,7 @@ const TradingLogSchema = z.object({
   tradeTime: z.string().describe('The time the trade was executed.'),
   symbol: z.string().describe('The ticker symbol or name of the traded asset.'),
   direction: z
-    .enum(['Buy', 'Sell', 'Long', 'Short'])
+    .enum(['Buy', 'Sell', 'Long', 'Short', 'Close'])
     .describe('The direction of the trade.'),
   positionSize: z.string().describe('The position size in percentage or lots.'),
   entryReason: z.string().describe('The reason for entering the trade.'),
@@ -44,19 +44,19 @@ const MonthlyPerformanceReviewOutputSchema = z.object({
   comparisonSummary:
     z.string()
       .describe(
-        'A summary comparing trading habits and performance between the current and previous months.'
+        'A summary comparing trading habits and performance between the current and previous months in Chinese.'
       ),
   persistentIssues:
     z.string()
-      .describe('Identifies any recurring issues in the trading system.'),
+      .describe('Identifies any recurring issues in the trading system in Chinese.'),
   strategyExecutionEvaluation:
     z.string()
-      .describe('An evaluation of the traders strategy execution and discipline.'),
-  keyLessons: z.string().describe('Key lessons learned during the month.'),
+      .describe('An evaluation of the traders strategy execution and discipline in Chinese.'),
+  keyLessons: z.string().describe('Key lessons learned during the month in Chinese.'),
   iterationSuggestions:
     z.string()
       .describe(
-        'Specific and actionable recommendations for improving the trading system.'
+        'Specific and actionable recommendations for improving the trading system in Chinese.'
       ),
 });
 
@@ -74,7 +74,7 @@ const monthlyPerformanceReviewPrompt = ai.definePrompt({
   name: 'monthlyPerformanceReviewPrompt',
   input: {schema: MonthlyPerformanceReviewInputSchema},
   output: {schema: MonthlyPerformanceReviewOutputSchema},
-  prompt: `You are an expert trading performance analyst. Your task is to analyze a trader's monthly trading logs and provide a comprehensive performance review.
+  prompt: `You are an expert trading performance analyst. Your task is to analyze a trader's monthly trading logs and provide a comprehensive performance review in Chinese.
 
   Compare the trader's trading habits and performance between the current and previous months. Identify any recurring issues in their trading system. Evaluate their strategy execution and discipline. Extract key lessons learned during the month. Provide specific and actionable recommendations for improving their trading system.
 
@@ -88,7 +88,7 @@ const monthlyPerformanceReviewPrompt = ai.definePrompt({
   - Trade Time: {{tradeTime}}, Symbol: {{symbol}}, Direction: {{direction}}, Position Size: {{positionSize}}, Entry Reason: {{entryReason}}, Exit Reason: {{exitReason}}, Trade Result: {{tradeResult}}, MindsetState: {{mindsetState}}, Lessons Learned: {{lessonsLearned}}
   {{/each}}
 
-  Based on the provided trading logs, generate the following:
+  Based on the provided trading logs, generate the following in Chinese:
 
   Comparison Summary: A summary comparing trading habits and performance between the current and previous months.
 

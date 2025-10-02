@@ -25,7 +25,7 @@ export type WeeklyImprovementPlanInput = z.infer<typeof WeeklyImprovementPlanInp
 const WeeklyImprovementPlanOutputSchema = z.object({
   improvementPlan: z
     .string()
-    .describe('A list of actionable steps for improving trading habits and performance.'),
+    .describe('A list of actionable steps for improving trading habits and performance in Chinese.'),
 });
 export type WeeklyImprovementPlanOutput = z.infer<typeof WeeklyImprovementPlanOutputSchema>;
 
@@ -39,7 +39,12 @@ const prompt = ai.definePrompt({
   name: 'weeklyImprovementPlanPrompt',
   input: {schema: WeeklyImprovementPlanInputSchema},
   output: {schema: WeeklyImprovementPlanOutputSchema},
-  prompt: `Based on the following weekly trading summary, create a list of actionable steps the trader can take to improve their trading habits and performance next week.\n\nWeekly Summary: {{{weeklySummary}}}\n\nImprovement Plan:`,
+  prompt: `Based on the following weekly trading summary, create a list of actionable steps in Chinese that the trader can take to improve their trading habits and performance next week.
+
+Weekly Summary: 
+{{{weeklySummary}}}
+
+Improvement Plan:`,
 });
 
 const weeklyImprovementPlanFlow = ai.defineFlow(

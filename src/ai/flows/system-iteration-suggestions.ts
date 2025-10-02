@@ -25,7 +25,7 @@ const SuggestSystemIterationOutputSchema = z.object({
   iterationSuggestions: z
     .string()
     .describe(
-      'Specific, actionable recommendations for improving the trading system.'
+      'Specific, actionable recommendations for improving the trading system in Chinese.'
     ),
 });
 export type SuggestSystemIterationOutput = z.infer<typeof SuggestSystemIterationOutputSchema>;
@@ -40,11 +40,18 @@ const prompt = ai.definePrompt({
   name: 'suggestSystemIterationPrompt',
   input: {schema: SuggestSystemIterationInputSchema},
   output: {schema: SuggestSystemIterationOutputSchema},
-  prompt: `You are an expert trading system analyst.\n
-  Based on the monthly trading report and comparison with the previous month, provide specific, actionable recommendations for improving the trading system.\n
-  Monthly Report:\n  {{monthlyReport}}\n
-  Previous Month Report:\n  {{previousMonthReport}}\n
-  Focus on identifying recurring issues, evaluating strategy execution, and proposing concrete steps for improvement. As a seasoned trading mentor, consider not just the data but also the trader's emotional and psychological state, suggesting practical adjustments that enhance consistency and profitability. Aim to provide a detailed strategy to help the trader build a stable, repeatable trading strategy. Prioritize insights that will drive continuous optimization and long-term success.\n`,
+  prompt: `You are an expert trading system analyst. Your task is to provide the entire analysis in Chinese.
+
+  Based on the monthly trading report and comparison with the previous month, provide specific, actionable recommendations for improving the trading system.
+  
+  Monthly Report:
+  {{monthlyReport}}
+  
+  Previous Month Report:
+  {{previousMonthReport}}
+  
+  Focus on identifying recurring issues, evaluating strategy execution, and proposing concrete steps for improvement. As a seasoned trading mentor, consider not just the data but also the trader's emotional and psychological state, suggesting practical adjustments that enhance consistency and profitability. Aim to provide a detailed strategy to help the trader build a stable, repeatable trading strategy. Prioritize insights that will drive continuous optimization and long-term success.
+  `,
 });
 
 const suggestSystemIterationFlow = ai.defineFlow(
