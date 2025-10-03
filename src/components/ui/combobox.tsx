@@ -38,7 +38,7 @@ export function Combobox({
   className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState(value || "");
+  const [inputValue, setInputValue] = React.useState("");
   const [options, setOptions] = React.useState<Stock[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -59,7 +59,6 @@ export function Combobox({
   }, []);
 
   React.useEffect(() => {
-    // When the external value changes, update the internal input value
     const selectedOption = options.find(option => option.value.toLowerCase() === value?.toLowerCase());
     setInputValue(selectedOption ? selectedOption.label : value || "");
   }, [value, options]);
@@ -71,7 +70,10 @@ export function Combobox({
       // treat it as a custom entry.
       const match = options.find(option => option.label.toLowerCase() === inputValue.toLowerCase());
       if (!match && inputValue) {
-        onChange(inputValue);
+         const valueMatch = options.find(option => option.value.toLowerCase() === value?.toLowerCase());
+         if (!valueMatch || valueMatch.label !== inputValue) {
+            onChange(inputValue);
+         }
       }
     }
   };
@@ -128,8 +130,7 @@ export function Combobox({
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    const selectedValue = options.find(opt => opt.value.toLowerCase() === currentValue.toLowerCase())?.value || currentValue;
-                    onChange(selectedValue);
+                    onChange(currentValue);
                     setOpen(false);
                   }}
                 >
