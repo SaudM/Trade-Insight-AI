@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/select";
 import type { TradeLog } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
-import { stocks } from '@/lib/stocks';
 import { useEffect } from 'react';
 
 const tradeLogSchema = z.object({
@@ -154,9 +153,8 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                 <FormLabel>交易标的</FormLabel>
                 <FormControl>
                   <Combobox
-                    options={stocks}
                     value={field.value}
-                    onChange={(value) => field.onChange(value)}
+                    onChange={field.onChange}
                     placeholder="搜索或输入股票..."
                     emptyText="未找到股票。"
                   />

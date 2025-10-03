@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,9 +19,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import type { Stock } from "@/lib/types"
+import { listStocks } from "@/ai/flows/list-stocks-flow"
 
 type ComboboxProps = {
-  options: { label: string; value: string }[];
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -30,7 +31,6 @@ type ComboboxProps = {
 };
 
 export function Combobox({
-  options,
   value,
   onChange,
   placeholder = "Select an option",
@@ -39,6 +39,24 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value || "");
+  const [options, setOptions] = React.useState<Stock[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function fetchStocks() {
+      try {
+        setIsLoading(true);
+        const stockList = await listStocks();
+        setOptions(stockList);
+      } catch (error) {
+        console.error("Failed to fetch stocks:", error);
+        // Optionally, set an error state and display a message
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStocks();
+  }, []);
 
   React.useEffect(() => {
     // When the external value changes, update the internal input value
@@ -52,16 +70,17 @@ export function Combobox({
       // When popover closes, if the input value doesn't correspond to an existing option value,
       // treat it as a custom entry.
       const match = options.find(option => option.label.toLowerCase() === inputValue.toLowerCase());
-      if (!match) {
+      if (!match && inputValue) {
         onChange(inputValue);
       }
     }
   };
 
   const selectedOptionDisplay = React.useMemo(() => {
+    if (isLoading) return "加载股票数据...";
     const selected = options.find((option) => option.value.toLowerCase() === value?.toLowerCase());
-    return selected ? selected.label : value;
-  }, [options, value]);
+    return selected ? selected.label : value || placeholder;
+  }, [options, value, isLoading, placeholder]);
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -70,9 +89,11 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", !value && "text-muted-foreground", className)}
+          disabled={isLoading}
+          className={cn("w-full justify-between", !value && !isLoading && "text-muted-foreground", className)}
         >
-          <span className="truncate">{selectedOptionDisplay || placeholder}</span>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />}
+          <span className="truncate">{selectedOptionDisplay}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -84,14 +105,20 @@ export function Combobox({
             onValueChange={setInputValue}
           />
           <CommandList>
-            <CommandEmpty
-                onSelect={() => {
-                  onChange(inputValue);
-                  setOpen(false);
-                }}
-                className="cursor-pointer"
-            >
-                {inputValue ? `创建 "${inputValue}"` : emptyText}
+            <CommandEmpty>
+              {isLoading ? "加载中..." : (
+                <CommandItem
+                  onSelect={() => {
+                    if (inputValue) {
+                      onChange(inputValue);
+                      setOpen(false);
+                    }
+                  }}
+                  className="cursor-pointer"
+                >
+                  {`创建 "${inputValue}"`}
+                </CommandItem>
+              )}
             </CommandEmpty>
             <CommandGroup>
               {options
@@ -101,7 +128,8 @@ export function Combobox({
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    onChange(currentValue);
+                    const selectedValue = options.find(opt => opt.value.toLowerCase() === currentValue.toLowerCase())?.value || currentValue;
+                    onChange(selectedValue);
                     setOpen(false);
                   }}
                 >

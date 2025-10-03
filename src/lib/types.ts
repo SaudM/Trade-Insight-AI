@@ -1,4 +1,5 @@
 import { Timestamp } from "firebase/firestore";
+import { z } from 'zod';
 
 export type TradeLog = {
   id: string;
@@ -16,3 +17,9 @@ export type TradeLog = {
 };
 
 export type View = 'dashboard' | 'tradelog' | 'daily' | 'weekly' | 'monthly';
+
+export const StockSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+});
+export type Stock = z.infer<typeof StockSchema>;
