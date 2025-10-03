@@ -33,35 +33,34 @@ type ComboboxProps = {
 export function Combobox({
   value,
   onChange,
-  placeholder = "Select an option",
-  emptyText = "No options found.",
+  placeholder = "搜索股票...",
+  emptyText = "未找到股票。",
   className,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false);
-  const [options, setOptions] = React.useState<Stock[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [open, setOpen] = React.useState(false)
+  const [options, setOptions] = React.useState<Stock[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
 
   React.useEffect(() => {
     async function fetchStocks() {
       try {
-        setIsLoading(true);
-        const stockList = await listStocks();
-        setOptions(stockList);
+        setIsLoading(true)
+        const stockList = await listStocks()
+        setOptions(stockList)
       } catch (error) {
-        console.error("Failed to fetch stocks:", error);
-        // Optionally, set an error state and display a message
+        console.error("Failed to fetch stocks:", error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
     }
-    fetchStocks();
-  }, []);
+    fetchStocks()
+  }, [])
 
-  const selectedOptionDisplay = React.useMemo(() => {
-    if (isLoading) return "加载股票数据...";
-    const selected = options.find((option) => option.value.toLowerCase() === value?.toLowerCase());
-    return selected ? selected.label : value || placeholder;
-  }, [options, value, isLoading, placeholder]);
+  const selectedLabel = React.useMemo(() => {
+    if (!value) return placeholder
+    const selectedOption = options.find(option => option.value.toLowerCase() === value.toLowerCase())
+    return selectedOption?.label || value
+  }, [value, options, placeholder])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -71,31 +70,54 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           disabled={isLoading}
-          className={cn("w-full justify-between", !value && !isLoading && "text-muted-foreground", className)}
+          className={cn("w-full justify-between font-normal", !value && "text-muted-foreground", className)}
         >
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin shrink-0" />}
-          <span className="truncate">{selectedOptionDisplay}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <span className="truncate">{isLoading ? "加载中..." : selectedLabel}</span>
+          {isLoading ? (
+            <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
+          ) : (
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-        <Command>
-          <CommandInput 
+        <Command
+          filter={(value, search) => {
+            const stock = options.find(o => o.value === value)
+            if (stock) {
+              // Search by value (e.g. AAPL) or label (e.g. Apple)
+              if (stock.value.toLowerCase().includes(search.toLowerCase())) return 1
+              if (stock.label.toLowerCase().includes(search.toLowerCase())) return 1
+            }
+            return 0
+          }}
+        >
+          <CommandInput
             placeholder={placeholder}
+            onBlur={(e) => {
+                const inputValue = e.target.value;
+                const existingOption = options.find(
+                    (option) =>
+                        option.label.toLowerCase() === inputValue.toLowerCase() ||
+                        option.value.toLowerCase() === inputValue.toLowerCase()
+                );
+                if (!existingOption && inputValue) {
+                    onChange(inputValue.toUpperCase());
+                }
+            }}
           />
           <CommandList>
             <CommandEmpty>
-              {isLoading ? "加载中..." : emptyText}
+                {isLoading ? "加载中..." : emptyText}
             </CommandEmpty>
             <CommandGroup>
-              {options
-                .map((option) => (
+              {options.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    onChange(currentValue.toUpperCase() === value ? "" : currentValue.toUpperCase());
-                    setOpen(false);
+                    onChange(currentValue.toUpperCase() === value ? "" : currentValue.toUpperCase())
+                    setOpen(false)
                   }}
                 >
                   <Check
@@ -104,7 +126,7 @@ export function Combobox({
                       value?.toLowerCase() === option.value.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option.label}
+                  <span>{option.label}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
