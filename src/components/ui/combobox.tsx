@@ -41,18 +41,21 @@ export function Combobox({
   const [inputValue, setInputValue] = React.useState(value || "");
 
   React.useEffect(() => {
-    setInputValue(value || "");
-  }, [value]);
+    // When the external value changes, update the internal input value
+    const selectedOption = options.find(option => option.value.toLowerCase() === value?.toLowerCase());
+    setInputValue(selectedOption ? selectedOption.label : value || "");
+  }, [value, options]);
 
   const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
     if (!isOpen) {
-      // Only update if the inputValue is not one of the option values
-      const match = options.find(option => option.value.toLowerCase() === inputValue.toLowerCase() || option.label.toLowerCase() === inputValue.toLowerCase());
+      // When popover closes, if the input value doesn't correspond to an existing option value,
+      // treat it as a custom entry.
+      const match = options.find(option => option.label.toLowerCase() === inputValue.toLowerCase());
       if (!match) {
         onChange(inputValue);
       }
     }
-    setOpen(isOpen);
   };
 
   const selectedOptionDisplay = React.useMemo(() => {
@@ -74,25 +77,31 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput 
             placeholder={placeholder}
             value={inputValue}
             onValueChange={setInputValue}
           />
           <CommandList>
-            <CommandEmpty>
+            <CommandEmpty
+                onSelect={() => {
+                  onChange(inputValue);
+                  setOpen(false);
+                }}
+                className="cursor-pointer"
+            >
                 {inputValue ? `创建 "${inputValue}"` : emptyText}
             </CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
+              {options
+                .filter(option => option.label.toLowerCase().includes(inputValue.toLowerCase()) || option.value.toLowerCase().includes(inputValue.toLowerCase()))
+                .map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    const newValue = currentValue === value ? "" : currentValue;
-                    onChange(newValue);
-                    setInputValue(newValue);
+                    onChange(currentValue);
                     setOpen(false);
                   }}
                 >
