@@ -38,7 +38,6 @@ export function Combobox({
   className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
   const [options, setOptions] = React.useState<Stock[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -58,26 +57,6 @@ export function Combobox({
     fetchStocks();
   }, []);
 
-  React.useEffect(() => {
-    const selectedOption = options.find(option => option.value.toLowerCase() === value?.toLowerCase());
-    setInputValue(selectedOption ? selectedOption.label : value || "");
-  }, [value, options]);
-
-  const handleOpenChange = (isOpen: boolean) => {
-    setOpen(isOpen);
-    if (!isOpen) {
-      // When popover closes, if the input value doesn't correspond to an existing option value,
-      // treat it as a custom entry.
-      const match = options.find(option => option.label.toLowerCase() === inputValue.toLowerCase());
-      if (!match && inputValue) {
-         const valueMatch = options.find(option => option.value.toLowerCase() === value?.toLowerCase());
-         if (!valueMatch || valueMatch.label !== inputValue) {
-            onChange(inputValue);
-         }
-      }
-    }
-  };
-
   const selectedOptionDisplay = React.useMemo(() => {
     if (isLoading) return "加载股票数据...";
     const selected = options.find((option) => option.value.toLowerCase() === value?.toLowerCase());
@@ -85,7 +64,7 @@ export function Combobox({
   }, [options, value, isLoading, placeholder]);
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -100,37 +79,22 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-        <Command shouldFilter={false}>
+        <Command>
           <CommandInput 
             placeholder={placeholder}
-            value={inputValue}
-            onValueChange={setInputValue}
           />
           <CommandList>
             <CommandEmpty>
-              {isLoading ? "加载中..." : (
-                <CommandItem
-                  onSelect={() => {
-                    if (inputValue) {
-                      onChange(inputValue);
-                      setOpen(false);
-                    }
-                  }}
-                  className="cursor-pointer"
-                >
-                  {`创建 "${inputValue}"`}
-                </CommandItem>
-              )}
+              {isLoading ? "加载中..." : emptyText}
             </CommandEmpty>
             <CommandGroup>
               {options
-                .filter(option => option.label.toLowerCase().includes(inputValue.toLowerCase()) || option.value.toLowerCase().includes(inputValue.toLowerCase()))
                 .map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    onChange(currentValue);
+                    onChange(currentValue === value ? "" : currentValue);
                     setOpen(false);
                   }}
                 >
