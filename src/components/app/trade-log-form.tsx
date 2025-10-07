@@ -54,7 +54,7 @@ const tradeLogSchema = z.object({
     message: '入场理由是必填项',
     path: ['entryReason'],
 }).refine(data => {
-    // Exit reason and result are required for exit trades
+    // Exit reason is required for exit trades
     if (['Sell', 'Close'].includes(data.direction)) {
         return !!data.exitReason && data.exitReason.length > 0;
     }
@@ -221,7 +221,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
               name="tradeResult"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>盈亏 (¥) {isExit && <span className="text-destructive">*</span>}</FormLabel>
+                  <FormLabel>盈亏 (¥) <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="例如, 500 或 -250" {...field} />
                   </FormControl>
@@ -245,19 +245,21 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
             )}
           />
           
-          <FormField
-            control={form.control}
-            name="entryReason"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>入场理由 {isEntry && <span className="text-destructive">*</span>}</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="您为什么进行这笔交易？" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isEntry && (
+            <FormField
+              control={form.control}
+              name="entryReason"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>入场理由 <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="您为什么进行这笔交易？" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           
           {isExit && (
             <FormField
@@ -265,7 +267,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
               name="exitReason"
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
-                  <FormLabel>出场理由 {isExit && <span className="text-destructive">*</span>}</FormLabel>
+                  <FormLabel>出场理由 <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Textarea placeholder="您为什么结束这笔交易？" {...field} />
                   </FormControl>
