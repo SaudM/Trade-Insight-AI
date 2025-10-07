@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { TradeLog } from '@/lib/types';
 import { AppHeader } from './header';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BrainCircuit, Zap, HeartPulse, Lightbulb } from 'lucide-react';
 
 export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [analysis, setAnalysis] = useState<DailyTradeAnalysisOutput | null>(null);
     const { toast } = useToast();
 
@@ -39,23 +39,13 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             setIsLoading(false);
         }
     };
-    
-    useEffect(() => {
-        if (tradeLogs.length > 0) {
-            handleAnalysis();
-        } else {
-            setIsLoading(false);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tradeLogs]);
-
 
     return (
         <div className="flex flex-col h-full">
             <AppHeader title="每日分析">
                 <Button onClick={handleAnalysis} disabled={isLoading}>
                     <Wand2 className="mr-2" />
-                    {isLoading ? '分析中...' : '重新生成报告'}
+                    {isLoading ? '分析中...' : (analysis ? '重新生成报告' : '生成报告')}
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
@@ -98,9 +88,9 @@ export function DailyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                    <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                         <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                        <h2 className="text-2xl font-headline font-semibold">无交易记录</h2>
+                        <h2 className="text-2xl font-headline font-semibold">生成您的每日AI分析</h2>
                         <p className="mt-2 max-w-md text-muted-foreground">
-                            请在仪表盘选择一个时间周期并生成报告。
+                            点击上方的“生成报告”按钮，让AI分析您在所选时间段内的交易记录，并提供专业的洞察和建议。
                         </p>
                     </div>
                 )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { TradeLog } from '@/lib/types';
 import { AppHeader } from './header';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Repeat, Trophy, Scaling, HeartPulse, ListChecks } from 'lucide-react';
 
 export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [analysis, setAnalysis] = useState<WeeklyPatternDiscoveryOutput | null>(null);
     const { toast } = useToast();
 
@@ -37,21 +37,12 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         }
     };
     
-    useEffect(() => {
-        if (tradeLogs.length > 0) {
-            handleAnalysis();
-        } else {
-            setIsLoading(false);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tradeLogs]);
-
     return (
         <div className="flex flex-col h-full">
             <AppHeader title="每周回顾">
                 <Button onClick={handleAnalysis} disabled={isLoading}>
                     <Wand2 className="mr-2" />
-                    {isLoading ? '分析中...' : '重新生成回顾'}
+                    {isLoading ? '分析中...' : (analysis ? '重新生成回顾' : '生成回顾')}
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
@@ -94,9 +85,9 @@ export function WeeklyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                      <h2 className="text-2xl font-headline font-semibold">无交易记录</h2>
+                      <h2 className="text-2xl font-headline font-semibold">生成您的每周AI回顾</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                          请在仪表盘选择一个时间周期并生成报告。
+                        点击上方的“生成回顾”按钮，让AI分析您在过去7天内的交易模式，并提供专业的洞察和改进计划。
                       </p>
                   </div>
                 )}
