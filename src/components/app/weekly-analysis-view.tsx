@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -87,7 +88,7 @@ export function WeeklyAnalysisView({
                             <SelectContent>
                                 {weeklyReviews.map(r => (
                                     <SelectItem key={r.id} value={r.id}>
-                                        始于 {format(new Date(r.startDate), 'yyyy年MM月dd日')}
+                                        {format(new Date(r.endDate as string), 'yyyy年MM月dd日 HH:mm')}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

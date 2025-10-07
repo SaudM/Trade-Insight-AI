@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -88,7 +89,7 @@ export function DailyAnalysisView({
                             <SelectContent>
                                 {dailyAnalyses.map(a => (
                                     <SelectItem key={a.id} value={a.id}>
-                                        {format(new Date(a.date), 'yyyy年MM月dd日 HH:mm')}
+                                        {format(new Date(a.date as string), 'yyyy年MM月dd日 HH:mm')}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

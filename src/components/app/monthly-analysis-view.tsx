@@ -65,7 +65,7 @@ export function MonthlyAnalysisView({
               if (typeof log.tradeTime !== 'string') {
                 plainLog.tradeTime = (log.tradeTime as Timestamp).toDate().toISOString();
               }
-              if (typeof log.createdAt !== 'string') {
+              if (log.createdAt && typeof log.createdAt !== 'string') {
                  plainLog.createdAt = (log.createdAt as Timestamp).toDate().toISOString();
               }
               
@@ -112,7 +112,7 @@ export function MonthlyAnalysisView({
                             <SelectContent>
                                 {monthlySummaries.map(s => (
                                     <SelectItem key={s.id} value={s.id}>
-                                        {format(new Date(s.monthStartDate as string), 'yyyy年MM月')}
+                                        {format(new Date(s.monthEndDate as string), 'yyyy年MM月dd日 HH:mm')}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
