@@ -16,6 +16,45 @@ export type TradeLog = {
   createdAt: Timestamp;
 };
 
+export type DailyAnalysis = {
+  id: string;
+  userId: string;
+  date: string | Timestamp;
+  summary: string;
+  strengths: string;
+  weaknesses: string;
+  emotionalImpact: string;
+  improvementSuggestions: string;
+  createdAt: Timestamp;
+}
+
+export type WeeklyReview = {
+    id: string;
+    userId: string;
+    startDate: string | Timestamp;
+    endDate: string | Timestamp;
+    patternSummary: string;
+    errorPatterns: string;
+    successPatterns: string;
+    positionSizingAnalysis: string;
+    emotionalCorrelation: string;
+    improvementPlan: string;
+    createdAt: Timestamp;
+}
+
+export type MonthlySummary = {
+    id: string;
+    userId: string;
+    monthStartDate: string | Timestamp;
+    monthEndDate: string | Timestamp;
+    performanceComparison: string;
+    recurringIssues: string;
+    strategyExecutionAssessment: string;
+    keyLessons: string;
+    iterationSuggestions: string;
+    createdAt: Timestamp;
+}
+
 export type View = 'dashboard' | 'tradelog' | 'daily' | 'weekly' | 'monthly';
 
 export const StockSchema = z.object({

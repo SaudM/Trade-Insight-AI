@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app/sidebar';
 import { Dashboard } from '@/components/app/dashboard';
@@ -8,7 +8,7 @@ import { TradeLogView } from '@/components/app/trade-log-view';
 import { DailyAnalysisView } from '@/components/app/daily-analysis-view';
 import { WeeklyAnalysisView } from '@/components/app/weekly-analysis-view';
 import { MonthlyAnalysisView } from '@/components/app/monthly-analysis-view';
-import type { TradeLog, View } from '@/lib/types';
+import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
@@ -20,30 +20,68 @@ export function TradeInsightsApp() {
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
   
+  // --- TradeLogs ---
   const tradeLogsRef = useMemoFirebase(
     () => user ? collection(firestore, 'users', user.uid, 'tradeLogs') : null,
     [user, firestore]
   );
-  
   const tradeLogsQuery = useMemoFirebase(
     () => tradeLogsRef ? query(tradeLogsRef, orderBy('tradeTime', 'desc')) : null,
     [tradeLogsRef]
   );
-
   const { data: tradeLogs, isLoading: isLoadingLogs } = useCollection<TradeLog>(tradeLogsQuery);
-  
+
+  // --- DailyAnalyses ---
+  const dailyAnalysesRef = useMemoFirebase(
+    () => user ? collection(firestore, 'users', user.uid, 'dailyAnalyses') : null,
+    [user, firestore]
+  );
+  const dailyAnalysesQuery = useMemoFirebase(
+    () => dailyAnalysesRef ? query(dailyAnalysesRef, orderBy('date', 'desc')) : null,
+    [dailyAnalysesRef]
+  );
+  const { data: dailyAnalyses } = useCollection<DailyAnalysis>(dailyAnalysesQuery);
+
+  // --- WeeklyReviews ---
+  const weeklyReviewsRef = useMemoFirebase(
+    () => user ? collection(firestore, 'users', user.uid, 'weeklyReviews') : null,
+    [user, firestore]
+  );
+  const weeklyReviewsQuery = useMemoFirebase(
+    () => weeklyReviewsRef ? query(weeklyReviewsRef, orderBy('endDate', 'desc')) : null,
+    [weeklyReviewsRef]
+  );
+  const { data: weeklyReviews } = useCollection<WeeklyReview>(weeklyReviewsQuery);
+
+  // --- MonthlySummaries ---
+  const monthlySummariesRef = useMemoFirebase(
+    () => user ? collection(firestore, 'users', user.uid, 'monthlySummaries') : null,
+    [user, firestore]
+  );
+  const monthlySummariesQuery = useMemoFirebase(
+    () => monthlySummariesRef ? query(monthlySummariesRef, orderBy('monthEndDate', 'desc')) : null,
+    [monthlySummariesRef]
+  );
+  const { data: monthlySummaries } = useCollection<MonthlySummary>(monthlySummariesQuery);
+
   const [timePeriod, setTimePeriod] = useState<'today' | '7d' | '30d' | 'all'>('all');
 
-  const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId'>) => {
-    if (!tradeLogsRef) return;
+  // --- CRUD Operations ---
+  const addDocWithTimestamp = async (ref: any, data: any, entityName: string) => {
+    if (!ref) return;
     try {
-      await addDoc(tradeLogsRef, { ...log, userId: user!.uid, createdAt: serverTimestamp() });
-      toast({ title: "交易笔记已添加" });
+      await addDoc(ref, { ...data, userId: user!.uid, createdAt: serverTimestamp() });
+      toast({ title: `${entityName}已添加` });
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的交易笔记。" });
+      toast({ variant: 'destructive', title: "添加失败", description: `无法保存您的${entityName}。` });
     }
   };
+
+  const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId'>) => addDocWithTimestamp(tradeLogsRef, log, '交易笔记');
+  const addDailyAnalysis = async (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => addDocWithTimestamp(dailyAnalysesRef, analysis, '每日分析');
+  const addWeeklyAnalysis = async (review: Omit<WeeklyReview, 'id' | 'userId'>) => addDocWithTimestamp(weeklyReviewsRef, review, '每周回顾');
+  const addMonthlySummary = async (summary: Omit<MonthlySummary, 'id' | 'userId'>) => addDocWithTimestamp(monthlySummariesRef, summary, '月度总结');
 
   const updateTradeLog = async (updatedLog: TradeLog) => {
     if (!user) return;
@@ -103,11 +141,11 @@ export function TradeInsightsApp() {
       case 'tradelog':
         return <TradeLogView tradeLogs={logs} addTradeLog={addTradeLog} updateTradeLog={updateTradeLog} deleteTradeLog={deleteTradeLog} />;
       case 'daily':
-        return <DailyAnalysisView tradeLogs={filteredTradeLogs} />;
+        return <DailyAnalysisView tradeLogs={filteredTradeLogs} dailyAnalyses={dailyAnalyses || []} addDailyAnalysis={addDailyAnalysis} />;
       case 'weekly':
-        return <WeeklyAnalysisView tradeLogs={filteredTradeLogs} />;
+        return <WeeklyAnalysisView tradeLogs={filteredTradeLogs} weeklyReviews={weeklyReviews || []} addWeeklyAnalysis={addWeeklyAnalysis} />;
       case 'monthly':
-        return <MonthlyAnalysisView tradeLogs={filteredTradeLogs} />;
+        return <MonthlyAnalysisView tradeLogs={filteredTradeLogs} monthlySummaries={monthlySummaries || []} addMonthlySummary={addMonthlySummary} />;
       default:
         return <Dashboard tradeLogs={filteredTradeLogs} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
     }

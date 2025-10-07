@@ -1,33 +1,55 @@
 "use client";
 
-import { useState } from 'react';
-import type { TradeLog } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import type { TradeLog, MonthlySummary } from '@/lib/types';
 import { AppHeader } from './header';
 import { Button } from '@/components/ui/button';
 import { Wand2 } from 'lucide-react';
-import { monthlyPerformanceReview, type MonthlyPerformanceReviewOutput } from '@/ai/flows/monthly-performance-review';
+import { monthlyPerformanceReview } from '@/ai/flows/monthly-performance-review';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
-import { startOfMonth } from 'date-fns';
+import { startOfMonth, subMonths, format } from 'date-fns';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
+export function MonthlyAnalysisView({ 
+    tradeLogs, 
+    monthlySummaries, 
+    addMonthlySummary 
+}: { 
+    tradeLogs: TradeLog[], 
+    monthlySummaries: MonthlySummary[],
+    addMonthlySummary: (summary: Omit<MonthlySummary, 'id' | 'userId' | 'createdAt'>) => Promise<void>
+}) {
     const [isLoading, setIsLoading] = useState(false);
-    const [analysis, setAnalysis] = useState<MonthlyPerformanceReviewOutput | null>(null);
+    const [selectedSummaryId, setSelectedSummaryId] = useState<string | undefined>(undefined);
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (monthlySummaries && monthlySummaries.length > 0 && !selectedSummaryId) {
+            setSelectedSummaryId(monthlySummaries[0].id);
+        }
+    }, [monthlySummaries, selectedSummaryId]);
 
     const handleAnalysis = async () => {
         setIsLoading(true);
-        setAnalysis(null);
         try {
             const now = new Date();
             const startOfCurrentMonth = startOfMonth(now);
-            
+            const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
+
             const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime) >= startOfCurrentMonth);
-            
-            // For previous month, we look at logs from before the start of the current month within the provided `tradeLogs`
-            const previousMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime) < startOfCurrentMonth);
+            const previousMonthLogs = tradeLogs.filter(log => {
+                const logDate = new Date(log.tradeTime);
+                return logDate >= startOfPreviousMonth && logDate < startOfCurrentMonth;
+            });
 
             if (currentMonthLogs.length === 0) {
                 toast({ title: "本月无交易。", description: "请确保所选时间范围内有本月的交易记录。" });
@@ -35,8 +57,24 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 return;
             }
 
-            const result = await monthlyPerformanceReview({ currentMonthLogs, previousMonthLogs });
-            setAnalysis(result);
+            const result = await monthlyPerformanceReview({ 
+                currentMonthLogs: currentMonthLogs.map(l => ({...l, tradeTime: new Date(l.tradeTime).toISOString()})), 
+                previousMonthLogs: previousMonthLogs.map(l => ({...l, tradeTime: new Date(l.tradeTime).toISOString()})) 
+            });
+
+            const newSummary: Omit<MonthlySummary, 'id' | 'userId' | 'createdAt'> = {
+                monthStartDate: startOfCurrentMonth.toISOString(),
+                monthEndDate: new Date().toISOString(),
+                performanceComparison: result.comparisonSummary,
+                recurringIssues: result.persistentIssues,
+                strategyExecutionAssessment: result.strategyExecutionEvaluation,
+                keyLessons: result.keyLessons,
+                iterationSuggestions: result.iterationSuggestions,
+            };
+            
+            await addMonthlySummary(newSummary as any);
+            toast({ title: '月度总结已生成并保存' });
+
         } catch (error) {
             console.error("无法获取月度分析:", error);
             toast({ variant: 'destructive', title: "分析失败", description: "无法生成AI分析。请重试。" });
@@ -44,49 +82,67 @@ export function MonthlyAnalysisView({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             setIsLoading(false);
         }
     };
+
+    const displayedSummary = monthlySummaries?.find(s => s.id === selectedSummaryId);
     
     return (
         <div className="flex flex-col h-full">
             <AppHeader title="月度总结">
-                <Button onClick={handleAnalysis} disabled={isLoading}>
-                    <Wand2 className="mr-2" />
-                    {isLoading ? '分析中...' : (analysis ? '重新生成总结' : '生成总结')}
-                </Button>
+                <div className="flex items-center gap-2">
+                    {monthlySummaries && monthlySummaries.length > 0 && (
+                        <Select onValueChange={setSelectedSummaryId} value={selectedSummaryId}>
+                            <SelectTrigger className="w-[280px]">
+                                <SelectValue placeholder="查看历史总结..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {monthlySummaries.map(s => (
+                                    <SelectItem key={s.id} value={s.id}>
+                                        {format(new Date(s.monthStartDate), 'yyyy年MM月')}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    <Button onClick={handleAnalysis} disabled={isLoading}>
+                        <Wand2 className="mr-2" />
+                        {isLoading ? '分析中...' : '生成新总结'}
+                    </Button>
+                </div>
             </AppHeader>
             <ScrollArea className="flex-1">
               <main className="p-4 md-p-6 lg:p-8 space-y-6">
-                {(isLoading || analysis) ? (
+                {(isLoading || displayedSummary) ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 
                       title="对比总结"
                       icon={GitCompareArrows}
-                      isLoading={isLoading}
-                      content={analysis?.comparisonSummary ?? null}
+                      isLoading={isLoading && !displayedSummary}
+                      content={displayedSummary?.performanceComparison ?? null}
                     />
                     <AiAnalysisCard 
                       title="持续性问题"
                       icon={AlertTriangle}
-                      isLoading={isLoading}
-                      content={analysis?.persistentIssues ?? null}
+                      isLoading={isLoading && !displayedSummary}
+                      content={displayedSummary?.recurringIssues ?? null}
                     />
                     <AiAnalysisCard 
                       title="策略执行评估"
                       icon={Target}
-                      isLoading={isLoading}
-                      content={analysis?.strategyExecutionEvaluation ?? null}
+                      isLoading={isLoading && !displayedSummary}
+                      content={displayedSummary?.strategyExecutionAssessment ?? null}
                     />
                     <AiAnalysisCard 
                       title="关键心得"
                       icon={BookCheck}
-                      isLoading={isLoading}
-                      content={analysis?.keyLessons ?? null}
+                      isLoading={isLoading && !displayedSummary}
+                      content={displayedSummary?.keyLessons ?? null}
                     />
                     <div className="lg:col-span-2">
                       <AiAnalysisCard 
                         title="系统迭代建议"
                         icon={Telescope}
-                        isLoading={isLoading}
-                        content={analysis?.iterationSuggestions ?? null}
+                        isLoading={isLoading && !displayedSummary}
+                        content={displayedSummary?.iterationSuggestions ?? null}
                       />
                     </div>
                   </div>

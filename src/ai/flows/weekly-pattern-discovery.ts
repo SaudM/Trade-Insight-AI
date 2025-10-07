@@ -58,11 +58,11 @@ const weeklyPatternDiscoveryPrompt = ai.definePrompt({
   5. Based on the analysis, generate a weekly improvement plan with actionable steps.
 
   Format your output as a JSON object with the following keys:
-  - errorPatterns: Recurring error patterns identified in the trading logs.
-  - successPatterns: Successful strategies identified in the trading logs.
-  - positionSizingAssessment: Assessment of position sizing effectiveness.
-  - emotionCorrelation: Correlation between emotional states and trading outcomes.
-  - improvementPlan: A weekly improvement plan with actionable steps.
+  - "errorPatterns": "Recurring error patterns identified..."
+  - "successPatterns": "Successful strategies identified..."
+  - "positionSizingAssessment": "Assessment of position sizing..."
+  - "emotionCorrelation": "Correlation between emotional states..."
+  - "improvementPlan": "A weekly improvement plan..."
 `,
 });
 
