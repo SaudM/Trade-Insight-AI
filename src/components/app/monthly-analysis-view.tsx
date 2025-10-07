@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Timestamp } from 'firebase/firestore';
 
 export function MonthlyAnalysisView({ 
     tradeLogs, 
@@ -45,9 +47,9 @@ export function MonthlyAnalysisView({
             const startOfCurrentMonth = startOfMonth(now);
             const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
 
-            const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime) >= startOfCurrentMonth);
+            const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime as string) >= startOfCurrentMonth);
             const previousMonthLogs = tradeLogs.filter(log => {
-                const logDate = new Date(log.tradeTime);
+                const logDate = new Date(log.tradeTime as string);
                 return logDate >= startOfPreviousMonth && logDate < startOfCurrentMonth;
             });
 
@@ -56,10 +58,16 @@ export function MonthlyAnalysisView({
                 setIsLoading(false);
                 return;
             }
+            
+            const toPlainObject = (log: TradeLog) => ({
+                ...log,
+                tradeTime: (log.tradeTime as Timestamp).toDate().toISOString(),
+                createdAt: (log.createdAt as Timestamp).toDate().toISOString(),
+            });
 
             const result = await monthlyPerformanceReview({ 
-                currentMonthLogs: currentMonthLogs.map(l => ({...l, tradeTime: new Date(l.tradeTime).toISOString()})), 
-                previousMonthLogs: previousMonthLogs.map(l => ({...l, tradeTime: new Date(l.tradeTime).toISOString()})) 
+                currentMonthLogs: currentMonthLogs.map(toPlainObject), 
+                previousMonthLogs: previousMonthLogs.map(toPlainObject) 
             });
 
             const newSummary: Omit<MonthlySummary, 'id' | 'userId' | 'createdAt'> = {
@@ -74,7 +82,7 @@ export function MonthlyAnalysisView({
             
             await addMonthlySummary(newSummary as any);
             toast({ title: '月度总结已生成并保存' });
-
+            
         } catch (error) {
             console.error("无法获取月度分析:", error);
             toast({ variant: 'destructive', title: "分析失败", description: "无法生成AI分析。请重试。" });
@@ -97,7 +105,7 @@ export function MonthlyAnalysisView({
                             <SelectContent>
                                 {monthlySummaries.map(s => (
                                     <SelectItem key={s.id} value={s.id}>
-                                        {format(new Date(s.monthStartDate), 'yyyy年MM月')}
+                                        {format(new Date(s.monthStartDate as string), 'yyyy年MM月')}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
