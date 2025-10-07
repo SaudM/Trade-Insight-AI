@@ -39,12 +39,13 @@ const tradeLogSchema = z.object({
   symbol: z.string().min(1, '交易标的是必填项'),
   direction: z.enum(['Buy', 'Sell', 'Long', 'Short', 'Close']),
   positionSize: z.string().min(1, '仓位大小是必填项'),
-  tradeResult: z.string().refine(val => !isNaN(parseFloat(val)), { message: "必须是数字" }),
+  tradeResult: z.string().optional(),
   mindsetState: z.string().min(1, '心态状态是必填项'),
   entryReason: z.string().optional(),
   exitReason: z.string().optional(),
   lessonsLearned: z.string().min(1, '心得体会是必填项'),
 }).refine(data => {
+    // Entry reason is required for entry trades
     if (['Buy', 'Long', 'Short'].includes(data.direction)) {
         return !!data.entryReason && data.entryReason.length > 0;
     }
@@ -53,6 +54,7 @@ const tradeLogSchema = z.object({
     message: '入场理由是必填项',
     path: ['entryReason'],
 }).refine(data => {
+    // Exit reason and result are required for exit trades
     if (['Sell', 'Close'].includes(data.direction)) {
         return !!data.exitReason && data.exitReason.length > 0;
     }
@@ -60,6 +62,14 @@ const tradeLogSchema = z.object({
 }, {
     message: '出场理由是必填项',
     path: ['exitReason'],
+}).refine(data => {
+    if (['Sell', 'Close'].includes(data.direction)) {
+        return data.tradeResult !== undefined && data.tradeResult !== '' && !isNaN(parseFloat(data.tradeResult));
+    }
+    return true;
+}, {
+    message: "盈亏是必填项，且必须是数字",
+    path: ['tradeResult'],
 });
 
 
@@ -117,7 +127,11 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
   const isExit = ['Sell', 'Close'].includes(direction);
 
   function handleFormSubmit(values: TradeLogFormValues) {
-    onSubmit(values);
+    const finalValues = { ...values };
+    if (!isExit) {
+        finalValues.tradeResult = '0'; // Set to 0 if not an exit trade
+    }
+    onSubmit(finalValues);
   }
 
   const isEditing = !!tradeLog;
@@ -152,12 +166,12 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
               <FormItem className="flex flex-col">
                 <FormLabel>交易标的</FormLabel>
                 <FormControl>
-                  <Combobox
+                   <Combobox
                     value={field.value}
-                    onChange={field.onChange}
-                    placeholder="搜索或输入股票..."
-                    emptyText="未找到股票。"
-                  />
+                    onChange={(value) => {
+                      field.onChange(value);
+                    }}
+                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -200,24 +214,28 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
               </FormItem>
             )}
           />
-           <FormField
-            control={form.control}
-            name="tradeResult"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>盈亏 (¥)</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="例如, 500 或 -250" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+          {isExit && (
+            <FormField
+              control={form.control}
+              name="tradeResult"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>盈亏 (¥) {isExit && <span className="text-destructive">*</span>}</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="例如, 500 或 -250" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           <FormField
             control={form.control}
             name="mindsetState"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className={!isExit ? 'md:col-span-2' : ''}>
                 <FormLabel>心态/情绪状态</FormLabel>
                 <FormControl>
                   <Input placeholder="例如, 自信, 焦虑, 害怕错过(FOMO)" {...field} />
@@ -241,19 +259,21 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
             )}
           />
           
-          <FormField
-            control={form.control}
-            name="exitReason"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>出场理由 {isExit && <span className="text-destructive">*</span>}</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="您为什么结束这笔交易？" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isExit && (
+            <FormField
+              control={form.control}
+              name="exitReason"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>出场理由 {isExit && <span className="text-destructive">*</span>}</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="您为什么结束这笔交易？" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
