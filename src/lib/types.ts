@@ -55,7 +55,7 @@ export type MonthlySummary = {
     createdAt: Timestamp;
 }
 
-export type View = 'dashboard' | 'tradelog' | 'daily' | 'weekly' | 'monthly';
+export type View = 'dashboard' | 'tradelog' | 'analysis';
 
 export const StockSchema = z.object({
   value: z.string(),

@@ -5,9 +5,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app/sidebar';
 import { Dashboard } from '@/components/app/dashboard';
 import { TradeLogView } from '@/components/app/trade-log-view';
-import { DailyAnalysisView } from '@/components/app/daily-analysis-view';
-import { WeeklyAnalysisView } from '@/components/app/weekly-analysis-view';
-import { MonthlyAnalysisView } from '@/components/app/monthly-analysis-view';
+import { AnalysisView } from '@/components/app/analysis-view';
 import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -87,20 +85,23 @@ export function TradeInsightsApp() {
         if (docData.monthStartDate && typeof docData.monthStartDate === 'string') docData.monthStartDate = Timestamp.fromDate(new Date(docData.monthStartDate));
         if (docData.monthEndDate && typeof docData.monthEndDate === 'string') docData.monthEndDate = Timestamp.fromDate(new Date(docData.monthEndDate));
         
-        await addDoc(ref, docData);
+        const newDocRef = await addDoc(ref, docData);
         toast({ title: `${entityName}已添加` });
         
         if (entityName === '每日分析') {
-          setActiveView('daily');
+          setActiveView('analysis');
         } else if (entityName === '每周回顾') {
-            setActiveView('weekly');
+            setActiveView('analysis');
         } else if (entityName === '月度总结') {
-            setActiveView('monthly');
+            setActiveView('analysis');
         }
+
+        return { ...docData, id: newDocRef.id };
 
     } catch (error) {
         console.error(error);
         toast({ variant: 'destructive', title: "添加失败", description: `无法保存您的${entityName}。` });
+        return null;
     }
   };
 
@@ -204,7 +205,7 @@ export function TradeInsightsApp() {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard 
-                  tradeLogs={allLogsForViews} 
+                  tradeLogs={filteredTradeLogs} 
                   setActiveView={setActiveView} 
                   timePeriod={timePeriod} 
                   setTimePeriod={setTimePeriod}
@@ -217,15 +218,20 @@ export function TradeInsightsApp() {
                   onAddTradeLog={handleAddTradeLogClick}
                   onEditTradeLog={handleEditTradeLogClick}
                 />;
-      case 'daily':
-        return <DailyAnalysisView tradeLogs={filteredTradeLogs} dailyAnalyses={dailyAnalyses || []} addDailyAnalysis={addDailyAnalysis} />;
-      case 'weekly':
-        return <WeeklyAnalysisView tradeLogs={filteredTradeLogs} weeklyReviews={weeklyReviews || []} addWeeklyAnalysis={addWeeklyAnalysis} />;
-      case 'monthly':
-        return <MonthlyAnalysisView tradeLogs={allLogsForViews} monthlySummaries={monthlySummaries || []} addMonthlySummary={addMonthlySummary} />;
+      case 'analysis':
+        return <AnalysisView 
+                  tradeLogs={allLogsForViews}
+                  filteredTradeLogs={filteredTradeLogs}
+                  dailyAnalyses={dailyAnalyses || []}
+                  weeklyReviews={weeklyReviews || []}
+                  monthlySummaries={monthlySummaries || []}
+                  addDailyAnalysis={addDailyAnalysis}
+                  addWeeklyAnalysis={addWeeklyAnalysis}
+                  addMonthlySummary={addMonthlySummary}
+                />;
       default:
         return <Dashboard 
-                  tradeLogs={allLogsForViews} 
+                  tradeLogs={filteredTradeLogs} 
                   setActiveView={setActiveView} 
                   timePeriod={timePeriod} 
                   setTimePeriod={setTimePeriod} 

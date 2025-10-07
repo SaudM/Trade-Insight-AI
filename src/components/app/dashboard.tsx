@@ -29,20 +29,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
     const totalPL = tradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
 
     const handleViewReport = () => {
-        switch (timePeriod) {
-            case 'today':
-                setActiveView('daily');
-                break;
-            case '7d':
-                setActiveView('weekly');
-                break;
-            case '30d':
-                setActiveView('monthly');
-                break;
-            default:
-                 setActiveView('daily');
-                break;
-        }
+        setActiveView('analysis');
     }
 
     return (

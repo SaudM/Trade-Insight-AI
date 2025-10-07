@@ -65,8 +65,8 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
-            onClick={() => setActiveView('daily')}
-            isActive={activeView === 'daily' || activeView === 'weekly' || activeView === 'monthly'}
+            onClick={() => setActiveView('analysis')}
+            isActive={activeView === 'analysis'}
             tooltip={{children: '分析报告'}}
           >
             <FileText />
