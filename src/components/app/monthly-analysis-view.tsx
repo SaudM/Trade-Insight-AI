@@ -59,11 +59,18 @@ export function MonthlyAnalysisView({
                 return;
             }
             
-            const toPlainObject = (log: TradeLog) => ({
-                ...log,
-                tradeTime: (log.tradeTime as Timestamp).toDate().toISOString(),
-                createdAt: (log.createdAt as Timestamp).toDate().toISOString(),
-            });
+            const toPlainObject = (log: TradeLog) => {
+              const plainLog: any = { ...log };
+              
+              if (typeof log.tradeTime !== 'string') {
+                plainLog.tradeTime = (log.tradeTime as Timestamp).toDate().toISOString();
+              }
+              if (typeof log.createdAt !== 'string') {
+                 plainLog.createdAt = (log.createdAt as Timestamp).toDate().toISOString();
+              }
+              
+              return plainLog;
+            };
 
             const result = await monthlyPerformanceReview({ 
                 currentMonthLogs: currentMonthLogs.map(toPlainObject), 
