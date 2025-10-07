@@ -62,6 +62,8 @@ export function ReportView({
                 return new Date(dateB instanceof Timestamp ? dateB.toDate() : dateB).getTime() - new Date(dateA instanceof Timestamp ? dateA.toDate() : dateA).getTime();
             })[0];
             setSelectedReportId(latestReport.id);
+        } else if (reports.length === 0) {
+            setSelectedReportId(undefined);
         }
     }, [reports, getReportDate, selectedReportId]);
 
