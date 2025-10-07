@@ -6,7 +6,7 @@ import { AppHeader } from './header';
 import { PLChart } from './pl-chart';
 import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
-import { TrendingUp, TrendingDown, Percent, Wallet, Wand2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Percent, Wallet, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '../ui/separator';
 
@@ -27,7 +27,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod 
     const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
     const totalPL = tradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
 
-    const handleGenerateReport = () => {
+    const handleViewReport = () => {
         switch (timePeriod) {
             case 'today':
                 setActiveView('daily');
@@ -39,7 +39,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod 
                 setActiveView('monthly');
                 break;
             default:
-                // Maybe show a toast or disable button if 'all' is selected
+                 setActiveView('daily');
                 break;
         }
     }
@@ -55,9 +55,9 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod 
                         <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')}>全部</Button>
                     </div>
                     <Separator orientation="vertical" className="h-6" />
-                     <Button onClick={handleGenerateReport} disabled={timePeriod === 'all'}>
-                        <Wand2 className="mr-2 h-4 w-4" />
-                        生成分析报告
+                     <Button onClick={handleViewReport}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        查看报告
                     </Button>
                 </div>
             </AppHeader>

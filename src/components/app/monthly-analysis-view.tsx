@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Timestamp } from 'firebase/firestore';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTradeInsights } from './trade-insights-context';
 
 export function MonthlyAnalysisView({ 
     tradeLogs, 
@@ -28,15 +30,17 @@ export function MonthlyAnalysisView({
 }: { 
     tradeLogs: TradeLog[], 
     monthlySummaries: MonthlySummary[],
-    addMonthlySummary: (summary: Omit<MonthlySummary, 'id' | 'userId' | 'createdAt'>) => Promise<void>
+    addMonthlySummary: (summary: Omit<MonthlySummary, 'id' | 'userId'>) => Promise<void>
 }) {
+    const { setActiveView } = useTradeInsights();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedSummaryId, setSelectedSummaryId] = useState<string | undefined>(undefined);
     const { toast } = useToast();
 
     useEffect(() => {
         if (monthlySummaries && monthlySummaries.length > 0 && !selectedSummaryId) {
-            setSelectedSummaryId(monthlySummaries[0].id);
+            const latestSummary = monthlySummaries.sort((a, b) => new Date(b.monthEndDate as string).getTime() - new Date(a.monthEndDate as string).getTime())[0];
+            setSelectedSummaryId(latestSummary.id);
         }
     }, [monthlySummaries, selectedSummaryId]);
 
@@ -62,7 +66,7 @@ export function MonthlyAnalysisView({
             const toPlainObject = (log: TradeLog) => {
               const plainLog: any = { ...log };
               
-              if (typeof log.tradeTime !== 'string') {
+              if (log.tradeTime && typeof log.tradeTime !== 'string') {
                 plainLog.tradeTime = (log.tradeTime as Timestamp).toDate().toISOString();
               }
               if (log.createdAt && typeof log.createdAt !== 'string') {
@@ -77,7 +81,7 @@ export function MonthlyAnalysisView({
                 previousMonthLogs: previousMonthLogs.map(toPlainObject) 
             });
 
-            const newSummary: Omit<MonthlySummary, 'id' | 'userId' | 'createdAt'> = {
+            const newSummary: Omit<MonthlySummary, 'id' | 'userId'> = {
                 monthStartDate: startOfCurrentMonth.toISOString(),
                 monthEndDate: new Date().toISOString(),
                 performanceComparison: result.comparisonSummary,
@@ -100,28 +104,39 @@ export function MonthlyAnalysisView({
 
     const displayedSummary = monthlySummaries?.find(s => s.id === selectedSummaryId);
     
+    const sortedSummaries = monthlySummaries ? [...monthlySummaries].sort((a, b) => new Date(b.monthEndDate as string).getTime() - new Date(a.monthEndDate as string).getTime()) : [];
+
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="月度总结">
-                <div className="flex items-center gap-2">
-                    {monthlySummaries && monthlySummaries.length > 0 && (
-                        <Select onValueChange={setSelectedSummaryId} value={selectedSummaryId}>
-                            <SelectTrigger className="w-[280px]">
-                                <SelectValue placeholder="查看历史总结..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {monthlySummaries.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>
-                                        {format(new Date(s.monthEndDate as string), 'yyyy年MM月dd日 HH:mm')}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    <Button onClick={handleAnalysis} disabled={isLoading}>
-                        <Wand2 className="mr-2" />
-                        {isLoading ? '分析中...' : '生成新总结'}
-                    </Button>
+            <AppHeader title="分析报告">
+                <div className="flex items-center gap-4">
+                    <Tabs value="monthly" onValueChange={(value) => setActiveView(value as any)}>
+                        <TabsList>
+                            <TabsTrigger value="daily">每日</TabsTrigger>
+                            <TabsTrigger value="weekly">每周</TabsTrigger>
+                            <TabsTrigger value="monthly">每月</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    <div className="flex items-center gap-2">
+                        {sortedSummaries && sortedSummaries.length > 0 && (
+                            <Select onValueChange={setSelectedSummaryId} value={selectedSummaryId}>
+                                <SelectTrigger className="w-[280px]">
+                                    <SelectValue placeholder="查看历史总结..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sortedSummaries.map(s => (
+                                        <SelectItem key={s.id} value={s.id}>
+                                            {format(new Date(s.monthEndDate as string), 'yyyy年MM月dd日 HH:mm')}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <Button onClick={handleAnalysis} disabled={isLoading}>
+                            <Wand2 className="mr-2" />
+                            {isLoading ? '分析中...' : '生成新总结'}
+                        </Button>
+                    </div>
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
@@ -166,7 +181,7 @@ export function MonthlyAnalysisView({
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
                       <h2 className="text-2xl font-headline font-semibold">生成您的月度AI总结</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                        点击上方的“生成总结”按钮，让AI分析您在过去30天内的表现，并与上一个周期对比，提供专业的迭代建议。
+                        请在仪表盘选择一个时间周期，然后点击上方的“生成总结”按钮，让AI分析您的表现，并与上一个周期对比，提供专业的迭代建议。
                       </p>
                   </div>
                 )}

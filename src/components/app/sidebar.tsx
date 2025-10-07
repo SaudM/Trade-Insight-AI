@@ -1,7 +1,7 @@
 "use client"
 
 import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, Book, BarChart, LogOut } from 'lucide-react';
+import { LayoutDashboard, Book, BarChart, LogOut, FileText } from 'lucide-react';
 import type { View } from '@/lib/types';
 import { ThemeToggle } from '../theme-toggle';
 import { getAuth, signOut } from 'firebase/auth';
@@ -56,11 +56,21 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('dashboard')}
-            isActive={activeView === 'dashboard' || activeView === 'daily' || activeView === 'weekly' || activeView === 'monthly'}
+            isActive={activeView === 'dashboard'}
             tooltip={{children: '仪表盘'}}
           >
             <LayoutDashboard />
             <span>仪表盘</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={() => setActiveView('daily')}
+            isActive={activeView === 'daily' || activeView === 'weekly' || activeView === 'monthly'}
+            tooltip={{children: '分析报告'}}
+          >
+            <FileText />
+            <span>分析报告</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>

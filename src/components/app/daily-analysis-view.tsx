@@ -6,7 +6,7 @@ import type { DailyAnalysis } from '@/lib/types';
 import { AppHeader } from './header';
 import { Button } from '@/components/ui/button';
 import { Wand2 } from 'lucide-react';
-import { analyzeDailyTrades, type DailyTradeAnalysisOutput } from '@/ai/flows/daily-ai-analysis';
+import { analyzeDailyTrades } from '@/ai/flows/daily-ai-analysis';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTradeInsights } from './trade-insights-context';
 
 export function DailyAnalysisView({ 
     tradeLogs, 
@@ -29,15 +31,18 @@ export function DailyAnalysisView({
     dailyAnalyses: DailyAnalysis[],
     addDailyAnalysis: (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => Promise<void> 
 }) {
+    const { setActiveView } = useTradeInsights();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | undefined>(undefined);
     const { toast } = useToast();
 
     useEffect(() => {
         if (dailyAnalyses && dailyAnalyses.length > 0 && !selectedAnalysisId) {
-            setSelectedAnalysisId(dailyAnalyses[0].id);
+            const latestAnalysis = dailyAnalyses.sort((a, b) => new Date(b.date as string).getTime() - new Date(a.date as string).getTime())[0];
+            setSelectedAnalysisId(latestAnalysis.id);
         }
     }, [dailyAnalyses, selectedAnalysisId]);
+
 
     const handleAnalysis = async () => {
         setIsLoading(true);
@@ -54,7 +59,7 @@ export function DailyAnalysisView({
             
             const result = await analyzeDailyTrades({ tradeLogs: logsString });
             
-            const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId' | 'createdAt'> = {
+            const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId'> = {
                 date: new Date().toISOString(),
                 summary: result.summary,
                 strengths: result.strengths,
@@ -63,7 +68,7 @@ export function DailyAnalysisView({
                 improvementSuggestions: result.improvementSuggestions,
             };
 
-            await addDailyAnalysis(newAnalysis as any); // Let app component handle adding userId and createdAt
+            await addDailyAnalysis(newAnalysis as any); 
 
             toast({ title: '每日分析已生成并保存' });
 
@@ -76,29 +81,40 @@ export function DailyAnalysisView({
     };
 
     const displayedAnalysis = dailyAnalyses?.find(a => a.id === selectedAnalysisId);
+    
+    const sortedAnalyses = dailyAnalyses ? [...dailyAnalyses].sort((a, b) => new Date(b.date as string).getTime() - new Date(a.date as string).getTime()) : [];
 
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="每日分析">
-                <div className="flex items-center gap-2">
-                    {dailyAnalyses && dailyAnalyses.length > 0 && (
-                        <Select onValueChange={setSelectedAnalysisId} value={selectedAnalysisId}>
-                            <SelectTrigger className="w-[280px]">
-                                <SelectValue placeholder="查看历史报告..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {dailyAnalyses.map(a => (
-                                    <SelectItem key={a.id} value={a.id}>
-                                        {format(new Date(a.date as string), 'yyyy年MM月dd日 HH:mm')}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    <Button onClick={handleAnalysis} disabled={isLoading}>
-                        <Wand2 className="mr-2" />
-                        {isLoading ? '分析中...' : '生成新报告'}
-                    </Button>
+            <AppHeader title="分析报告">
+                <div className="flex items-center gap-4">
+                    <Tabs value="daily" onValueChange={(value) => setActiveView(value as any)}>
+                        <TabsList>
+                            <TabsTrigger value="daily">每日</TabsTrigger>
+                            <TabsTrigger value="weekly">每周</TabsTrigger>
+                            <TabsTrigger value="monthly">每月</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    <div className="flex items-center gap-2">
+                        {sortedAnalyses && sortedAnalyses.length > 0 && (
+                            <Select onValueChange={setSelectedAnalysisId} value={selectedAnalysisId}>
+                                <SelectTrigger className="w-[280px]">
+                                    <SelectValue placeholder="查看历史报告..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sortedAnalyses.map(a => (
+                                        <SelectItem key={a.id} value={a.id}>
+                                            {format(new Date(a.date as string), 'yyyy年MM月dd日 HH:mm')}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <Button onClick={handleAnalysis} disabled={isLoading}>
+                            <Wand2 className="mr-2" />
+                            {isLoading ? '分析中...' : '生成新报告'}
+                        </Button>
+                    </div>
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
@@ -143,7 +159,7 @@ export function DailyAnalysisView({
                         <Wand2 className="w-16 h-16 mb-4 text-primary" />
                         <h2 className="text-2xl font-headline font-semibold">生成您的每日AI分析</h2>
                         <p className="mt-2 max-w-md text-muted-foreground">
-                            点击上方的“生成报告”按钮，让AI分析您在所选时间段内的交易记录，并提供专业的洞察和建议。
+                            请在仪表盘选择一个时间周期，然后点击上方的“生成报告”按钮，让AI分析您的交易记录，并提供专业的洞察和建议。
                         </p>
                     </div>
                 )}

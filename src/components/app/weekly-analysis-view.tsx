@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format, startOfWeek } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTradeInsights } from './trade-insights-context';
 
 export function WeeklyAnalysisView({ 
     tradeLogs, 
@@ -29,13 +31,15 @@ export function WeeklyAnalysisView({
     weeklyReviews: WeeklyReview[],
     addWeeklyAnalysis: (review: Omit<WeeklyReview, 'id' | 'userId'>) => Promise<void>
 }) {
+    const { setActiveView } = useTradeInsights();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedReviewId, setSelectedReviewId] = useState<string | undefined>(undefined);
     const { toast } = useToast();
 
     useEffect(() => {
         if (weeklyReviews && weeklyReviews.length > 0 && !selectedReviewId) {
-            setSelectedReviewId(weeklyReviews[0].id);
+            const latestReview = weeklyReviews.sort((a, b) => new Date(b.endDate as string).getTime() - new Date(a.endDate as string).getTime())[0];
+            setSelectedReviewId(latestReview.id);
         }
     }, [weeklyReviews, selectedReviewId]);
 
@@ -52,7 +56,7 @@ export function WeeklyAnalysisView({
             const result = await weeklyPatternDiscovery({ tradingLogs: logsString });
 
             const now = new Date();
-            const newReview: Omit<WeeklyReview, 'id' | 'userId' | 'createdAt'> = {
+            const newReview: Omit<WeeklyReview, 'id' | 'userId'> = {
                 startDate: startOfWeek(now, { weekStartsOn: 1 }).toISOString(),
                 endDate: now.toISOString(),
                 patternSummary: `${result.successPatterns}\n${result.errorPatterns}`,
@@ -75,29 +79,40 @@ export function WeeklyAnalysisView({
     };
     
     const displayedReview = weeklyReviews?.find(r => r.id === selectedReviewId);
+    
+    const sortedReviews = weeklyReviews ? [...weeklyReviews].sort((a, b) => new Date(b.endDate as string).getTime() - new Date(a.endDate as string).getTime()) : [];
 
     return (
         <div className="flex flex-col h-full">
-            <AppHeader title="每周回顾">
-                 <div className="flex items-center gap-2">
-                    {weeklyReviews && weeklyReviews.length > 0 && (
-                        <Select onValueChange={setSelectedReviewId} value={selectedReviewId}>
-                            <SelectTrigger className="w-[280px]">
-                                <SelectValue placeholder="查看历史回顾..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {weeklyReviews.map(r => (
-                                    <SelectItem key={r.id} value={r.id}>
-                                        {format(new Date(r.endDate as string), 'yyyy年MM月dd日 HH:mm')}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    <Button onClick={handleAnalysis} disabled={isLoading}>
-                        <Wand2 className="mr-2" />
-                        {isLoading ? '分析中...' : '生成新回顾'}
-                    </Button>
+            <AppHeader title="分析报告">
+                 <div className="flex items-center gap-4">
+                    <Tabs value="weekly" onValueChange={(value) => setActiveView(value as any)}>
+                        <TabsList>
+                            <TabsTrigger value="daily">每日</TabsTrigger>
+                            <TabsTrigger value="weekly">每周</TabsTrigger>
+                            <TabsTrigger value="monthly">每月</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    <div className="flex items-center gap-2">
+                        {sortedReviews && sortedReviews.length > 0 && (
+                            <Select onValueChange={setSelectedReviewId} value={selectedReviewId}>
+                                <SelectTrigger className="w-[280px]">
+                                    <SelectValue placeholder="查看历史回顾..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sortedReviews.map(r => (
+                                        <SelectItem key={r.id} value={r.id}>
+                                            {format(new Date(r.endDate as string), 'yyyy年MM月dd日 HH:mm')}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <Button onClick={handleAnalysis} disabled={isLoading}>
+                            <Wand2 className="mr-2" />
+                            {isLoading ? '分析中...' : '生成新回顾'}
+                        </Button>
+                    </div>
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
@@ -142,7 +157,7 @@ export function WeeklyAnalysisView({
                       <Wand2 className="w-16 h-16 mb-4 text-primary" />
                       <h2 className="text-2xl font-headline font-semibold">生成您的每周AI回顾</h2>
                       <p className="mt-2 max-w-md text-muted-foreground">
-                        点击上方的“生成回顾”按钮，让AI分析您在过去7天内的交易模式，并提供专业的洞察和改进计划。
+                        请在仪表盘选择一个时间周期，然后点击上方的“生成回顾”按钮，让AI分析您的交易模式，并提供专业的洞察和改进计划。
                       </p>
                   </div>
                 )}

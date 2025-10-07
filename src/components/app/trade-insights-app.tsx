@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, createContext } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app/sidebar';
 import { Dashboard } from '@/components/app/dashboard';
@@ -10,10 +10,11 @@ import { WeeklyAnalysisView } from '@/components/app/weekly-analysis-view';
 import { MonthlyAnalysisView } from '@/components/app/monthly-analysis-view';
 import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { TradeInsightsProvider } from './trade-insights-context';
 
 export function TradeInsightsApp() {
   const [activeView, setActiveView] = useState<View>('dashboard');
@@ -40,7 +41,7 @@ export function TradeInsightsApp() {
     () => dailyAnalysesRef ? query(dailyAnalysesRef, orderBy('date', 'desc')) : null,
     [dailyAnalysesRef]
   );
-  const { data: dailyAnalyses } = useCollection<DailyAnalysis>(dailyAnalysesQuery);
+  const { data: dailyAnalyses, isLoading: isLoadingDaily } = useCollection<DailyAnalysis>(dailyAnalysesQuery);
 
   // --- WeeklyReviews ---
   const weeklyReviewsRef = useMemoFirebase(
@@ -51,7 +52,7 @@ export function TradeInsightsApp() {
     () => weeklyReviewsRef ? query(weeklyReviewsRef, orderBy('endDate', 'desc')) : null,
     [weeklyReviewsRef]
   );
-  const { data: weeklyReviews } = useCollection<WeeklyReview>(weeklyReviewsQuery);
+  const { data: weeklyReviews, isLoading: isLoadingWeekly } = useCollection<WeeklyReview>(weeklyReviewsQuery);
 
   // --- MonthlySummaries ---
   const monthlySummariesRef = useMemoFirebase(
@@ -62,19 +63,28 @@ export function TradeInsightsApp() {
     () => monthlySummariesRef ? query(monthlySummariesRef, orderBy('monthEndDate', 'desc')) : null,
     [monthlySummariesRef]
   );
-  const { data: monthlySummaries } = useCollection<MonthlySummary>(monthlySummariesQuery);
+  const { data: monthlySummaries, isLoading: isLoadingMonthly } = useCollection<MonthlySummary>(monthlySummariesQuery);
 
   const [timePeriod, setTimePeriod] = useState<'today' | '7d' | '30d' | 'all'>('all');
 
   // --- CRUD Operations ---
   const addDocWithTimestamp = async (ref: any, data: any, entityName: string) => {
-    if (!ref) return;
+    if (!ref || !user) return;
     try {
-      await addDoc(ref, { ...data, userId: user!.uid, createdAt: serverTimestamp() });
-      toast({ title: `${entityName}已添加` });
+        const docData = { ...data, userId: user.uid, createdAt: serverTimestamp() };
+        // Ensure date fields are Timestamps for consistent querying
+        if (docData.date && typeof docData.date === 'string') docData.date = Timestamp.fromDate(new Date(docData.date));
+        if (docData.tradeTime && typeof docData.tradeTime === 'string') docData.tradeTime = Timestamp.fromDate(new Date(docData.tradeTime));
+        if (docData.startDate && typeof docData.startDate === 'string') docData.startDate = Timestamp.fromDate(new Date(docData.startDate));
+        if (docData.endDate && typeof docData.endDate === 'string') docData.endDate = Timestamp.fromDate(new Date(docData.endDate));
+        if (docData.monthStartDate && typeof docData.monthStartDate === 'string') docData.monthStartDate = Timestamp.fromDate(new Date(docData.monthStartDate));
+        if (docData.monthEndDate && typeof docData.monthEndDate === 'string') docData.monthEndDate = Timestamp.fromDate(new Date(docData.monthEndDate));
+        
+        await addDoc(ref, docData);
+        toast({ title: `${entityName}已添加` });
     } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: "添加失败", description: `无法保存您的${entityName}。` });
+        console.error(error);
+        toast({ variant: 'destructive', title: "添加失败", description: `无法保存您的${entityName}。` });
     }
   };
 
@@ -87,7 +97,11 @@ export function TradeInsightsApp() {
     if (!user) return;
     try {
       const logRef = doc(firestore, 'users', user.uid, 'tradeLogs', updatedLog.id);
-      await updateDoc(logRef, { ...updatedLog });
+      const dataToUpdate = { ...updatedLog };
+      if (typeof dataToUpdate.tradeTime === 'string') {
+        dataToUpdate.tradeTime = Timestamp.fromDate(new Date(dataToUpdate.tradeTime));
+      }
+      await updateDoc(logRef, dataToUpdate);
       toast({ title: "交易笔记已更新" });
     } catch (error) {
       console.error(error);
@@ -110,22 +124,24 @@ export function TradeInsightsApp() {
   const filteredTradeLogs = useMemo(() => {
     if (!tradeLogs) return [];
     const now = new Date();
+    const toDate = (time: string | Timestamp) => time instanceof Timestamp ? time.toDate() : new Date(time);
+    
     if (timePeriod === 'today') {
-        return tradeLogs.filter(log => isSameDay(new Date(log.tradeTime), now));
+        return tradeLogs.filter(log => isSameDay(toDate(log.tradeTime), now));
     }
     if (timePeriod === '7d') {
         const sevenDaysAgo = startOfDay(subDays(now, 7));
-        return tradeLogs.filter(log => new Date(log.tradeTime) >= sevenDaysAgo);
+        return tradeLogs.filter(log => toDate(log.tradeTime) >= sevenDaysAgo);
     }
     if (timePeriod === '30d') {
         const thirtyDaysAgo = startOfDay(subDays(now, 30));
-        return tradeLogs.filter(log => new Date(log.tradeTime) >= thirtyDaysAgo);
+        return tradeLogs.filter(log => toDate(log.tradeTime) >= thirtyDaysAgo);
     }
-    return tradeLogs;
+    return tradeLogs.map(log => ({...log, tradeTime: toDate(log.tradeTime).toISOString()}));
   }, [tradeLogs, timePeriod]);
 
   const renderView = () => {
-    if (isLoadingLogs) {
+    if (isLoadingLogs || isLoadingDaily || isLoadingWeekly || isLoadingMonthly) {
       return (
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -133,32 +149,37 @@ export function TradeInsightsApp() {
       );
     }
     
-    const logs = tradeLogs || [];
+    const logsForDashboard = tradeLogs ? tradeLogs.map(log => ({...log, tradeTime: log.tradeTime instanceof Timestamp ? log.tradeTime.toDate().toISOString() : log.tradeTime })) : [];
+    const logsForAnalysis = filteredTradeLogs;
+    const allLogs = tradeLogs ? tradeLogs.map(log => ({...log, tradeTime: log.tradeTime instanceof Timestamp ? log.tradeTime.toDate().toISOString() : log.tradeTime })) : [];
+
 
     switch (activeView) {
       case 'dashboard':
-        return <Dashboard tradeLogs={filteredTradeLogs} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
+        return <Dashboard tradeLogs={logsForDashboard} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
       case 'tradelog':
-        return <TradeLogView tradeLogs={logs} addTradeLog={addTradeLog} updateTradeLog={updateTradeLog} deleteTradeLog={deleteTradeLog} />;
+        return <TradeLogView tradeLogs={allLogs} addTradeLog={addTradeLog} updateTradeLog={updateTradeLog} deleteTradeLog={deleteTradeLog} />;
       case 'daily':
-        return <DailyAnalysisView tradeLogs={filteredTradeLogs} dailyAnalyses={dailyAnalyses || []} addDailyAnalysis={addDailyAnalysis} />;
+        return <DailyAnalysisView tradeLogs={logsForAnalysis} dailyAnalyses={dailyAnalyses || []} addDailyAnalysis={addDailyAnalysis} />;
       case 'weekly':
-        return <WeeklyAnalysisView tradeLogs={filteredTradeLogs} weeklyReviews={weeklyReviews || []} addWeeklyAnalysis={addWeeklyAnalysis} />;
+        return <WeeklyAnalysisView tradeLogs={logsForAnalysis} weeklyReviews={weeklyReviews || []} addWeeklyAnalysis={addWeeklyAnalysis} />;
       case 'monthly':
-        return <MonthlyAnalysisView tradeLogs={filteredTradeLogs} monthlySummaries={monthlySummaries || []} addMonthlySummary={addMonthlySummary} />;
+        return <MonthlyAnalysisView tradeLogs={logsForDashboard} monthlySummaries={monthlySummaries || []} addMonthlySummary={addMonthlySummary} />;
       default:
-        return <Dashboard tradeLogs={filteredTradeLogs} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
+        return <Dashboard tradeLogs={logsForDashboard} setActiveView={setActiveView} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />;
     }
   };
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen bg-background text-foreground">
-        <AppSidebar activeView={activeView} setActiveView={setActiveView} />
-        <SidebarInset className="flex flex-col h-screen">
-          {renderView()}
-        </SidebarInset>
-      </div>
+      <TradeInsightsProvider value={{ activeView, setActiveView }}>
+        <div className="flex h-screen bg-background text-foreground">
+          <AppSidebar activeView={activeView} setActiveView={setActiveView} />
+          <SidebarInset className="flex flex-col h-screen">
+            {renderView()}
+          </SidebarInset>
+        </div>
+      </TradeInsightsProvider>
     </SidebarProvider>
   );
 }
