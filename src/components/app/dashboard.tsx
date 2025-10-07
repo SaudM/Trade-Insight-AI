@@ -6,7 +6,7 @@ import { AppHeader } from './header';
 import { PLChart } from './pl-chart';
 import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
-import { TrendingUp, TrendingDown, Percent, Wallet, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, Percent, Wallet, FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '../ui/separator';
 
@@ -17,9 +17,10 @@ type DashboardProps = {
     setActiveView: (view: View) => void;
     timePeriod: TimePeriod;
     setTimePeriod: (period: TimePeriod) => void;
+    onAddTradeLog: () => void;
 }
 
-export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod }: DashboardProps) {
+export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod, onAddTradeLog }: DashboardProps) {
     
     const totalTrades = tradeLogs.length;
     const profitableTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) > 0).length;
@@ -45,7 +46,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod 
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
             <AppHeader title="仪表盘">
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1 rounded-md bg-muted p-1">
@@ -113,6 +114,12 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod 
                   </div>
               </main>
             </ScrollArea>
+             <Button 
+                onClick={onAddTradeLog}
+                className="absolute bottom-8 right-8 h-14 w-14 rounded-full shadow-lg"
+            >
+                <Plus className="h-6 w-6" />
+            </Button>
         </div>
     );
 }
