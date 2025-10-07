@@ -87,9 +87,9 @@ export function TradeInsightsApp() {
         if (docData.monthStartDate && typeof docData.monthStartDate === 'string') docData.monthStartDate = Timestamp.fromDate(new Date(docData.monthStartDate));
         if (docData.monthEndDate && typeof docData.monthEndDate === 'string') docData.monthEndDate = Timestamp.fromDate(new Date(docData.monthEndDate));
         
-        const newDoc = await addDoc(ref, docData);
+        await addDoc(ref, docData);
         toast({ title: `${entityName}已添加` });
-        // After adding a daily analysis, fetch it to get the ID and set it as selected
+        
         if (entityName === '每日分析') {
           setActiveView('daily');
         } else if (entityName === '每周回顾') {
@@ -242,7 +242,7 @@ export function TradeInsightsApp() {
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogContent className="max-w-3xl">
+              <DialogContent className="sm:max-w-3xl">
                   <ScrollArea className="max-h-[80vh]">
                   <div className="p-1">
                       <TradeLogForm 

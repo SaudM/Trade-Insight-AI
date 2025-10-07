@@ -96,7 +96,7 @@ export function WeeklyAnalysisView({
                     <div className="flex items-center gap-2">
                         {sortedReviews && sortedReviews.length > 0 && (
                             <Select onValueChange={setSelectedReviewId} value={selectedReviewId}>
-                                <SelectTrigger className="w-[280px]">
+                                <SelectTrigger className="w-auto md:w-[280px]">
                                     <SelectValue placeholder="查看历史回顾..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -116,7 +116,7 @@ export function WeeklyAnalysisView({
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
-              <main className="p-4 md:p-6 lg:p-8 space-y-6">
+              <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
                 {(isLoading || displayedReview) ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 

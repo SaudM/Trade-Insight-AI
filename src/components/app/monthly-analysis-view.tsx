@@ -66,11 +66,14 @@ export function MonthlyAnalysisView({
             const toPlainObject = (log: TradeLog) => {
               const plainLog: any = { ...log };
               
-              if (log.tradeTime && typeof log.tradeTime !== 'string') {
-                plainLog.tradeTime = (log.tradeTime as Timestamp).toDate().toISOString();
+              // Handle Timestamp conversion for tradeTime
+              if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
+                plainLog.tradeTime = (plainLog.tradeTime as Timestamp).toDate().toISOString();
               }
-              if (log.createdAt && typeof log.createdAt !== 'string') {
-                 plainLog.createdAt = (log.createdAt as Timestamp).toDate().toISOString();
+              
+              // Handle Timestamp conversion for createdAt
+              if (plainLog.createdAt && typeof plainLog.createdAt !== 'string') {
+                 plainLog.createdAt = (plainLog.createdAt as Timestamp).toDate().toISOString();
               }
               
               return plainLog;
@@ -120,7 +123,7 @@ export function MonthlyAnalysisView({
                     <div className="flex items-center gap-2">
                         {sortedSummaries && sortedSummaries.length > 0 && (
                             <Select onValueChange={setSelectedSummaryId} value={selectedSummaryId}>
-                                <SelectTrigger className="w-[280px]">
+                                <SelectTrigger className="w-auto md:w-[280px]">
                                     <SelectValue placeholder="查看历史总结..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -140,7 +143,7 @@ export function MonthlyAnalysisView({
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
-              <main className="p-4 md-p-6 lg:p-8 space-y-6">
+              <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
                 {(isLoading || displayedSummary) ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AiAnalysisCard 

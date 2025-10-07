@@ -63,7 +63,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
-              <main className="p-4 md:p-6 lg:p-8 space-y-8">
+              <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                       <Card>
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
