@@ -30,7 +30,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { TradeLog } from '@/lib/types';
-import { Combobox } from '@/components/ui/combobox';
 import { useEffect } from 'react';
 
 const tradeLogSchema = z.object({
@@ -79,10 +78,9 @@ type TradeLogFormProps = {
   tradeLog?: TradeLog | null;
   onSubmit: (log: Omit<TradeLog, 'id'> | TradeLog) => void;
   onCancel: () => void;
-  suggestions?: string[];
 };
 
-export function TradeLogForm({ tradeLog, onSubmit, onCancel, suggestions = [] }: TradeLogFormProps) {
+export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps) {
   const form = useForm<TradeLogFormValues>({
     resolver: zodResolver(tradeLogSchema),
     defaultValues: tradeLog ? {
@@ -137,8 +135,6 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel, suggestions = [] }:
 
   const isEditing = !!tradeLog;
 
-  const suggestionOptions = suggestions.map(s => ({ value: s, label: s }));
-
   return (
     <>
       <DialogHeader>
@@ -166,16 +162,10 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel, suggestions = [] }:
             control={form.control}
             name="symbol"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
+              <FormItem>
                 <FormLabel>交易标的</FormLabel>
                 <FormControl>
-                   <Combobox
-                    value={field.value}
-                    onChange={(value) => {
-                      field.onChange(value);
-                    }}
-                    suggestions={suggestionOptions}
-                   />
+                   <Input placeholder="例如, AAPL 或 贵州茅台" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
