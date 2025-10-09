@@ -6,9 +6,10 @@ import { AppHeader } from './header';
 import { PLChart } from './pl-chart';
 import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
-import { TrendingUp, TrendingDown, Percent, Wallet, FileText, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Percent, Wallet, FileText, Plus, Target, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '../ui/separator';
+import { CumulativePLChart } from './cumulative-pl-chart';
 
 type TimePeriod = 'today' | '7d' | '30d' | 'all';
 
@@ -23,10 +24,20 @@ type DashboardProps = {
 export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod, onAddTradeLog }: DashboardProps) {
     
     const totalTrades = tradeLogs.length;
-    const profitableTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) > 0).length;
-    const lossTrades = totalTrades - profitableTrades;
-    const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
+    const profitableTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) > 0);
+    const losingTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) < 0);
+    
+    const winRate = totalTrades > 0 ? (profitableTrades.length / totalTrades) * 100 : 0;
     const totalPL = tradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
+
+    const totalProfit = profitableTrades.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
+    const totalLoss = losingTrades.reduce((acc, log) => acc + Math.abs(parseFloat(log.tradeResult)), 0);
+    
+    const averageProfit = profitableTrades.length > 0 ? totalProfit / profitableTrades.length : 0;
+    const averageLoss = losingTrades.length > 0 ? totalLoss / losingTrades.length : 0;
+    
+    const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : 0;
+
 
     const handleViewReport = () => {
         setActiveView('analysis');
@@ -71,33 +82,56 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                           </CardHeader>
                           <CardContent>
                               <div className="text-2xl font-bold">{winRate.toFixed(1)}%</div>
-                              <p className="text-xs text-muted-foreground">您的成功率</p>
+                              <p className="text-xs text-muted-foreground">{profitableTrades.length} 胜 / {losingTrades.length} 负</p>
                           </CardContent>
                       </Card>
-                      <Card>
+                       <Card>
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">盈利交易</CardTitle>
+                              <CardTitle className="text-sm font-medium">平均盈利</CardTitle>
                               <TrendingUp className="h-4 w-4 text-success" />
                           </CardHeader>
                           <CardContent>
-                              <div className="text-2xl font-bold">{profitableTrades}</div>
-                              <p className="text-xs text-muted-foreground">盈利的交易</p>
+                              <div className="text-2xl font-bold text-success">
+                                  {averageProfit.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                              </div>
+                               <p className="text-xs text-muted-foreground">基于 {profitableTrades.length} 笔盈利交易</p>
                           </CardContent>
                       </Card>
                       <Card>
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">亏损交易</CardTitle>
+                              <CardTitle className="text-sm font-medium">平均亏损</CardTitle>
                               <TrendingDown className="h-4 w-4 text-destructive" />
                           </CardHeader>
                           <CardContent>
-                              <div className="text-2xl font-bold">{lossTrades}</div>
-                              <p className="text-xs text-muted-foreground">亏损的交易</p>
+                              <div className="text-2xl font-bold text-destructive">
+                                  {averageLoss.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                              </div>
+                              <p className="text-xs text-muted-foreground">基于 {losingTrades.length} 笔亏损交易</p>
                           </CardContent>
                       </Card>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2">
+                  
+                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                        <Card className="lg:col-span-3">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">盈亏比</CardTitle>
+                                <Calculator className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{profitFactor.toFixed(2)}</div>
+                                <p className="text-xs text-muted-foreground">总盈利 / 总亏损</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="lg:col-span-4">
+                           <WinLossRatioChart profitableTrades={profitableTrades.length} lossTrades={losingTrades.length} />
+                        </Card>
+                   </div>
+
+                  <div className="grid gap-4">
+                      <CumulativePLChart tradeLogs={tradeLogs} />
+                  </div>
+                  <div className="grid gap-4">
                       <PLChart tradeLogs={tradeLogs} />
-                      <WinLossRatioChart profitableTrades={profitableTrades} lossTrades={lossTrades} />
                   </div>
               </main>
             </ScrollArea>
