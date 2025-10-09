@@ -29,17 +29,17 @@ import {
 const getDirectionBadge = (direction: TradeLog['direction']) => {
     switch (direction) {
         case 'Buy':
-            return <Badge variant="default" className="capitalize">买入</Badge>;
+            return <Badge variant="default" className="capitalize whitespace-nowrap">买入</Badge>;
         case 'Long':
-            return <Badge variant="default" className="capitalize">做多</Badge>;
+            return <Badge variant="default" className="capitalize whitespace-nowrap">做多</Badge>;
         case 'Sell':
-            return <Badge variant="destructive" className="capitalize">卖出</Badge>;
+            return <Badge variant="destructive" className="capitalize whitespace-nowrap">卖出</Badge>;
         case 'Short':
-            return <Badge variant="destructive" className="capitalize">做空</Badge>;
+            return <Badge variant="destructive" className="capitalize whitespace-nowrap">做空</Badge>;
         case 'Close':
-            return <Badge variant="secondary" className="capitalize">平仓</Badge>;
+            return <Badge variant="secondary" className="capitalize whitespace-nowrap">平仓</Badge>;
         default:
-            return <Badge variant="outline" className="capitalize">{direction}</Badge>;
+            return <Badge variant="outline" className="capitalize whitespace-nowrap">{direction}</Badge>;
     }
 }
 
@@ -58,7 +58,7 @@ const TradeLogMobileCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">方向</span>
                     {getDirectionBadge(log.direction)}
                 </div>
@@ -144,7 +144,7 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
                     <TableRow>
                         <TableHead className="w-[180px]">时间</TableHead>
                         <TableHead>标的</TableHead>
-                        <TableHead>方向</TableHead>
+                        <TableHead className="w-[80px]">方向</TableHead>
                         <TableHead>仓位大小</TableHead>
                         <TableHead className="text-right">盈亏</TableHead>
                         <TableHead className="w-12"></TableHead>
