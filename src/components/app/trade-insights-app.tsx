@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { TradeInsightsProvider } from './trade-insights-context';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TradeLogForm } from './trade-log-form';
+import { TradeLogForm, type TradeLogFormValues } from './trade-log-form';
 
 export function TradeInsightsApp() {
   const [activeView, setActiveView] = useState<View>('dashboard');
@@ -106,12 +106,12 @@ export function TradeInsightsApp() {
     }
   };
 
-  const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId'>) => addDocWithTimestamp(tradeLogsRef, log, '交易笔记');
+  const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => addDocWithTimestamp(tradeLogsRef, log, '交易笔记');
   const addDailyAnalysis = async (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => addDocWithTimestamp(dailyAnalysesRef, analysis, '每日分析');
   const addWeeklyAnalysis = async (review: Omit<WeeklyReview, 'id' | 'userId'>) => addDocWithTimestamp(weeklyReviewsRef, review, '每周回顾');
   const addMonthlySummary = async (summary: Omit<MonthlySummary, 'id' | 'userId'>) => addDocWithTimestamp(monthlySummariesRef, summary, '月度总结');
 
-  const updateTradeLog = async (updatedLog: TradeLog) => {
+  const updateTradeLog = async (updatedLog: Omit<TradeLog, 'userId' | 'createdAt'>) => {
     if (!user) return;
     try {
       const logRef = doc(firestore, 'users', user.uid, 'tradeLogs', updatedLog.id);
@@ -151,11 +151,22 @@ export function TradeInsightsApp() {
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = (log: Omit<TradeLog, 'id' | 'userId'> | TradeLog) => {
-    if ('id' in log && log.id) {
-        updateTradeLog(log as TradeLog);
+  const handleFormSubmit = (log: TradeLogFormValues) => {
+    const common = {
+      tradeTime: log.tradeTime,
+      symbol: log.symbol,
+      direction: log.direction,
+      positionSize: log.positionSize,
+      tradeResult: log.tradeResult ?? '0',
+      mindsetState: log.mindsetState,
+      entryReason: log.entryReason ?? '',
+      exitReason: log.exitReason ?? '',
+      lessonsLearned: log.lessonsLearned ?? '',
+    };
+    if (log.id) {
+      updateTradeLog({ id: log.id, ...common });
     } else {
-        addTradeLog(log);
+      addTradeLog(common);
     }
     setIsFormOpen(false);
     setEditingLog(null);
@@ -169,7 +180,14 @@ export function TradeInsightsApp() {
   const filteredTradeLogs = useMemo(() => {
     if (!tradeLogs) return [];
     const now = new Date();
-    const toDate = (time: string | Timestamp) => time instanceof Timestamp ? time.toDate() : new Date(time);
+    const toDate = (time: string | Timestamp) => {
+      if (time instanceof Timestamp) return time.toDate();
+      if (typeof time === 'string') {
+        const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(time);
+        return new Date(isDateOnly ? `${time}T00:00` : time);
+      }
+      return new Date(time as any);
+    };
     
     if (timePeriod === 'today') {
         return tradeLogs.filter(log => isSameDay(toDate(log.tradeTime), now));
@@ -188,7 +206,11 @@ export function TradeInsightsApp() {
   const allLogsForViews = useMemo(() => {
     if (!tradeLogs) return [];
     return tradeLogs.map(log => {
-      const date = log.tradeTime instanceof Timestamp ? log.tradeTime.toDate() : new Date(log.tradeTime);
+      const date = log.tradeTime instanceof Timestamp
+        ? log.tradeTime.toDate()
+        : /^\d{4}-\d{2}-\d{2}$/.test(log.tradeTime as string)
+          ? new Date(`${log.tradeTime}T00:00`)
+          : new Date(log.tradeTime as string);
       return { ...log, tradeTime: date.toISOString() };
     });
   }, [tradeLogs]);
@@ -248,8 +270,8 @@ export function TradeInsightsApp() {
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogContent className="sm:max-w-2xl p-4">
-                  <ScrollArea className="max-h-[90vh] px-1">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-xl md:max-w-2xl min-w-0 overflow-x-hidden p-3 sm:p-4 md:p-6">
+                  <ScrollArea className="max-h-[85vh] sm:max-h-[80vh] px-1 min-w-0 overflow-x-hidden">
                       <TradeLogForm 
                           tradeLog={editingLog} 
                           onSubmit={handleFormSubmit}

@@ -31,6 +31,23 @@ import {
 } from "@/components/ui/select";
 import type { TradeLog } from '@/lib/types';
 import { useEffect } from 'react';
+import { Timestamp } from 'firebase/firestore';
+
+// 格式化为本地 date 输入值（YYYY-MM-DD）
+function toLocalDateInputValue(date: Date) {
+  const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return d.toISOString().split('T')[0]
+}
+
+// 将字符串或 Firebase Timestamp 转换为 Date
+function toDateFromTradeTime(time: string | Timestamp) {
+  if (time instanceof Timestamp) return time.toDate();
+  if (typeof time === 'string') {
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(time);
+    return new Date(isDateOnly ? `${time}T00:00` : time);
+  }
+  return new Date(time as any);
+}
 
 const tradeLogSchema = z.object({
   id: z.string().optional(),
@@ -72,11 +89,11 @@ const tradeLogSchema = z.object({
 });
 
 
-type TradeLogFormValues = z.infer<typeof tradeLogSchema>;
+export type TradeLogFormValues = z.infer<typeof tradeLogSchema>;
 
 type TradeLogFormProps = {
   tradeLog?: TradeLog | null;
-  onSubmit: (log: Omit<TradeLog, 'id'> | TradeLog) => void;
+  onSubmit: (log: TradeLogFormValues) => void;
   onCancel: () => void;
 };
 
@@ -85,9 +102,9 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
     resolver: zodResolver(tradeLogSchema),
     defaultValues: tradeLog ? {
       ...tradeLog,
-      tradeTime: new Date(tradeLog.tradeTime).toISOString().substring(0, 16),
+      tradeTime: toLocalDateInputValue(toDateFromTradeTime(tradeLog.tradeTime)),
     } : {
-      tradeTime: new Date().toISOString().substring(0, 16),
+      tradeTime: toLocalDateInputValue(new Date()),
       symbol: '',
       direction: 'Buy',
       positionSize: '',
@@ -103,11 +120,11 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
     if (tradeLog) {
       form.reset({
         ...tradeLog,
-        tradeTime: new Date(tradeLog.tradeTime).toISOString().substring(0, 16),
+        tradeTime: toLocalDateInputValue(toDateFromTradeTime(tradeLog.tradeTime)),
       });
     } else {
       form.reset({
-        tradeTime: new Date().toISOString().substring(0, 16),
+        tradeTime: toLocalDateInputValue(new Date()),
         symbol: '',
         direction: 'Buy',
         positionSize: '',
@@ -144,7 +161,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 min-w-0">
           <FormField
             control={form.control}
             name="tradeTime"
@@ -152,7 +169,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
               <FormItem>
                 <FormLabel>交易时间</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  <Input type="date" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -179,7 +196,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                 <FormLabel>方向</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="选择方向" />
                     </SelectTrigger>
                   </FormControl>
