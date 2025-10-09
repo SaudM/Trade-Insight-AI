@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bar, BarChart, CartesianGrid, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, Tooltip, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { TradeLog } from '@/lib/types';
@@ -12,6 +12,7 @@ import { Timestamp } from 'firebase/firestore';
 const MIN_DATA_POINTS = 10;
 
 export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
+  type ChartPoint = { id: string; date: string; fullDate: string; pl: number | null };
   
   const toDate = (time: string | Timestamp): Date => {
     if (time instanceof Timestamp) {
@@ -26,8 +27,8 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     return tradeLogs.every(log => isSameDay(toDate(log.tradeTime), firstDate));
   }, [tradeLogs]);
 
-  const chartData = useMemo(() => {
-    const processedLogs = tradeLogs
+  const chartData: ChartPoint[] = useMemo(() => {
+    const processedLogs: ChartPoint[] = tradeLogs
       .map((log, index) => {
         const date = toDate(log.tradeTime);
         return {
@@ -38,10 +39,10 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         }
       });
       
-    let allData = [...processedLogs];
+    let allData: ChartPoint[] = [...processedLogs];
 
     if (processedLogs.length < MIN_DATA_POINTS) {
-        const placeholders = [];
+        const placeholders: ChartPoint[] = [];
         const lastDate = processedLogs.length > 0 ? toDate(tradeLogs[tradeLogs.length-1].tradeTime) : new Date();
         for (let i = 0; i < MIN_DATA_POINTS - processedLogs.length; i++) {
             const placeholderDate = isSingleDay ? subHours(lastDate, i + 1) : subDays(lastDate, i + 1);
@@ -73,36 +74,34 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={{}} className="h-64 w-full">
-          <ResponsiveContainer>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} interval={0} />
-              <Tooltip
-                cursor={false}
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length && payload[0].value !== null) {
-                    return (
-                      <ChartTooltipContent
-                        className="w-40"
-                        label={payload[0].payload.fullDate}
-                        payload={payload.map(p => ({...p, value: p.value?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}))}
-                      />
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Bar
-                dataKey="pl"
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-              >
-                {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pl === null ? 'transparent' : (entry.pl >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))')} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} interval={0} />
+            <Tooltip
+              cursor={false}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length && payload[0].value !== null) {
+                  return (
+                    <ChartTooltipContent
+                      className="w-40"
+                      label={payload[0].payload.fullDate}
+                      payload={payload.map(p => ({...p, value: p.value?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}))}
+                    />
+                  );
+                }
+                return null;
+              }}
+            />
+            <Bar
+              dataKey="pl"
+              fill="hsl(var(--primary))"
+              radius={[4, 4, 0, 0]}
+            >
+              {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.pl === null ? 'transparent' : (entry.pl >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))')} />
+              ))}
+            </Bar>
+          </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>

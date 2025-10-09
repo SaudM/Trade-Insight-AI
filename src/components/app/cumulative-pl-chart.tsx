@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { TradeLog } from '@/lib/types';
@@ -39,51 +39,49 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
       <CardContent>
         <ChartContainer config={{}} className="h-80 w-full">
           {chartData.length > 0 ? (
-            <ResponsiveContainer>
-              <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                <defs>
-                    <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1}/>
-                    </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis 
-                  dataKey="tradeNumber" 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickMargin={8} 
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                  label={{ value: "交易笔数", position: "insideBottom", offset: -15 }}
-                />
-                <Tooltip
-                  cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1, strokeDasharray: '3 3' }}
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <ChartTooltipContent
-                          label={`第 ${label} 笔交易`}
-                          payload={payload.map(p => ({
-                            name: '累计盈亏',
-                            value: p.value?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })
-                          }))}
-                        />
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="cumulativePL"
-                  stroke="hsl(var(--chart-1))"
-                  fill="url(#colorUv)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <AreaChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+              <defs>
+                  <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1}/>
+                  </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis 
+                dataKey="tradeNumber" 
+                tickLine={false} 
+                axisLine={false} 
+                tickMargin={8} 
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                label={{ value: "交易笔数", position: "insideBottom", offset: -15 }}
+              />
+              <Tooltip
+                cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1, strokeDasharray: '3 3' }}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <ChartTooltipContent
+                        label={`第 ${label} 笔交易`}
+                        payload={payload.map(p => ({
+                          name: '累计盈亏',
+                          value: p.value?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })
+                        }))}
+                      />
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="cumulativePL"
+                stroke="hsl(var(--chart-1))"
+                fill="url(#colorUv)"
+                strokeWidth={2}
+                dot={false}
+              />
+            </AreaChart>
           ) : (
              <div className="flex h-80 items-center justify-center text-muted-foreground">
                 暂无交易数据以生成累计盈亏曲线。
