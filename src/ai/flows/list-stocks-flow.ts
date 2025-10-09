@@ -26,23 +26,25 @@ const listStocksFlow = ai.defineFlow(
     // we use the AI to generate a comprehensive and static list of popular stocks.
     // This approach provides a good balance of convenience and functionality.
     const { output } = await ai.generate({
-        prompt: `Generate a list of 200 popular and commonly traded stocks. Include a mix of US stocks (e.g., AAPL, MSFT), Hong Kong stocks (e.g., 0700.HK, 9988.HK), and Chinese A-shares (e.g., 600519.SS, 300750.SZ).
-        
-        For each stock, provide a 'value' (the ticker symbol) and a 'label' in the format '中文名称 (Ticker)'.
-        
-        Your output MUST be a valid JSON array of objects, where each object has a "value" and "label" key. Do not include any text outside of the JSON array.
-        
-        Example format:
-        [
-            { "value": "AAPL", "label": "苹果 (AAPL)" },
-            { "value": "0700.HK", "label": "腾讯控股 (0700.HK)" }
-        ]
-        `,
+        prompt: `You are a financial data API. Your sole purpose is to return a list of 200 popular and commonly traded stocks. The list must include a mix of US stocks (e.g., AAPL, MSFT), Hong Kong stocks (e.g., 0700.HK, 9988.HK), and Chinese A-shares (e.g., 600519.SS, 300750.SZ).
+
+For each stock, provide a 'value' (the ticker symbol) and a 'label' in the format '中文名称 (Ticker)'.
+
+Your output MUST be a valid JSON array of objects. Do not include any text, conversational filler, or explanations outside of the JSON array itself.
+
+Example of the required output format:
+[
+    { "value": "AAPL", "label": "苹果 (AAPL)" },
+    { "value": "BABA", "label": "阿里巴巴 (BABA)" },
+    { "value": "0700.HK", "label": "腾讯控股 (0700.HK)" },
+    { "value": "600519.SS", "label": "贵州茅台 (600519.SS)" }
+]
+`,
         output: {
             format: 'json',
             schema: z.array(StockSchema),
         },
-        model: 'googleai/gemini-flash-latest',
+        model: 'googleai/gemini-1.5-flash-latest',
         config: {
             temperature: 0.1, // Lower temperature for more deterministic and structured output
         }

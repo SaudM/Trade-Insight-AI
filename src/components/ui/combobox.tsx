@@ -46,7 +46,7 @@ export function Combobox({
       try {
         setIsLoading(true)
         const stockList = await listStocks()
-        // Deduplicate the list based on the 'value' property
+        // Deduplicate the list based on the 'value' property to avoid key errors
         const uniqueStocks = Array.from(new Map(stockList.map(item => [item.value.toLowerCase(), item])).values());
         setOptions(uniqueStocks);
       } catch (error) {
