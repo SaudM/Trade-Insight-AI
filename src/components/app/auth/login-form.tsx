@@ -25,6 +25,7 @@ import {
 } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
+import Link from 'next/link';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "请输入有效的邮箱地址" }),
@@ -110,7 +111,15 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>密码</FormLabel>
+                <div className="flex items-center justify-between">
+                  <FormLabel>密码</FormLabel>
+                   <Link
+                      href="/forgot-password"
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      忘记密码？
+                    </Link>
+                </div>
                 <FormControl>
                   <Input type="password" placeholder="********" {...field} />
                 </FormControl>
