@@ -46,8 +46,8 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
     return (
         <div className="flex flex-col h-full relative">
             <AppHeader title="仪表盘">
-                <div className="grid grid-cols-[1fr_auto] items-center gap-2 min-w-0">
-                    <div className="flex items-center gap-1 rounded-md bg-muted p-1 justify-self-end">
+                 <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 rounded-md bg-muted p-1">
                         <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')}>今日</Button>
                         <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')}>7天</Button>
                         <Button variant={timePeriod === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('30d')}>30天</Button>
@@ -60,7 +60,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
-              <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+              <main className="w-full p-4 md:p-6 lg:p-8 space-y-6">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                       <Card>
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -121,7 +121,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                                 <p className="text-xs text-muted-foreground">总盈利 / 总亏损</p>
                             </CardContent>
                         </Card>
-                        <Card className="lg:col-span-4">
+                        <Card className="lg:col-span-4 flex flex-col">
                            <WinLossRatioChart profitableTrades={profitableTrades.length} lossTrades={losingTrades.length} />
                         </Card>
                    </div>
