@@ -5,7 +5,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
-import { isSameDay, format } from 'date-fns';
+import { isSameDay, format, subHours, subDays } from 'date-fns';
+
+const MIN_DATA_POINTS = 10;
 
 export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   
@@ -16,7 +18,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   }, [tradeLogs]);
 
   const chartData = useMemo(() => {
-    return tradeLogs
+    const processedLogs = tradeLogs
       .map(log => {
         const date = new Date(log.tradeTime);
         return {
@@ -26,6 +28,30 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         }
       })
       .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
+
+    if (processedLogs.length < MIN_DATA_POINTS) {
+        const placeholders = [];
+        const lastDate = processedLogs.length > 0 ? new Date(processedLogs[processedLogs.length-1].fullDate) : new Date();
+        for (let i = 0; i < MIN_DATA_POINTS - processedLogs.length; i++) {
+            const placeholderDate = isSingleDay ? subHours(lastDate, i + 1) : subDays(lastDate, i + 1);
+            placeholders.unshift({
+                date: isSingleDay ? format(placeholderDate, 'HH:mm') : format(placeholderDate, 'MM-dd'),
+                fullDate: format(placeholderDate, 'yyyy-MM-dd HH:mm'),
+                pl: null, // Use null for empty data points
+            });
+        }
+        // This combines placeholders and real data, but we only want to show real data on the chart
+        // The main purpose is to establish a date range for the axis
+        const combined = [...placeholders, ...processedLogs].sort((a,b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
+
+        // We only return processed logs to be plotted, but the axis will use the range from combined data
+        const ticks = combined.map(d => d.date);
+
+        return { data: processedLogs, ticks };
+    }
+
+    return { data: processedLogs, ticks: processedLogs.map(d => d.date) };
+
   }, [tradeLogs, isSingleDay]);
 
   return (
@@ -37,9 +63,9 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
       <CardContent>
         <ChartContainer config={{}} className="h-64 w-full">
           <ResponsiveContainer>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+            <BarChart data={chartData.data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+              <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} type="category" ticks={chartData.ticks} tickCount={MIN_DATA_POINTS}/>
               <Tooltip
                 cursor={false}
                 content={({ active, payload }) => {
@@ -60,7 +86,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 fill="hsl(var(--primary))"
                 radius={[4, 4, 0, 0]}
               >
-                {chartData.map((entry, index) => (
+                {chartData.data.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} />
                 ))}
               </Bar>
