@@ -2,7 +2,7 @@
 
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend, Label } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemo } from 'react';
 
 type WinLossRatioChartProps = {
@@ -24,7 +24,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
       <CardHeader>
         <CardTitle className="font-headline text-sm font-medium">胜/败比</CardTitle>
       </CardHeader>
-      <CardContent className="flex justify-center pb-0">
+      <CardContent className="flex w-full justify-center pb-0">
         {totalTrades > 0 ? (
           <ChartContainer config={{}} className="h-40 w-full">
             <ResponsiveContainer>
