@@ -284,6 +284,9 @@
     "providers": [
       "password",
       "google.com"
+    ],
+    "authorizedDomains": [
+      "localhost"
     ]
   },
   "firestore": {
@@ -408,3 +411,5 @@
     "reasoning": "This design prioritizes user data isolation in a multi-tenant environment by using path-based ownership. Each user's data is stored under a dedicated `/users/{userId}` path, ensuring data segregation and straightforward security rules. This approach also aligns with the principle of Authorization Independence, as access control can be directly enforced based on the `request.auth.uid` and the path structure, avoiding the need for `get()` calls to parent documents for authorization.\n\nThe structure supports the required QAPs by:\n\n1.  **Secure `list` operations:** Rules can easily restrict listing operations to the authenticated user's own data.\n2.  **Ownership Integrity:** Enforces ownership for each data by using hierarchical paths. No data can be created without being owned by the authenticated user."
   }
 }
+
+    
