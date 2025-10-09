@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Bar, BarChart, CartesianGrid, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -28,27 +29,30 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
           pl: parseFloat(log.tradeResult),
         }
       });
+      
+    const allData = [...processedLogs];
 
     if (processedLogs.length < MIN_DATA_POINTS) {
         const placeholders = [];
-        const lastDate = processedLogs.length > 0 ? new Date(processedLogs[processedLogs.length-1].fullDate) : new Date();
+        const lastDate = processedLogs.length > 0 ? new Date(tradeLogs[tradeLogs.length-1].tradeTime) : new Date();
         for (let i = 0; i < MIN_DATA_POINTS - processedLogs.length; i++) {
             const placeholderDate = isSingleDay ? subHours(lastDate, i + 1) : subDays(lastDate, i + 1);
             placeholders.unshift({
-                id: `placeholder-${i}-${placeholderDate.getTime()}`, // Unique ID for placeholders
+                id: `placeholder-${i}-${placeholderDate.getTime()}`,
                 date: isSingleDay ? format(placeholderDate, 'HH:mm') : format(placeholderDate, 'MM-dd'),
                 fullDate: format(placeholderDate, 'yyyy-MM-dd HH:mm'),
                 pl: null, // Use null for empty data points
             });
         }
-        const combined = [...placeholders, ...processedLogs].sort((a,b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
-        // Ensure ticks are unique to prevent React key errors
-        const uniqueTicks = Array.from(new Set(combined.map(d => d.date)));
-
-        return { data: processedLogs, ticks: uniqueTicks };
+        allData.unshift(...placeholders);
     }
+    
+    allData.sort((a,b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
 
-    return { data: processedLogs, ticks: processedLogs.map(d => d.date) };
+    // Ensure ticks are unique to prevent React key errors
+    const uniqueTicks = Array.from(new Set(allData.map(d => d.date)));
+
+    return { data: allData, ticks: uniqueTicks };
 
   }, [tradeLogs, isSingleDay]);
 
@@ -67,7 +71,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
               <Tooltip
                 cursor={false}
                 content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
+                  if (active && payload && payload.length && payload[0].value !== null) {
                     return (
                       <ChartTooltipContent
                         className="w-40"
@@ -85,7 +89,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 radius={[4, 4, 0, 0]}
               >
                 {chartData.data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} />
+                    <Cell key={`cell-${index}`} fill={entry.pl === null ? 'transparent' : (entry.pl >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))')} />
                 ))}
               </Bar>
             </BarChart>
@@ -95,3 +99,4 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     </Card>
   );
 }
+
