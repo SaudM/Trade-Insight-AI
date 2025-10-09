@@ -24,7 +24,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         const date = new Date(log.tradeTime as string);
         return {
           id: `log-${index}-${date.getTime()}`, // Unique ID for logs
-          date: isSingleDay ? format(date, 'HH:mm') : format(date, 'MM-dd'),
+          date: isSingleDay ? format(date, 'HH:mm') : format(date, 'dd'),
           fullDate: format(date, 'yyyy-MM-dd HH:mm'),
           pl: parseFloat(log.tradeResult),
         }
@@ -39,7 +39,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             const placeholderDate = isSingleDay ? subHours(lastDate, i + 1) : subDays(lastDate, i + 1);
             placeholders.unshift({
                 id: `placeholder-${i}-${placeholderDate.getTime()}`,
-                date: isSingleDay ? format(placeholderDate, 'HH:mm') : format(placeholderDate, 'MM-dd'),
+                date: isSingleDay ? format(placeholderDate, 'HH:mm') : format(placeholderDate, 'dd'),
                 fullDate: format(placeholderDate, 'yyyy-MM-dd HH:mm'),
                 pl: null, // Use null for empty data points
             });
@@ -48,9 +48,9 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     }
     
     allData.sort((a,b) => {
-        const dateA = isSingleDay ? parseISO(`1970-01-01T${a.date}:00`) : parseISO(`2000-${a.date.replace('-', '-')}`);
-        const dateB = isSingleDay ? parseISO(`1970-01-01T${b.date}:00`) : parseISO(`2000-${b.date.replace('-', '-')}`);
-        return dateA.getTime() - dateB.getTime();
+        const dateA = isSingleDay ? parseISO(`1970-01-01T${a.date}:00`) : parseISO(`2000-01-${a.date}`);
+        const dateB = isSingleDay ? parseISO(`1970-01-01T${b.date}:00`) : parseISO(`2000-01-${b.date}`);
+        return new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime();
     });
 
     return allData;
