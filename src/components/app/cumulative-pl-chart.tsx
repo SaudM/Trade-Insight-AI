@@ -2,10 +2,10 @@
 
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 
 export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
