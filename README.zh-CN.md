@@ -7,7 +7,7 @@
 
 **交易笔记AI** 是一款专为交易者设计的现代化、由AI驱动的交易日志分析工具。它旨在帮助您记录、分析并从每一笔交易中学习，通过深度数据洞察和智能建议，最终提升您的交易表现。
 
-[![交易笔记AI 仪表盘](https://storage.googleapis.com/stabl-prod-apps-media/github-media/trade-journal-ai/dashboard-ss-new.png)](https://studio--studio-4954880629-a3af8.us-central1.hosted.app/)
+[![交易笔记AI 仪表盘](./docs/1.png)](https://studio--studio-4954880629-a3af8.us-central1.hosted.app/)
 
 ## ✨ 核心功能
 
@@ -22,7 +22,7 @@
 
 | 交易日志 | AI分析报告 |
 | :---: | :---: |
-| ![交易日志](https://storage.googleapis.com/stabl-prod-apps-media/github-media/trade-journal-ai/trade-log-ss.png) | ![AI分析报告](https://storage.googleapis.com/stabl-prod-apps-media/github-media/trade-journal-ai/analysis-report-ss.png) |
+| ![交易日志](./docs/2.png) | ![AI分析报告](./docs/3.png) |
 
 ## 🚀 技术栈
 
