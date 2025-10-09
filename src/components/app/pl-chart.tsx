@@ -27,8 +27,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
           fullDate: format(date, 'yyyy-MM-dd HH:mm'),
           pl: parseFloat(log.tradeResult),
         }
-      })
-      .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
+      });
 
     if (processedLogs.length < MIN_DATA_POINTS) {
         const placeholders = [];
@@ -43,9 +42,10 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
             });
         }
         const combined = [...placeholders, ...processedLogs].sort((a,b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
-        const ticks = combined.map(d => d.date);
+        // Ensure ticks are unique to prevent React key errors
+        const uniqueTicks = Array.from(new Set(combined.map(d => d.date)));
 
-        return { data: processedLogs, ticks };
+        return { data: processedLogs, ticks: uniqueTicks };
     }
 
     return { data: processedLogs, ticks: processedLogs.map(d => d.date) };
