@@ -19,9 +19,10 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
 
   const chartData = useMemo(() => {
     const processedLogs = tradeLogs
-      .map(log => {
+      .map((log, index) => {
         const date = new Date(log.tradeTime);
         return {
+          id: `log-${index}-${date.getTime()}`, // Unique ID for logs
           date: isSingleDay ? format(date, 'HH:mm') : format(date, 'MM-dd'),
           fullDate: format(date, 'yyyy-MM-dd HH:mm'),
           pl: parseFloat(log.tradeResult),
@@ -35,16 +36,13 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         for (let i = 0; i < MIN_DATA_POINTS - processedLogs.length; i++) {
             const placeholderDate = isSingleDay ? subHours(lastDate, i + 1) : subDays(lastDate, i + 1);
             placeholders.unshift({
+                id: `placeholder-${i}-${placeholderDate.getTime()}`, // Unique ID for placeholders
                 date: isSingleDay ? format(placeholderDate, 'HH:mm') : format(placeholderDate, 'MM-dd'),
                 fullDate: format(placeholderDate, 'yyyy-MM-dd HH:mm'),
                 pl: null, // Use null for empty data points
             });
         }
-        // This combines placeholders and real data, but we only want to show real data on the chart
-        // The main purpose is to establish a date range for the axis
         const combined = [...placeholders, ...processedLogs].sort((a,b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
-
-        // We only return processed logs to be plotted, but the axis will use the range from combined data
         const ticks = combined.map(d => d.date);
 
         return { data: processedLogs, ticks };
