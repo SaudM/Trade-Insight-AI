@@ -121,7 +121,7 @@ export function AnalysisView({
                         <TabsTrigger value="monthly">月度总结</TabsTrigger>
                     </TabsList>
                 </div>
-                <TabsContent value="daily" className="flex-1 mt-0">
+                <TabsContent value="daily" className="flex-1 mt-0 flex flex-col">
                     <ReportView
                         reportType="每日"
                         reportName="分析"
@@ -138,7 +138,7 @@ export function AnalysisView({
                         ]}
                     />
                 </TabsContent>
-                <TabsContent value="weekly" className="flex-1 mt-0">
+                <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col">
                      <ReportView
                         reportType="每周"
                         reportName="回顾"
@@ -155,7 +155,7 @@ export function AnalysisView({
                         ]}
                     />
                 </TabsContent>
-                <TabsContent value="monthly" className="flex-1 mt-0">
+                <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col">
                     <ReportView
                         reportType="月度"
                         reportName="总结"

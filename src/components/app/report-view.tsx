@@ -100,7 +100,7 @@ export function ReportView({
     }) : [];
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full w-full">
             <div className="flex h-16 shrink-0 items-center justify-end border-b px-4 md:px-6">
                 <div className="flex items-center gap-2">
                     {sortedReports && sortedReports.length > 0 && (
@@ -128,30 +128,32 @@ export function ReportView({
                 </div>
             </div>
             <ScrollArea className="flex-1">
-              <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
                 {(isLoading || displayedReport) ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {cards.map(card => (
-                         <div key={card.id} className={card.colSpan ? `lg:col-span-${card.colSpan}`: ''}>
-                            <AiAnalysisCard 
-                                title={card.title}
-                                icon={card.icon}
-                                isLoading={isLoading && !displayedReport}
-                                content={displayedReport ? card.content(displayedReport) : null}
-                            />
-                        </div>
-                    ))}
-                  </div>
-                ) : (
-                   <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
-                        <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                        <h2 className="text-2xl font-headline font-semibold">{`生成您的${reportType}AI${reportName}`}</h2>
-                        <p className="mt-2 max-w-md text-muted-foreground">
-                            请在仪表盘选择一个时间周期，然后点击上方的“{`生成新${reportName}`}”按钮，让AI分析您的交易记录，并提供专业的洞察和建议。
-                        </p>
+                  <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {cards.map(card => (
+                            <div key={card.id} className={card.colSpan ? `lg:col-span-${card.colSpan}`: ''}>
+                                <AiAnalysisCard 
+                                    title={card.title}
+                                    icon={card.icon}
+                                    isLoading={isLoading && !displayedReport}
+                                    content={displayedReport ? card.content(displayedReport) : null}
+                                />
+                            </div>
+                        ))}
                     </div>
+                  </main>
+                ) : (
+                   <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                        <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
+                            <Wand2 className="w-16 h-16 mb-4 text-primary" />
+                            <h2 className="text-2xl font-headline font-semibold">{`生成您的${reportType}AI${reportName}`}</h2>
+                            <p className="mt-2 max-w-md text-muted-foreground">
+                                请在仪表盘选择一个时间周期，然后点击上方的“{`生成新${reportName}`}”按钮，让AI分析您的交易记录，并提供专业的洞察和建议。
+                            </p>
+                        </div>
+                   </main>
                 )}
-              </main>
             </ScrollArea>
         </div>
     );
