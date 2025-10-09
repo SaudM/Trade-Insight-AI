@@ -42,13 +42,14 @@ export function ForgotPasswordForm() {
       await sendPasswordResetEmail(auth, values.email);
       toast({
         title: '邮件已发送',
-        description: '密码重置链接已发送到您的邮箱，请注意查收。',
+        description: '密码重置链接已发送到您的邮箱，请检查您的收件箱和垃圾邮件箱。',
       });
       form.reset();
     } catch (error: any) {
-      console.error(error);
+      console.error("Password reset error:", error);
       const errorCode = error.code;
-      let message = '发送失败，请重试。';
+      const errorMessage = error.message;
+      let message = `发送失败，请重试。错误: ${errorMessage}`;
       if (errorCode === 'auth/user-not-found') {
         message = '该邮箱地址未注册。';
       }
