@@ -46,7 +46,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
     return (
         <div className="flex flex-col h-full relative">
             <AppHeader title="仪表盘">
-                <div className="flex items-center gap-2 flex-wrap justify-end">
+                <div className="flex flex-col md:flex-row items-center gap-2">
                     <div className="flex items-center gap-1 rounded-md bg-muted p-1">
                         <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')}>今日</Button>
                         <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')}>7天</Button>
@@ -54,14 +54,14 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                         <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')}>全部</Button>
                     </div>
                     <Separator orientation="vertical" className="h-6 hidden md:block" />
-                     <Button onClick={handleViewReport} size="sm">
+                     <Button onClick={handleViewReport} size="sm" className="w-full md:w-auto">
                         <FileText className="h-4 w-4 md:mr-2" />
-                        <span className="hidden md:inline">查看报告</span>
+                        <span className="md:inline">查看报告</span>
                     </Button>
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
-              <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
+              <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                       <Card>
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -137,7 +137,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
             </ScrollArea>
              <Button 
                 onClick={onAddTradeLog}
-                className="absolute bottom-8 right-8 h-14 w-14 rounded-full shadow-lg"
+                className="absolute bottom-6 right-6 h-14 w-14 rounded-full shadow-lg md:bottom-8 md:right-8"
             >
                 <Plus className="h-6 w-6" />
             </Button>
