@@ -1,6 +1,6 @@
 "use client"
 
-import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend, Label } from 'recharts';
+import { Pie, PieChart, Cell, Tooltip, Legend, Label } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemo } from 'react';
@@ -27,27 +27,26 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
       <CardContent className="w-full flex-1 pb-4">
         {totalTrades > 0 ? (
           <ChartContainer config={{}} className="h-40 w-full">
-            <ResponsiveContainer>
-              <PieChart>
-                <Tooltip
-                  cursor={false}
-                  content={<ChartTooltipContent 
-                    formatter={(value) => `${value} (${((value as number / totalTrades) * 100).toFixed(1)}%)`}
-                    hideLabel
-                  />}
-                />
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={45}
-                  outerRadius={60}
-                  paddingAngle={5}
-                  startAngle={90}
-                  endAngle={450}
-                >
-                  <Label 
-                    content={({ viewBox }) => {
+            <PieChart>
+              <Tooltip
+                cursor={false}
+                content={<ChartTooltipContent 
+                  formatter={(value) => `${value} (${((value as number / totalTrades) * 100).toFixed(1)}%)`}
+                  hideLabel
+                />}
+              />
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={45}
+                outerRadius={60}
+                paddingAngle={5}
+                startAngle={90}
+                endAngle={450}
+              >
+                <Label 
+                  content={({ viewBox }) => {
                         if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                             return (
                                 <text
@@ -90,11 +89,10 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
                         ))}
                         </div>
                     )}
-                    verticalAlign="bottom"
-                    wrapperStyle={{ paddingTop: '10px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+                  verticalAlign="bottom"
+                  wrapperStyle={{ paddingTop: '10px' }}
+              />
+            </PieChart>
           </ChartContainer>
         ) : (
           <div className="flex h-40 items-center justify-center text-muted-foreground">
