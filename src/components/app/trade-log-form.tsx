@@ -43,7 +43,7 @@ const tradeLogSchema = z.object({
   mindsetState: z.string().min(1, '心态状态是必填项'),
   entryReason: z.string().optional(),
   exitReason: z.string().optional(),
-  lessonsLearned: z.string().min(1, '心得体会是必填项'),
+  lessonsLearned: z.string().optional(),
 }).refine(data => {
     // Entry reason is required for entry trades
     if (['Buy', 'Long', 'Short'].includes(data.direction)) {
