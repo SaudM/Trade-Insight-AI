@@ -46,17 +46,17 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
     return (
         <div className="flex flex-col h-full relative">
             <AppHeader title="仪表盘">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
                     <div className="flex items-center gap-1 rounded-md bg-muted p-1">
                         <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')}>今日</Button>
                         <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')}>7天</Button>
                         <Button variant={timePeriod === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('30d')}>30天</Button>
                         <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')}>全部</Button>
                     </div>
-                    <Separator orientation="vertical" className="h-6" />
-                     <Button onClick={handleViewReport}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        查看报告
+                    <Separator orientation="vertical" className="h-6 hidden md:block" />
+                     <Button onClick={handleViewReport} size="sm">
+                        <FileText className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">查看报告</span>
                     </Button>
                 </div>
             </AppHeader>
