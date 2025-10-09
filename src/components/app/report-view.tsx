@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Wand2 } from 'lucide-react';
+import { WandSparkles } from 'lucide-react';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -121,38 +121,36 @@ export function ReportView({
                         </Select>
                     )}
                     <Button onClick={handleAnalysis} disabled={isLoading}>
-                        <Wand2 className="mr-2" />
+                        <WandSparkles className="mr-2" />
                         {isLoading ? '分析中...' : `生成新${reportName}`}
                     </Button>
                 </div>
             </div>
             
+            <main className="p-4 md:p-6 lg:p-8 flex-1">
                 {(isLoading || displayedReport) ? (
-                  <main className="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {cards.map(card => (
-                            <div key={card.id} className={card.colSpan ? `lg:col-span-${card.colSpan}`: ''}>
-                                <AiAnalysisCard 
-                                    title={card.title}
-                                    icon={card.icon}
-                                    isLoading={isLoading && !displayedReport}
-                                    content={displayedReport ? card.content(displayedReport) : null}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                  </main>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {cards.map(card => (
+                          <div key={card.id} className={card.colSpan ? `lg:col-span-${card.colSpan}`: ''}>
+                              <AiAnalysisCard 
+                                  title={card.title}
+                                  icon={card.icon}
+                                  isLoading={isLoading && !displayedReport}
+                                  content={displayedReport ? card.content(displayedReport) : null}
+                              />
+                          </div>
+                      ))}
+                  </div>
                 ) : (
-                   <main className="p-4 md:p-6 lg:p-8 flex-1">
-                        <div className="flex flex-col items-center justify-center text-center h-full bg-card border rounded-lg p-8">
-                            <Wand2 className="w-16 h-16 mb-4 text-primary" />
-                            <h2 className="text-2xl font-headline font-semibold">{`生成您的${reportType}AI${reportName}`}</h2>
-                            <p className="mt-2 max-w-md text-muted-foreground">
-                                请在仪表盘选择一个时间周期，然后点击上方的“{`生成新${reportName}`}”按钮，让AI分析您的交易记录，并提供专业的洞察和建议。
-                            </p>
-                        </div>
-                   </main>
+                    <div className="flex flex-col flex-1 items-center justify-center text-center h-full bg-card border rounded-lg p-8">
+                        <WandSparkles className="w-16 h-16 mb-4 text-primary" />
+                        <h2 className="text-2xl font-headline font-semibold">{`生成您的${reportType}AI${reportName}`}</h2>
+                        <p className="mt-2 max-w-md text-muted-foreground">
+                            请在仪表盘选择一个时间周期，然后点击上方的“{`生成新${reportName}`}”按钮，让AI分析您的交易记录，并提供专业的洞察和建议。
+                        </p>
+                    </div>
                 )}
+            </main>
         </div>
     );
 }

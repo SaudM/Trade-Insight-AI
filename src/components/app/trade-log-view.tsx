@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { TradeLog } from '@/lib/types';
