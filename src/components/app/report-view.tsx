@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Wand2 } from 'lucide-react';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -127,9 +126,9 @@ export function ReportView({
                     </Button>
                 </div>
             </div>
-            <ScrollArea className="flex-1">
+            
                 {(isLoading || displayedReport) ? (
-                  <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                  <main className="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {cards.map(card => (
                             <div key={card.id} className={card.colSpan ? `lg:col-span-${card.colSpan}`: ''}>
@@ -144,8 +143,8 @@ export function ReportView({
                     </div>
                   </main>
                 ) : (
-                   <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-                        <div className="flex flex-col items-center justify-center text-center h-[60vh] bg-card border rounded-lg p-8">
+                   <main className="p-4 md:p-6 lg:p-8 flex-1">
+                        <div className="flex flex-col items-center justify-center text-center h-full bg-card border rounded-lg p-8">
                             <Wand2 className="w-16 h-16 mb-4 text-primary" />
                             <h2 className="text-2xl font-headline font-semibold">{`生成您的${reportType}AI${reportName}`}</h2>
                             <p className="mt-2 max-w-md text-muted-foreground">
@@ -154,7 +153,6 @@ export function ReportView({
                         </div>
                    </main>
                 )}
-            </ScrollArea>
         </div>
     );
 }

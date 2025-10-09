@@ -11,6 +11,7 @@ import { monthlyPerformanceReview } from '@/ai/flows/monthly-performance-review'
 import { BrainCircuit, Zap, HeartPulse, Lightbulb, Repeat, Trophy, Scaling, ListChecks, GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
 import { startOfWeek, startOfMonth, subMonths } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
+import { ScrollArea } from '../ui/scroll-area';
 
 export function AnalysisView({ 
     tradeLogs,
@@ -122,55 +123,61 @@ export function AnalysisView({
                     </TabsList>
                 </div>
                 <TabsContent value="daily" className="flex-1 mt-0 flex flex-col">
-                    <ReportView
-                        reportType="每日"
-                        reportName="分析"
-                        reports={dailyAnalyses}
-                        onGenerate={handleDailyAnalysis}
-                        tradeLogs={filteredTradeLogs}
-                        getReportDate={(r) => (r as DailyAnalysis).date}
-                        cards={[
-                            { id: 'summary', title: '摘要', icon: BrainCircuit, content: (r) => (r as DailyAnalysis).summary },
-                            { id: 'strengths', title: '优点', icon: Zap, content: (r) => (r as DailyAnalysis).strengths },
-                            { id: 'weaknesses', title: '缺点', icon: HeartPulse, content: (r) => (r as DailyAnalysis).weaknesses },
-                            { id: 'emotionalImpact', title: '情绪影响', icon: HeartPulse, content: (r) => (r as DailyAnalysis).emotionalImpact },
-                            { id: 'improvementSuggestions', title: '改进建议', icon: Lightbulb, content: (r) => (r as DailyAnalysis).improvementSuggestions, colSpan: 2 },
-                        ]}
-                    />
+                    <ScrollArea className="h-full">
+                        <ReportView
+                            reportType="每日"
+                            reportName="分析"
+                            reports={dailyAnalyses}
+                            onGenerate={handleDailyAnalysis}
+                            tradeLogs={filteredTradeLogs}
+                            getReportDate={(r) => (r as DailyAnalysis).date}
+                            cards={[
+                                { id: 'summary', title: '摘要', icon: BrainCircuit, content: (r) => (r as DailyAnalysis).summary },
+                                { id: 'strengths', title: '优点', icon: Zap, content: (r) => (r as DailyAnalysis).strengths },
+                                { id: 'weaknesses', title: '缺点', icon: HeartPulse, content: (r) => (r as DailyAnalysis).weaknesses },
+                                { id: 'emotionalImpact', title: '情绪影响', icon: HeartPulse, content: (r) => (r as DailyAnalysis).emotionalImpact },
+                                { id: 'improvementSuggestions', title: '改进建议', icon: Lightbulb, content: (r) => (r as DailyAnalysis).improvementSuggestions, colSpan: 2 },
+                            ]}
+                        />
+                    </ScrollArea>
                 </TabsContent>
                 <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col">
-                     <ReportView
-                        reportType="每周"
-                        reportName="回顾"
-                        reports={weeklyReviews}
-                        onGenerate={handleWeeklyAnalysis}
-                        tradeLogs={filteredTradeLogs}
-                        getReportDate={(r) => (r as WeeklyReview).endDate}
-                        cards={[
-                            { id: 'successPatterns', title: '成功模式', icon: Trophy, content: (r) => (r as WeeklyReview).successPatterns },
-                            { id: 'errorPatterns', title: '错误模式', icon: Repeat, content: (r) => (r as WeeklyReview).errorPatterns },
-                            { id: 'positionSizingAnalysis', title: '仓位大小评估', icon: Scaling, content: (r) => (r as WeeklyReview).positionSizingAnalysis },
-                            { id: 'emotionalCorrelation', title: '情绪关联性', icon: HeartPulse, content: (r) => (r as WeeklyReview).emotionalCorrelation },
-                            { id: 'improvementPlan', title: '每周改进计划', icon: ListChecks, content: (r) => (r as WeeklyReview).improvementPlan, colSpan: 2 },
-                        ]}
-                    />
+                    <ScrollArea className="h-full">
+                        <ReportView
+                            reportType="每周"
+                            reportName="回顾"
+                            reports={weeklyReviews}
+                            onGenerate={handleWeeklyAnalysis}
+                            tradeLogs={filteredTradeLogs}
+                            getReportDate={(r) => (r as WeeklyReview).endDate}
+                            cards={[
+                                { id: 'successPatterns', title: '成功模式', icon: Trophy, content: (r) => (r as WeeklyReview).successPatterns },
+                                { id: 'errorPatterns', title: '错误模式', icon: Repeat, content: (r) => (r as WeeklyReview).errorPatterns },
+                                { id: 'positionSizingAnalysis', title: '仓位大小评估', icon: Scaling, content: (r) => (r as WeeklyReview).positionSizingAnalysis },
+                                { id: 'emotionalCorrelation', title: '情绪关联性', icon: HeartPulse, content: (r) => (r as WeeklyReview).emotionalCorrelation },
+                                { id: 'improvementPlan', title: '每周改进计划', icon: ListChecks, content: (r) => (r as WeeklyReview).improvementPlan, colSpan: 2 },
+                            ]}
+                        />
+                    </ScrollArea>
                 </TabsContent>
                 <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col">
-                    <ReportView
-                        reportType="月度"
-                        reportName="总结"
-                        reports={monthlySummaries}
-                        onGenerate={handleMonthlyAnalysis}
-                        tradeLogs={tradeLogs} // Monthly view uses all logs
-                        getReportDate={(r) => (r as MonthlySummary).monthEndDate}
-                        cards={[
-                            { id: 'performanceComparison', title: '对比总结', icon: GitCompareArrows, content: (r) => (r as MonthlySummary).performanceComparison },
-                            { id: 'recurringIssues', title: '持续性问题', icon: AlertTriangle, content: (r) => (r as MonthlySummary).recurringIssues },
-                            { id: 'strategyExecutionAssessment', title: '策略执行评估', icon: Target, content: (r) => (r as MonthlySummary).strategyExecutionAssessment },
-                            { id: 'keyLessons', title: '关键心得', icon: BookCheck, content: (r) => (r as MonthlySummary).keyLessons },
-                            { id: 'iterationSuggestions', title: '系统迭代建议', icon: Telescope, content: (r) => (r as MonthlySummary).iterationSuggestions, colSpan: 2 },
-                        ]}
-                    />
+                    <ScrollArea className="h-full">
+                        <ReportView
+                            reportType="月度"
+                            reportName="总结"
+                            reports={monthlySummaries}
+                            onGenerate={handleMonthlyAnalysis}
+                            tradeLogs={tradeLogs} // Monthly view uses all logs
+                            getReportDate={(r) => (r as MonthlySummary).monthEndDate}
+                            cards={[
+                                { id: 'performanceComparison', title: '对比总结', icon: GitCompareArrows, content: (r) => (r as MonthlySummary).performanceComparison },
+                                { id: 'recurringIssues', title: '持续性问题', icon: AlertTriangle, content: (r) => (r as MonthlySummary).recurringIssues },
+                                { id: 'strategyExecutionAssessment', title: '策略执行评估', icon: Target, content: (r) => (r as MonthlySummary).strategyExecutionAssessment },
+                                { id: 'keyLessons', title: '关键心得', icon: BookCheck, content: (r) => (r as MonthlySummary).keyLessons },
+                                { id: 'iterationSuggestions', title: '系统迭代建议', icon: Telescope, content: (r) => (r as MonthlySummary).iterationSuggestions, colSpan: 2 },
+                            ]}
+                        />
+                    </ScrollArea>
                 </TabsContent>
             </Tabs>
         </div>
