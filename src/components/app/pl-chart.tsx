@@ -6,7 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
-import { isSameDay, format, subHours, subDays } from 'date-fns';
+import { isSameDay, format, subHours, subDays, parseISO } from 'date-fns';
 
 const MIN_DATA_POINTS = 10;
 
@@ -14,14 +14,14 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   
   const isSingleDay = useMemo(() => {
     if (tradeLogs.length < 2) return true;
-    const firstDate = new Date(tradeLogs[0].tradeTime);
-    return tradeLogs.every(log => isSameDay(new Date(log.tradeTime), firstDate));
+    const firstDate = new Date(tradeLogs[0].tradeTime as string);
+    return tradeLogs.every(log => isSameDay(new Date(log.tradeTime as string), firstDate));
   }, [tradeLogs]);
 
   const chartData = useMemo(() => {
     const processedLogs = tradeLogs
       .map((log, index) => {
-        const date = new Date(log.tradeTime);
+        const date = new Date(log.tradeTime as string);
         return {
           id: `log-${index}-${date.getTime()}`, // Unique ID for logs
           date: isSingleDay ? format(date, 'HH:mm') : format(date, 'MM-dd'),
@@ -30,11 +30,11 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         }
       });
       
-    const allData = [...processedLogs];
+    let allData = [...processedLogs];
 
     if (processedLogs.length < MIN_DATA_POINTS) {
         const placeholders = [];
-        const lastDate = processedLogs.length > 0 ? new Date(tradeLogs[tradeLogs.length-1].tradeTime) : new Date();
+        const lastDate = processedLogs.length > 0 ? new Date(tradeLogs[tradeLogs.length-1].tradeTime as string) : new Date();
         for (let i = 0; i < MIN_DATA_POINTS - processedLogs.length; i++) {
             const placeholderDate = isSingleDay ? subHours(lastDate, i + 1) : subDays(lastDate, i + 1);
             placeholders.unshift({
@@ -44,15 +44,16 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 pl: null, // Use null for empty data points
             });
         }
-        allData.unshift(...placeholders);
+        allData = [...placeholders, ...allData];
     }
     
-    allData.sort((a,b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
+    allData.sort((a,b) => {
+        const dateA = isSingleDay ? parseISO(`1970-01-01T${a.date}:00`) : parseISO(`2000-${a.date.replace('-', '-')}`);
+        const dateB = isSingleDay ? parseISO(`1970-01-01T${b.date}:00`) : parseISO(`2000-${b.date.replace('-', '-')}`);
+        return dateA.getTime() - dateB.getTime();
+    });
 
-    // Ensure ticks are unique to prevent React key errors
-    const uniqueTicks = Array.from(new Set(allData.map(d => d.date)));
-
-    return { data: allData, ticks: uniqueTicks };
+    return allData;
 
   }, [tradeLogs, isSingleDay]);
 
@@ -65,9 +66,9 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
       <CardContent>
         <ChartContainer config={{}} className="h-64 w-full">
           <ResponsiveContainer>
-            <BarChart data={chartData.data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+            <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} type="category" ticks={chartData.ticks} tickCount={MIN_DATA_POINTS}/>
+              <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} interval={0} />
               <Tooltip
                 cursor={false}
                 content={({ active, payload }) => {
@@ -88,7 +89,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 fill="hsl(var(--primary))"
                 radius={[4, 4, 0, 0]}
               >
-                {chartData.data.map((entry, index) => (
+                {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.pl === null ? 'transparent' : (entry.pl >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))')} />
                 ))}
               </Bar>
@@ -99,4 +100,3 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     </Card>
   );
 }
-
