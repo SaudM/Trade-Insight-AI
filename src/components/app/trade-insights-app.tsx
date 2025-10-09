@@ -192,6 +192,12 @@ export function TradeInsightsApp() {
     });
   }, [tradeLogs]);
 
+  const symbolSuggestions = useMemo(() => {
+    if (!tradeLogs) return [];
+    const symbols = tradeLogs.map(log => log.symbol);
+    return [...new Set(symbols)];
+  }, [tradeLogs]);
+
 
   const renderView = () => {
     if (isLoadingLogs || isLoadingDaily || isLoadingWeekly || isLoadingMonthly) {
@@ -255,6 +261,7 @@ export function TradeInsightsApp() {
                           tradeLog={editingLog} 
                           onSubmit={handleFormSubmit}
                           onCancel={handleFormCancel}
+                          suggestions={symbolSuggestions}
                       />
                   </div>
                   </ScrollArea>

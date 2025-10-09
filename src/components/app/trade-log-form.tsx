@@ -79,9 +79,10 @@ type TradeLogFormProps = {
   tradeLog?: TradeLog | null;
   onSubmit: (log: Omit<TradeLog, 'id'> | TradeLog) => void;
   onCancel: () => void;
+  suggestions?: string[];
 };
 
-export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps) {
+export function TradeLogForm({ tradeLog, onSubmit, onCancel, suggestions = [] }: TradeLogFormProps) {
   const form = useForm<TradeLogFormValues>({
     resolver: zodResolver(tradeLogSchema),
     defaultValues: tradeLog ? {
@@ -136,6 +137,8 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
 
   const isEditing = !!tradeLog;
 
+  const suggestionOptions = suggestions.map(s => ({ value: s, label: s }));
+
   return (
     <>
       <DialogHeader>
@@ -171,6 +174,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                     onChange={(value) => {
                       field.onChange(value);
                     }}
+                    suggestions={suggestionOptions}
                    />
                 </FormControl>
                 <FormMessage />

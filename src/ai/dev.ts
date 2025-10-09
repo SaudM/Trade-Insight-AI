@@ -7,4 +7,3 @@ import '@/ai/flows/monthly-performance-review.ts';
 import '@/ai/flows/system-iteration-suggestions.ts';
 import '@/ai/flows/weekly-improvement-plan.ts';
 import '@/ai/flows/weekly-pattern-discovery.ts';
-import '@/ai/flows/list-stocks-flow.ts';
