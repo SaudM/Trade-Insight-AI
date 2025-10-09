@@ -21,9 +21,10 @@ const listStocksFlow = ai.defineFlow(
     outputSchema: z.array(StockSchema),
   },
   async () => {
-    // In a real application, you would fetch this from a third-party API like Akshare, Alpha Vantage, or Finnhub.
-    // This requires setting up an API key securely on the backend and handling the data fetching logic here.
-    // As a flexible alternative without requiring API keys, we use the AI to generate a list of popular stocks.
+    // In a real application, you could use a dedicated financial data API.
+    // However, to keep deployment simple without requiring third-party API keys,
+    // we use the AI to generate a comprehensive and static list of popular stocks.
+    // This approach provides a good balance of convenience and functionality.
     const { output } = await ai.generate({
         prompt: `Generate a list of 200 popular and commonly traded stocks. Include a mix of US stocks (e.g., AAPL, MSFT), Hong Kong stocks (e.g., 0700.HK, 9988.HK), and Chinese A-shares (e.g., 600519.SS, 300750.SZ).
         
