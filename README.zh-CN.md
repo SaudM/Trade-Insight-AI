@@ -1,7 +1,7 @@
 
 # 交易笔记AI (Trade Journal AI)
 
-**English** | [**简体中文**](./README.zh-CN.md)
+[**English**](./README.md) | **简体中文**
 
 ---
 
@@ -39,8 +39,8 @@
 ### 前提条件
 
 1.  **Node.js**: 版本 >= 18.0.0
-2.  **Firebase Account**: [创建一个Firebase账户](https://firebase.google.com/)
-3.  **Google AI API Key**: [获取一个Google AI API 密钥](https://ai.google.dev/)
+2.  **Firebase 账户**: [创建一个Firebase账户](https://firebase.google.com/)
+3.  **Google AI API 密钥**: [获取一个Google AI API 密钥](https://ai.google.dev/)
 
 ### 步骤 1: 克隆仓库
 
@@ -61,7 +61,7 @@ npm install
 2.  在项目设置中，添加一个新的“Web 应用”。
 3.  复制生成的 Firebase 配置对象，并用它替换 `src/firebase/config.ts` 文件中的内容。
 4.  在 Firebase 控制台中，进入 **Authentication** > **Sign-in method**，并启用“邮箱/密码”和“Google”登录提供商。
-5.  进入 **Firestore Database** 并创建一个数据库。保留默认的安全规则即可，应用会在后续的步骤中进行配置。
+5.  进入 **Firestore Database** 并创建一个数据库。保留默认的安全规则即可。
 
 ### 步骤 4: 配置环境变量
 
@@ -106,4 +106,4 @@ npm run dev
 如果您对商业许可感兴趣，请联系我们。
 
 ---
-*This README was co-authored by AI.*
+*此 README 由 AI 协助编写。*
