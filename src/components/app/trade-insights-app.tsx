@@ -243,7 +243,7 @@ export function TradeInsightsApp() {
   return (
     <SidebarProvider>
       <TradeInsightsProvider value={{ activeView, setActiveView }}>
-        <div className="flex h-screen bg-background text-foreground">
+        <div className="flex h-screen bg-background text-foreground w-full">
           <AppSidebar activeView={activeView} setActiveView={setActiveView} />
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}

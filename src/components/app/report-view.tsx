@@ -127,7 +127,7 @@ export function ReportView({
                 </div>
             </div>
             
-            <main className="p-4 md:p-6 lg:p-8 flex-1">
+            <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 flex-1 flex flex-col">
                 {(isLoading || displayedReport) ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {cards.map(card => (
@@ -142,7 +142,7 @@ export function ReportView({
                       ))}
                   </div>
                 ) : (
-                    <div className="flex flex-col flex-1 items-center justify-center text-center h-full bg-card border rounded-lg p-8">
+                    <div className="flex flex-col flex-1 items-center justify-center text-center bg-card border rounded-lg p-8">
                         <WandSparkles className="w-16 h-16 mb-4 text-primary" />
                         <h2 className="text-2xl font-headline font-semibold">{`生成您的${reportType}AI${reportName}`}</h2>
                         <p className="mt-2 max-w-md text-muted-foreground">
