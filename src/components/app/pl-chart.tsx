@@ -7,21 +7,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
 import { isSameDay, format, subHours, subDays, parseISO } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
 
 const MIN_DATA_POINTS = 10;
 
 export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   
+  const toDate = (time: string | Timestamp): Date => {
+    if (time instanceof Timestamp) {
+      return time.toDate();
+    }
+    return new Date(time);
+  };
+  
   const isSingleDay = useMemo(() => {
     if (tradeLogs.length < 2) return true;
-    const firstDate = new Date(tradeLogs[0].tradeTime as string);
-    return tradeLogs.every(log => isSameDay(new Date(log.tradeTime as string), firstDate));
+    const firstDate = toDate(tradeLogs[0].tradeTime);
+    return tradeLogs.every(log => isSameDay(toDate(log.tradeTime), firstDate));
   }, [tradeLogs]);
 
   const chartData = useMemo(() => {
     const processedLogs = tradeLogs
       .map((log, index) => {
-        const date = new Date(log.tradeTime as string);
+        const date = toDate(log.tradeTime);
         return {
           id: `log-${index}-${date.getTime()}`, // Unique ID for logs
           date: isSingleDay ? format(date, 'HH:mm') : format(date, 'dd'),
@@ -34,7 +42,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
 
     if (processedLogs.length < MIN_DATA_POINTS) {
         const placeholders = [];
-        const lastDate = processedLogs.length > 0 ? new Date(tradeLogs[tradeLogs.length-1].tradeTime as string) : new Date();
+        const lastDate = processedLogs.length > 0 ? toDate(tradeLogs[tradeLogs.length-1].tradeTime) : new Date();
         for (let i = 0; i < MIN_DATA_POINTS - processedLogs.length; i++) {
             const placeholderDate = isSingleDay ? subHours(lastDate, i + 1) : subDays(lastDate, i + 1);
             placeholders.unshift({
