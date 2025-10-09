@@ -26,7 +26,7 @@ export function TradeLogView({ tradeLogs, onAddTradeLog, onEditTradeLog, deleteT
                 </Button>
             </AppHeader>
             <ScrollArea className="flex-1">
-              <main className="p-4 md:p-6 lg:p-8">
+              <main className="p-4 md:p-6 lg:p-8 w-full">
                   <TradeLogTable 
                     tradeLogs={tradeLogs} 
                     handleEdit={onEditTradeLog} 
