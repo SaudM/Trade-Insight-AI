@@ -7,7 +7,7 @@
 
 **交易笔记AI** 是一款专为交易者设计的现代化、由AI驱动的交易日志分析工具。它旨在帮助您记录、分析并从每一笔交易中学习，通过深度数据洞察和智能建议，最终提升您的交易表现。
 
-![交易笔记AI 仪表盘](https://storage.googleapis.com/stabl-prod-apps-media/github-media/trade-journal-ai/dashboard-ss-new.png)
+[![交易笔记AI 仪表盘](https://storage.googleapis.com/stabl-prod-apps-media/github-media/trade-journal-ai/dashboard-ss-new.png)](https://studio--studio-4954880629-a3af8.us-central1.hosted.app/)
 
 ## ✨ 核心功能
 
@@ -45,8 +45,8 @@
 ### 步骤 1: 克隆仓库
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/trade-journal-ai.git
-cd trade-journal-ai
+git clone https://github.com/SaudM/Trade-Insight-AI.git
+cd Trade-Insight-AI
 ```
 
 ### 步骤 2: 安装依赖
