@@ -71,8 +71,8 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         <CardTitle className="font-headline">盈亏随时间变化</CardTitle>
         <CardDescription>可视化您的每日交易表现。</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={{}} className="h-64 w-full">
+      <CardContent className="flex flex-1">
+        <ChartContainer config={{}} className="h-64 w-full flex-1">
           <ResponsiveContainer>
             <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
