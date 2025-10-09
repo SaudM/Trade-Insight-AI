@@ -24,7 +24,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
       <CardHeader>
         <CardTitle className="font-headline text-sm font-medium">胜/败比</CardTitle>
       </CardHeader>
-      <CardContent className="w-full flex-1 pb-0">
+      <CardContent className="w-full flex-1 pb-4">
         {totalTrades > 0 ? (
           <ChartContainer config={{}} className="h-40 w-full">
             <ResponsiveContainer>
