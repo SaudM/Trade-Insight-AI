@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
+import { Check, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import type { Stock } from "@/lib/types"
 
 type ComboboxProps = {
   value?: string;
@@ -27,7 +26,7 @@ type ComboboxProps = {
   placeholder?: string;
   emptyText?: string;
   className?: string;
-  suggestions?: Stock[];
+  suggestions?: { value: string; label: string }[];
 };
 
 export function Combobox({
