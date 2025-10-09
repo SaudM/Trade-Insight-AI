@@ -33,11 +33,11 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   return (
     <>
       <CardHeader>
-        <CardTitle className="font-headline">累计盈亏曲线</CardTitle>
+        <CardTitle>累计盈亏曲线</CardTitle>
         <CardDescription>您的账户净值随时间的变化情况。</CardDescription>
       </CardHeader>
       <CardContent className="w-full flex-1 flex flex-col pb-4">
-        <ChartContainer config={{}} className="h-80 w-full flex-1">
+        <ChartContainer config={{}} className="w-full flex-1">
           {chartData.length > 0 ? (
             <AreaChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
               <defs>
@@ -83,7 +83,7 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
               />
             </AreaChart>
           ) : (
-             <div className="flex h-80 items-center justify-center text-muted-foreground">
+             <div className="flex flex-1 items-center justify-center text-muted-foreground">
                 暂无交易数据以生成累计盈亏曲线。
              </div>
           )}
