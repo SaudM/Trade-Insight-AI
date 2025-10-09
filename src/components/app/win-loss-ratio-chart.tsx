@@ -1,6 +1,6 @@
 "use client"
 
-import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend, Label } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useMemo } from 'react';
@@ -17,6 +17,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
   ], [profitableTrades, lossTrades]);
 
   const totalTrades = profitableTrades + lossTrades;
+  const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
 
   return (
     <Card>
@@ -31,7 +32,9 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
               <PieChart>
                 <Tooltip
                   cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
+                  content={<ChartTooltipContent 
+                    formatter={(value) => `${value} (${((value / totalTrades) * 100).toFixed(1)}%)`}
+                  />}
                 />
                 <Pie
                   data={data}
@@ -40,22 +43,26 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
                   innerRadius={60}
                   outerRadius={90}
                   paddingAngle={5}
-                  labelLine={false}
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
-                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
-                    const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
-                    return (
-                      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
-                        {`${(percent * 100).toFixed(0)}%`}
-                      </text>
-                    );
-                  }}
                 >
+                  <Label 
+                    value={`${winRate.toFixed(1)}%`}
+                    position="center"
+                    fill="hsl(var(--foreground))"
+                    className="text-3xl font-bold"
+                    dy={-10}
+                   />
+                   <Label 
+                    value="胜率"
+                    position="center"
+                    fill="hsl(var(--muted-foreground))"
+                    className="text-sm"
+                    dy={15}
+                   />
                   {data.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </ChartContainer>
