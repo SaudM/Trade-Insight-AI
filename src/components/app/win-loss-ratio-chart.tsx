@@ -21,7 +21,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
 
   return (
     <>
-      <CardHeader className="absolute">
+      <CardHeader>
         <CardTitle className="font-headline text-sm font-medium">胜/败比</CardTitle>
       </CardHeader>
       <CardContent className="flex justify-center pb-0">
