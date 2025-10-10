@@ -1,3 +1,4 @@
+
 "use client"
 
 import type { TradeLog, View } from '@/lib/types';
@@ -6,10 +7,13 @@ import { AppHeader } from './header';
 import { PLChart } from './pl-chart';
 import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
-import { TrendingUp, TrendingDown, Percent, Wallet, FileText, Plus, Target, Calculator } from 'lucide-react';
+import { TrendingUp, TrendingDown, Percent, Wallet, FileText, Plus, Target, Calculator, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '../ui/separator';
 import { CumulativePLChart } from './cumulative-pl-chart';
+import { useMemo } from 'react';
+import { differenceInCalendarDays, isSaturday, isSunday, startOfDay } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
 
 type TimePeriod = 'today' | '7d' | '30d' | 'all';
 
@@ -47,6 +51,66 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
     
     const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : 0;
 
+    const consecutiveDays = useMemo(() => {
+        if (!tradeLogs || tradeLogs.length === 0) {
+            return 0;
+        }
+
+        const uniqueTradeDays = [
+            ...new Set(
+                tradeLogs.map(log => {
+                    const date = log.tradeTime instanceof Timestamp ? log.tradeTime.toDate() : new Date(log.tradeTime);
+                    return startOfDay(date).getTime();
+                })
+            ),
+        ].sort((a, b) => b - a);
+
+        if (uniqueTradeDays.length === 0) {
+            return 0;
+        }
+        
+        let streak = 0;
+        let today = startOfDay(new Date());
+
+        // Check if today has a log
+        const todayHasLog = uniqueTradeDays[0] === today.getTime();
+        
+        // If today has no log, and it's a weekday, streak is 0. If it's weekend, we start check from yesterday.
+        if (!todayHasLog && !isSaturday(today) && !isSunday(today)) {
+             // Check if yesterday has a log
+            const yesterday = startOfDay(new Date(today.setDate(today.getDate() - 1)));
+            if (uniqueTradeDays[0] !== yesterday.getTime()) {
+                return 0;
+            }
+        }
+        
+        let currentDay = startOfDay(new Date());
+
+        for (let i = 0; i < uniqueTradeDays.length; i++) {
+            const tradeDay = new Date(uniqueTradeDays[i]);
+            let diff = differenceInCalendarDays(currentDay, tradeDay);
+
+            let dayToAdvance = currentDay;
+            let skippedDays = 0;
+            while(diff > 0) {
+                dayToAdvance.setDate(dayToAdvance.getDate() - 1);
+                if (!isSaturday(dayToAdvance) && !isSunday(dayToAdvance)) {
+                    skippedDays++;
+                }
+                diff = differenceInCalendarDays(dayToAdvance, tradeDay);
+            }
+
+            if (skippedDays > 1) {
+                break;
+            }
+            
+            streak++;
+            currentDay = tradeDay;
+        }
+
+        return streak;
+    }, [tradeLogs]);
+
     const handleViewReport = () => {
         setActiveView('analysis');
     }
@@ -69,8 +133,8 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
             </AppHeader>
             <ScrollArea className="flex-1">
               <main className="min-w-0 w-full p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6 overflow-x-hidden">
-                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-                      <div className="min-w-0 col-span-2 sm:col-span-1">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                      <div className="min-w-0 col-span-1">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">总盈亏</CardTitle>
@@ -84,7 +148,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                             </CardContent>
                         </Card>
                       </div>
-                      <div className="min-w-0 col-span-2 sm:col-span-1">
+                      <div className="min-w-0 col-span-1">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">胜率</CardTitle>
@@ -96,7 +160,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                             </CardContent>
                         </Card>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 col-span-1">
                          <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">平均盈利</CardTitle>
@@ -110,7 +174,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                             </CardContent>
                         </Card>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 col-span-1">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">平均亏损</CardTitle>
@@ -124,11 +188,23 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                             </CardContent>
                         </Card>
                       </div>
+                      <div className="min-w-0 col-span-2 sm:col-span-1">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">连续复盘</CardTitle>
+                                <Flame className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{consecutiveDays} <span className="text-base font-normal">天</span></div>
+                                <p className="text-xs text-muted-foreground">自动跳过周末休市日</p>
+                            </CardContent>
+                        </Card>
+                      </div>
                   </div>
                   
 
-                   <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                        <div className="min-w-0 lg:col-span-1">
+                   <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-5">
+                        <div className="min-w-0 md:col-span-1 xl:col-span-2">
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">盈亏比</CardTitle>
@@ -140,7 +216,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="min-w-0 md:col-span-1 lg:col-span-3">
+                        <div className="min-w-0 md:col-span-1 xl:col-span-3">
                             <Card className="flex flex-col">
                                <WinLossRatioChart profitableTrades={profitableTrades.length} lossTrades={losingTrades.length} />
                             </Card>
@@ -172,3 +248,5 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
         </div>
     );
 }
+
+    

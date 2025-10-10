@@ -1,4 +1,5 @@
 import type {Config} from 'tailwindcss';
+const { "slate": slate } = require("tailwindcss/colors")
 
 export default {
   darkMode: ['class'],
@@ -101,3 +102,5 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+
+    
