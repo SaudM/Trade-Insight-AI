@@ -1,10 +1,11 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -26,6 +27,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import Link from 'next/link';
+import { useUser } from '@/firebase';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "请输入有效的邮箱地址" }),
@@ -38,8 +40,19 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = getAuth();
+  const { user, isUserLoading } = useUser();
+
+  const redirectUrl = searchParams.get('redirect') || '/';
+
+  useEffect(() => {
+    if (!isUserLoading && user) {
+        router.push(redirectUrl);
+    }
+  }, [user, isUserLoading, router, redirectUrl]);
+
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -53,7 +66,7 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/');
+      // Let the useEffect handle the redirect
     } catch (error: any) {
       console.error(error);
       const errorCode = error.code;
@@ -76,7 +89,7 @@ export function LoginForm() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      router.push('/');
+      // Let the useEffect handle the redirect
     } catch (error) {
       console.error(error);
       toast({

@@ -11,6 +11,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { useUser } from "@/firebase";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const pricingPlans: PricingPlan[] = [
   {
@@ -75,11 +78,28 @@ const faqs = [
 ]
 
 export default function PricingPage() {
+    const { user } = useUser();
+    const router = useRouter();
+    const { toast } = useToast();
 
     const handleSubscribe = (planId: PricingPlan['id']) => {
-        // TODO: Implement payment gateway integration (e.g., WeChat Pay)
-        console.log(`Subscribing to plan from pricing page: ${planId}`);
+        if (!user) {
+            toast({
+                title: "请先登录",
+                description: "您需要登录后才能进行订阅。",
+            });
+            router.push('/login?redirect=/pricing');
+            return;
+        }
+
+        // TODO: Implement actual payment gateway integration (e.g., WeChat Pay, Stripe)
+        console.log(`User ${user.uid} is subscribing to plan: ${planId}`);
+        toast({
+            title: "正在处理订阅...",
+            description: `正在为您开通 ${planId} 方案。`,
+        });
         // Here you would typically open a QR code modal or redirect to a payment page.
+        // For now, we'll just simulate a successful subscription.
     };
 
   return (
@@ -156,7 +176,7 @@ export default function PricingPage() {
                   plan.isPopular ? "bg-primary hover:bg-primary/90 shadow-lg" : "bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
                 )}
               >
-                选择{plan.name}
+                立即订阅
                 <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
