@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 import { z } from 'zod';
 
@@ -82,7 +83,10 @@ export interface PricingPlan {
   duration: string;
   price: number;
   originalPrice: number;
+  pricePerMonth?: number;
   discount: string;
   features: string[];
   isPopular?: boolean;
 }
+
+    

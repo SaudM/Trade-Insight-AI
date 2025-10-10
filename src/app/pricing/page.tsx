@@ -1,37 +1,44 @@
 
 "use client";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Sparkles } from "lucide-react";
+import { CheckCircle, Sparkles, HelpCircle, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { PricingPlan } from "@/lib/types";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
-// Same data as in the modal for consistency
 const pricingPlans: PricingPlan[] = [
   {
     id: 'monthly',
     name: '月度会员',
-    duration: '30天',
+    duration: '/月',
     price: 28,
     originalPrice: 35,
-    discount: '8折优惠',
+    discount: '限时8折',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
   },
   {
     id: 'quarterly',
     name: '季度会员',
-    duration: '90天',
+    duration: '/季',
     price: 78,
     originalPrice: 105,
-    discount: '节省 25%',
+    pricePerMonth: 26,
+    discount: '节省25%',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
   },
   {
     id: 'semi_annually',
-    name: '半年费员',
-    duration: '180天',
+    name: '半年会员',
+    duration: '/半年',
     price: 148,
     originalPrice: 210,
+    pricePerMonth: 24.6,
     discount: '推荐',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
     isPopular: true,
@@ -39,14 +46,33 @@ const pricingPlans: PricingPlan[] = [
   {
     id: 'annually',
     name: '年度会员',
-    duration: '365天',
+    duration: '/年',
     price: 268,
     originalPrice: 420,
+    pricePerMonth: 22.3,
     discount: '最佳性价比',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步', '优先客服支持', '新功能尝鲜'],
   },
 ];
 
+const faqs = [
+    {
+        question: "如何支付？",
+        answer: "我们目前主要支持微信支付。后续将逐步开放支付宝、银联等更多支付方式。"
+    },
+    {
+        question: "可以开发票吗？",
+        answer: "可以。支付成功后，您可以在个人中心的订阅管理页面申请电子发票。"
+    },
+    {
+        question: "订阅后可以取消吗？",
+        answer: "当然。您可以随时在个人中心取消下一个周期的订阅，取消后当前周期的会员权益仍然有效，直到到期为止。"
+    },
+    {
+        question: "新用户免费试用是什么？",
+        answer: "每一位新注册的用户都将自动获得30天的免费试用期，期间您可以无限制地体验所有专业版AI功能。试用期结束后，您需要订阅才能继续使用AI分析服务。"
+    }
+]
 
 export default function PricingPage() {
 
@@ -56,14 +82,16 @@ export default function PricingPage() {
         // Here you would typically open a QR code modal or redirect to a payment page.
     };
 
-
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-br from-primary/10 via-background to-background -z-0"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/50 to-transparent rounded-full -z-0"></div>
+
+      <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-            <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-                <Sparkles className="w-6 h-6 text-primary"/>
-                <span>交易笔记AI</span>
+            <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary">
+                <Sparkles className="w-6 h-6"/>
+                <span className="font-headline">交易笔记AI</span>
             </Link>
             <Button asChild>
                 <Link href="/login">返回应用</Link>
@@ -71,13 +99,13 @@ export default function PricingPage() {
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-12 md:px-6 md:py-20 lg:py-24">
+      <main className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
         <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-headline font-bold tracking-tight md:text-5xl lg:text-6xl">
-                选择最适合您的方案
+            <h1 className="text-4xl font-headline font-bold tracking-tight text-primary md:text-5xl lg:text-6xl">
+                解锁您的全部AI潜能
             </h1>
-            <p className="mt-4 text-lg text-muted-foreground md:text-xl">
-                解锁全部AI功能，获得深度交易洞察，让每一笔交易都成为您进步的阶梯。
+            <p className="mt-6 text-lg text-muted-foreground md:text-xl">
+                选择一个方案，即可获得由AI驱动的深度交易洞察、模式识别和个性化改进建议，让每一笔交易都成为您持续进步的阶梯。
             </p>
         </div>
         
@@ -86,50 +114,84 @@ export default function PricingPage() {
             <div
               key={plan.id}
               className={cn(
-                "rounded-2xl border p-8 flex flex-col relative bg-card shadow-lg",
-                plan.isPopular ? "border-primary ring-2 ring-primary" : "border-border"
+                "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
+                plan.isPopular ? "border-primary/50 shadow-xl ring-2 ring-primary/80" : "border-border/50"
               )}
             >
               {plan.isPopular && (
-                <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                    <div className="rounded-full bg-primary px-4 py-1 text-sm font-semibold text-primary-foreground">
+                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                    <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
                         {plan.discount}
                     </div>
                 </div>
               )}
-              <h3 className="text-xl font-bold font-headline">{plan.name}</h3>
-              <p className="text-muted-foreground mt-1">{plan.duration}</p>
-              
-              <div className="my-8">
-                <span className="text-5xl font-bold">¥{plan.price}</span>
-                <span className="ml-2 text-muted-foreground line-through">¥{plan.originalPrice}</span>
+
+              <div className="flex-1">
+                <h3 className="text-xl font-bold font-headline text-center mt-2">{plan.name}</h3>
+                
+                <div className="my-6 text-center">
+                  <span className="text-5xl font-bold">¥{plan.price}</span>
+                  <span className="text-muted-foreground">{plan.duration}</span>
+                  <div className="h-6 mt-1">
+                    <span className="text-sm text-muted-foreground line-through">原价 ¥{plan.originalPrice}</span>
+                    {plan.pricePerMonth && <span className="ml-2 text-sm text-accent"> (折合 ¥{plan.pricePerMonth}/月)</span>}
+                  </div>
+                </div>
+                
+                <ul className="space-y-3 text-sm mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                      <span className="text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              
-              <ul className="space-y-4 text-base mb-10 flex-1">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
 
               <Button
                 onClick={() => handleSubscribe(plan.id)}
                 size="lg"
-                className={cn(plan.isPopular ? "bg-primary hover:bg-primary/90" : "bg-primary/80 hover:bg-primary/90 text-primary-foreground", "w-full text-base")}
+                className={cn(
+                  "w-full text-base font-bold group",
+                  plan.isPopular ? "bg-primary hover:bg-primary/90 shadow-lg" : "bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
+                )}
               >
                 选择{plan.name}
+                <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </div>
           ))}
         </div>
+      </main>
 
-        <div className="mt-16 text-center text-sm text-muted-foreground">
-            <p>遇到问题？<a href="mailto:support@example.com" className="underline">联系我们</a></p>
+       <section className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
+        <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-headline font-bold text-foreground">常见问题解答</h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+                还有其他疑问？您可以随时 <a href="mailto:support@example.com" className="text-primary underline">联系我们</a>。
+            </p>
+        </div>
+
+        <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto mt-12">
+            {faqs.map((faq, i) => (
+                <AccordionItem value={`item-${i}`} key={i}>
+                    <AccordionTrigger className="text-lg text-left hover:no-underline">{faq.question}</AccordionTrigger>
+                    <AccordionContent className="text-base text-muted-foreground pt-2">
+                    {faq.answer}
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
+      </section>
+
+      <footer className="container mx-auto px-4 py-8 md:px-6">
+        <div className="text-center text-sm text-muted-foreground">
+            <p>&copy; {new Date().getFullYear()} 交易笔记AI. All rights reserved.</p>
             <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
         </div>
-      </main>
+      </footer>
     </div>
   );
 }
+
+    
