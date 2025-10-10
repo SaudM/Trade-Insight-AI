@@ -1,139 +1,29 @@
 diff --git a/node_modules/wechatpay-node-v3/src/index.js b/node_modules/wechatpay-node-v3/src/index.js
-index 4a8b792..d3a776c 100644
+index 9276d49..f9f0951 100644
 --- a/node_modules/wechatpay-node-v3/src/index.js
 +++ b/node_modules/wechatpay-node-v3/src/index.js
-@@ -1,4 +1,4 @@
+@@ -1,5 +1,5 @@
+ const Pem = require('./pem');
 -const Formidable = require('formidable');
 +// const Formidable = require('formidable');
- const { readFileSync } = require('fs');
- const {
-   rsa,
-@@ -296,25 +296,25 @@
-   /**
-    *
-    * @param {object} opt {mchid,serial_no,privateKey,publicKey,authType,timestamp,nonce,body,signature}
--   * @returns {{header:string,verified:boolean,request:object}}
-+   * @returns {{header:string,verified:boolean,request:object<any>}}
+ const { createHash } = require('crypto');
+ const { readFileSync, writeFileSync } = require('fs');
+ const { Aes, Rsa, request, Download, `SignType` } = require('./utils');
+@@ -194,7 +194,7 @@
+    * @property {string} nonce_str - The nonce_str from wechat.
+    * @returns {object} - The payment detail.
     */
--  notification(opt) {
--    const self = this;
--    const {
--      WECHATPAY_PLATFORM_CERTIFICATE,
--      WXAPI_MCHID,
--      WXAPI_V3_KEY,
--    } = self.config;
--    const {
--      timestamp,
--      nonce,
--      body,
--      signature,
--      'wechatpay-serial': serial,
--    } = opt;
--    return new Notification({
--      timestamp, nonce, body, signature, serial,
--    }, { cert: WECHATPAY_PLATFORM_CERTIFICATE, mchid: WXAPI_MCHID, v3key: WXAPI_V3_KEY });
+-  async notification(request) {
++  /*async notification(request) {
+     const {
+       'wechatpay-timestamp': timestamp,
+       'wechatpay-nonce': nonce,
+@@ -239,7 +239,7 @@
+         reject(err);
+       });
+     });
 -  }
-+  // notification(opt) {
-+  //   const self = this;
-+  //   const {
-+  //     WECHATPAY_PLATFORM_CERTIFICATE,
-+  //     WXAPI_MCHID,
-+  //     WXAPI_V3_KEY,
-+  //   } = self.config;
-+  //   const {
-+  //     timestamp,
-+  //     nonce,
-+  //     body,
-+  //     signature,
-+  //     'wechatpay-serial': serial,
-+  //   } = opt;
-+  //   return new Notification({
-+  //     timestamp, nonce, body, signature, serial,
-+  //   }, { cert: WECHATPAY_PLATFORM_CERTIFICATE, mchid: WXAPI_MCHID, v3key: WXAPI_V3_KEY });
-+  // }
++  }*/
  }
  
- module.exports = WechatPay;
-diff --git a/node_modules/wechatpay-node-v3/src/notification.js b/node_modules/wechatpay-node-v3/src/notification.js
-index c8d8392..e69de29 100644
---- a/node_modules/wechatpay-node-v3/src/notification.js
-+++ b/node_modules/wechatpay-node-v3/src/notification.js
-@@ -1,78 +0,0 @@
--const Formidable = require('formidable');
--const {
--  aes, rsa,
--} = require('./utils');
--
--class Notification {
--  /**
--   *
--   * @param {object} opt {timestamp,nonce,body,signature,serial}
--   * @param {object} config {cert,mchid,v3key}
--   */
--  constructor(opt, config) {
--    const self = this;
--    const {
--      body,
--    } = opt;
--    self.origin = opt;
--    self.config = config;
--    self.decrypted = {};
--    self.request = {};
--    self.verified = self.verify(opt);
--    if (self.verified) {
--      const { resource } = body;
--      self.decrypted = self.decrypt(resource);
--      self.request = JSON.parse(self.decrypted.plaintext);
--    }
--  }
--
--  /**
--   *
--   * @param {object} opt {body,signature,timestamp,nonce,serial}
--   * @returns {boolean}
--   */
--  verify(opt) {
--    const self = this;
--    const {
--      signature,
--      timestamp,
--      nonce,
--      body,
--      serial,
--    } = opt;
--    const {
--      cert,
--    } = self.config;
--    let platformPublicKey = '';
--    cert.forEach((item) => {
--      if (item.serial_no === serial) {
--        platformPublicKey = item.publicKey;
--      }
--    });
--    return rsa.verify(
--      signature,
--      `${timestamp}\n${nonce}\n${JSON.stringify(body)}\n`,
--      platformPublicKey,
--    );
--  }
--
--  /**
--   *
--   * @param {object} resource {ciphertext,associated_data,nonce}
--   * @returns {{ciphertext:string,v3key:string,associated_data:string,nonce:string,plaintext:string}}
--   */
--  decrypt(resource) {
--    const self = this;
--    const {
--      v3key,
--    } = self.config;
--    const result = { ...resource, v3key };
--    result.plaintext = aes.decrypt(result);
--t    return result;
--  }
--}
--
--module.exports = Notification;
--
--// TODO: koa middleware
--// TODO: express middleware
+ WechatPay.SignType = SignType;
