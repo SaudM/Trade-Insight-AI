@@ -30,7 +30,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverComponentsExternalPackages: ['wechatpay-node-v3', 'formidable'],
 };
 
 export default nextConfig;
