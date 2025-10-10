@@ -134,90 +134,78 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
             </AppHeader>
             <ScrollArea className="flex-1">
               <main className="min-w-0 w-full p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6 overflow-x-hidden">
-                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
-                      <div className="min-w-0 col-span-1">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">总盈亏</CardTitle>
-                                <Wallet className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className={`text-2xl font-bold ${totalPL >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                    {totalPL.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
-                                </div>
-                                <p className="text-xs text-muted-foreground">共 {totalTrades} 笔交易</p>
-                            </CardContent>
-                        </Card>
-                      </div>
-                      <div className="min-w-0 col-span-1">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">胜率</CardTitle>
-                                <Percent className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{winRate.toFixed(1)}%</div>
-                                <p className="text-xs text-muted-foreground">{profitableTrades.length} 胜 / {losingTrades.length} 负</p>
-                            </CardContent>
-                        </Card>
-                      </div>
-                      <div className="min-w-0 col-span-1">
-                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">平均盈利</CardTitle>
-                                <TrendingUp className="h-4 w-4 text-success" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-success">
-                                    {averageProfit.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
-                                </div>
-                               <p className="text-xs text-muted-foreground">基于 {profitableTrades.length} 笔盈利交易</p>
-                            </CardContent>
-                        </Card>
-                      </div>
-                      <div className="min-w-0 col-span-1">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">平均亏损</CardTitle>
-                                <TrendingDown className="h-4 w-4 text-destructive" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-destructive">
-                                    {averageLoss.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
-                                </div>
-                                <p className="text-xs text-muted-foreground">基于 {losingTrades.length} 笔亏损交易</p>
-                            </CardContent>
-                        </Card>
-                      </div>
-                      <div className="min-w-0 col-span-2 sm:col-span-1">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">连续复盘</CardTitle>
-                                <Flame className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{consecutiveDays} <span className="text-base font-normal">天</span></div>
-                                <p className="text-xs text-muted-foreground">自动跳过周末休市日</p>
-                            </CardContent>
-                        </Card>
-                      </div>
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-3">
+                      <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <CardTitle className="text-sm font-medium">总盈亏</CardTitle>
+                              <Wallet className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent>
+                              <div className={`text-2xl font-bold ${totalPL >= 0 ? 'text-success' : 'text-destructive'}`}>
+                                  {totalPL.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                              </div>
+                              <p className="text-xs text-muted-foreground">共 {totalTrades} 笔交易</p>
+                          </CardContent>
+                      </Card>
+                      <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <CardTitle className="text-sm font-medium">胜率</CardTitle>
+                              <Percent className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent>
+                              <div className="text-2xl font-bold">{winRate.toFixed(1)}%</div>
+                              <p className="text-xs text-muted-foreground">{profitableTrades.length} 胜 / {losingTrades.length} 负</p>
+                          </CardContent>
+                      </Card>
+                       <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <CardTitle className="text-sm font-medium">盈亏比</CardTitle>
+                              <Calculator className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent>
+                              <div className="text-2xl font-bold">{profitFactor.toFixed(2)}</div>
+                              <p className="text-xs text-muted-foreground">总盈利 / 总亏损</p>
+                          </CardContent>
+                      </Card>
+                       <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <CardTitle className="text-sm font-medium">平均盈利</CardTitle>
+                              <TrendingUp className="h-4 w-4 text-success" />
+                          </CardHeader>
+                          <CardContent>
+                              <div className="text-2xl font-bold text-success">
+                                  {averageProfit.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                              </div>
+                             <p className="text-xs text-muted-foreground">基于 {profitableTrades.length} 笔盈利交易</p>
+                          </CardContent>
+                      </Card>
+                      <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <CardTitle className="text-sm font-medium">平均亏损</CardTitle>
+                              <TrendingDown className="h-4 w-4 text-destructive" />
+                          </CardHeader>
+                          <CardContent>
+                              <div className="text-2xl font-bold text-destructive">
+                                  {averageLoss.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                              </div>
+                              <p className="text-xs text-muted-foreground">基于 {losingTrades.length} 笔亏损交易</p>
+                          </CardContent>
+                      </Card>
+                      <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <CardTitle className="text-sm font-medium">连续复盘</CardTitle>
+                              <Flame className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent>
+                              <div className="text-2xl font-bold">{consecutiveDays} <span className="text-base font-normal">天</span></div>
+                              <p className="text-xs text-muted-foreground">自动跳过周末休市日</p>
+                          </CardContent>
+                      </Card>
                   </div>
                   
 
-                   <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-5">
-                        <div className="min-w-0 lg:col-span-2">
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">盈亏比</CardTitle>
-                                    <Calculator className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">{profitFactor.toFixed(2)}</div>
-                                    <p className="text-xs text-muted-foreground">总盈利 / 总亏损</p>
-                                </CardContent>
-                            </Card>
-                        </div>
-                        <div className="min-w-0 lg:col-span-3">
+                   <div className="grid gap-3 sm:gap-4 grid-cols-1">
+                        <div className="min-w-0">
                             <Card className="flex flex-col">
                                <WinLossRatioChart profitableTrades={profitableTrades.length} lossTrades={losingTrades.length} />
                             </Card>
@@ -251,3 +239,4 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
 }
 
     
+
