@@ -17,7 +17,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 
-export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }: { isProUser: boolean, subscription: Subscription | null, onOpenSubscriptionModal: () => void }) {
+export function ProfileView({ isProUser, subscription }: { isProUser: boolean, subscription: Subscription | null }) {
     const { user } = useFirebase();
     const { toast } = useToast();
     const [isResetting, setIsResetting] = useState(false);
@@ -116,17 +116,13 @@ export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }
                         </CardContent>
                         <CardFooter>
                             {!subscription && (
-                                 <Button onClick={onOpenSubscriptionModal}>
-                                    <Crown className="mr-2 h-4 w-4" />
-                                    升级到专业版
+                                 <Button asChild>
+                                    <Link href="/pricing">
+                                        <Crown className="mr-2 h-4 w-4" />
+                                        升级到专业版
+                                    </Link>
                                 </Button>
                             )}
-                             <Button variant="outline" asChild className="ml-auto">
-                                <Link href="/pricing" target="_blank">
-                                    查看所有方案
-                                    <ExternalLink className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
                         </CardFooter>
                     </Card>
                     

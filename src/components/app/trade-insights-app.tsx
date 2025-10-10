@@ -290,7 +290,6 @@ export function TradeInsightsApp() {
         return <ProfileView 
                   isProUser={isProUser} 
                   subscription={subscription} 
-                  onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)} 
                 />;
       default:
         return <Dashboard 
