@@ -23,6 +23,7 @@ export type WeChatPayInput = z.infer<typeof WeChatPayInputSchema>;
 
 export const WeChatPayOutputSchema = z.object({
   paymentUrl: z.string().optional().describe("The URL for payment (code_url for NATIVE, h5_url for H5)."),
+  outTradeNo: z.string().optional().describe("The unique order ID."),
   error: z.string().optional().describe("Error message if transaction creation fails."),
 });
 export type WeChatPayOutput = z.infer<typeof WeChatPayOutputSchema>;
@@ -109,9 +110,9 @@ const createWechatPayTransaction = ai.defineFlow(
         const result = response.data;
 
         if (result.code_url) {
-            return { paymentUrl: result.code_url };
+            return { paymentUrl: result.code_url, outTradeNo: out_trade_no };
         } else if (result.h5_url) {
-            return { paymentUrl: result.h5_url };
+            return { paymentUrl: result.h5_url, outTradeNo: out_trade_no };
         } else {
             console.error("WeChat Pay API response error:", result);
             return { error: (result.message as string) || 'Failed to create payment transaction.' };

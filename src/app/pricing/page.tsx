@@ -103,9 +103,6 @@ export default function PricingPage() {
         }
 
         setIsLoading(plan.id);
-        
-        // This is not ideal as it can be out of sync with the backend, but it's good enough for this demo.
-        const outTradeNo = `plan_${plan.id}_${user.uid}_${Date.now()}`;
 
         try {
             const tradeType = isMobile ? 'H5' : 'NATIVE';
@@ -117,15 +114,18 @@ export default function PricingPage() {
                   price: plan.price,
                   userId: user.uid,
                   tradeType,
-                  outTradeNo, // Pass it to the backend
                 }),
             });
             const result = await createRes.json();
 
-            if (result.paymentUrl) {
+            if (result.error) {
+              throw new Error(result.error);
+            }
+
+            if (result.paymentUrl && result.outTradeNo) {
                 if (tradeType === 'NATIVE') {
                     setQrCodeUrl(result.paymentUrl);
-                    pollStatus(outTradeNo);
+                    pollStatus(result.outTradeNo);
                 } else if (tradeType === 'H5') {
                     window.location.href = result.paymentUrl;
                 }
@@ -133,16 +133,16 @@ export default function PricingPage() {
                  toast({
                     variant: "destructive",
                     title: "创建订单失败",
-                    description: result.error || "无法获取支付链接，请稍后重试。",
+                    description: "无法获取支付链接，请稍后重试。",
                 });
             }
 
-        } catch (error) {
+        } catch (error: any) {
              console.error('Payment flow error:', error);
              toast({
                 variant: "destructive",
                 title: "支付出错",
-                description: "处理您的订阅时发生未知错误，请联系客服。",
+                description: error.message || "处理您的订阅时发生未知错误，请联系客服。",
             });
         } finally {
             if (!isMobile) {
