@@ -102,7 +102,7 @@ export default function PricingPage() {
       <main className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
         <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-4xl font-headline font-bold tracking-tight text-primary md:text-5xl lg:text-6xl">
-                解锁您的全部AI潜能
+                解锁您的全部投资交易潜能
             </h1>
             <p className="mt-6 text-lg text-muted-foreground md:text-xl">
                 选择一个方案，即可获得由AI驱动的深度交易洞察、模式识别和个性化改进建议，让每一笔交易都成为您持续进步的阶梯。
@@ -193,5 +193,3 @@ export default function PricingPage() {
     </div>
   );
 }
-
-    
