@@ -1,7 +1,8 @@
 
 "use client";
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Sparkles, HelpCircle, ChevronRight } from "lucide-react";
+import { CheckCircle, Sparkles, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { PricingPlan } from "@/lib/types";
@@ -14,6 +15,10 @@ import {
 import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { wechatPay, type WeChatPayInput } from '@/ai/flows/wechat-pay';
+import { QRCodeModal } from '@/components/app/qrcode-modal';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Loader2 } from 'lucide-react';
 
 const pricingPlans: PricingPlan[] = [
   {
@@ -81,8 +86,12 @@ export default function PricingPage() {
     const { user } = useUser();
     const router = useRouter();
     const { toast } = useToast();
+    const isMobile = useIsMobile();
 
-    const handleSubscribe = (planId: PricingPlan['id']) => {
+    const [isLoading, setIsLoading] = useState<PricingPlan['id'] | null>(null);
+    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+
+    const handleSubscribe = async (plan: PricingPlan) => {
         if (!user) {
             toast({
                 title: "请先登录",
@@ -92,17 +101,47 @@ export default function PricingPage() {
             return;
         }
 
-        // TODO: Implement actual payment gateway integration (e.g., WeChat Pay, Stripe)
-        console.log(`User ${user.uid} is subscribing to plan: ${planId}`);
-        toast({
-            title: "正在处理订阅...",
-            description: `正在为您开通 ${planId} 方案。`,
-        });
-        // Here you would typically open a QR code modal or redirect to a payment page.
-        // For now, we'll just simulate a successful subscription.
+        setIsLoading(plan.id);
+        
+        try {
+            const tradeType = isMobile ? 'H5' : 'NATIVE';
+            const payload: WeChatPayInput = {
+                planId: plan.id,
+                price: plan.price, // Price in CNY
+                userId: user.uid,
+                tradeType: tradeType,
+            };
+
+            const result = await wechatPay(payload);
+
+            if (result.paymentUrl) {
+                if (tradeType === 'NATIVE') {
+                    setQrCodeUrl(result.paymentUrl);
+                } else if (tradeType === 'H5') {
+                    window.location.href = result.paymentUrl;
+                }
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "创建订单失败",
+                    description: result.error || "无法获取支付链接，请稍后重试。",
+                });
+            }
+
+        } catch (error) {
+             console.error('Payment flow error:', error);
+             toast({
+                variant: "destructive",
+                title: "支付出错",
+                description: "处理您的订阅时发生未知错误，请联系客服。",
+            });
+        } finally {
+            setIsLoading(null);
+        }
     };
 
   return (
+    <>
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-br from-primary/10 via-background to-background -z-0"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/50 to-transparent rounded-full -z-0"></div>
@@ -169,15 +208,22 @@ export default function PricingPage() {
               </div>
 
               <Button
-                onClick={() => handleSubscribe(plan.id)}
+                onClick={() => handleSubscribe(plan)}
                 size="lg"
+                disabled={isLoading !== null}
                 className={cn(
                   "w-full text-base font-bold group",
                   plan.isPopular ? "bg-primary hover:bg-primary/90 shadow-lg" : "bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
                 )}
               >
-                立即订阅
-                <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                {isLoading === plan.id ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    立即订阅
+                    <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
               </Button>
             </div>
           ))}
@@ -211,5 +257,7 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
+    <QRCodeModal qrCodeUrl={qrCodeUrl} setQrCodeUrl={setQrCodeUrl} />
+    </>
   );
 }
