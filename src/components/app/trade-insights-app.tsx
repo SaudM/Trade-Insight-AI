@@ -8,6 +8,7 @@ import { AppSidebar } from '@/components/app/sidebar';
 import { Dashboard } from '@/components/app/dashboard';
 import { TradeLogView } from '@/components/app/trade-log-view';
 import { AnalysisView } from '@/components/app/analysis-view';
+import { ProfileView } from '@/components/app/profile-view';
 import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary, Subscription } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -121,11 +122,13 @@ export function TradeInsightsApp() {
         const newDocRef = await addDoc(ref, docData);
         toast({ title: `${entityName}已添加` });
         
+        const newDoc = { ...docData, id: newDocRef.id, createdAt: Timestamp.now() };
+
         if (entityName === '每日分析' || entityName === '每周回顾' || entityName === '月度总结') {
           setActiveView('analysis');
         }
 
-        return { ...docData, id: newDocRef.id, createdAt: Timestamp.now() };
+        return newDoc;
 
     } catch (error) {
         console.error(error);
@@ -283,6 +286,12 @@ export function TradeInsightsApp() {
                   isProUser={isProUser}
                   onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
                 />;
+      case 'profile':
+        return <ProfileView 
+                  isProUser={isProUser} 
+                  subscription={subscription} 
+                  onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)} 
+                />;
       default:
         return <Dashboard 
                   tradeLogs={filteredTradeLogs} 
@@ -319,5 +328,3 @@ export function TradeInsightsApp() {
     </SidebarProvider>
   );
 }
-
-    

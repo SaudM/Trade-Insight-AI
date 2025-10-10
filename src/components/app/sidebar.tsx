@@ -1,7 +1,8 @@
+
 "use client"
 
 import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, Book, BarChart, LogOut, FileText, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Book, LogOut, FileText, Sparkles, User as UserIcon } from 'lucide-react';
 import type { View } from '@/lib/types';
 import { ThemeToggle } from '../theme-toggle';
 import { getAuth, signOut } from 'firebase/auth';
@@ -15,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 type AppSidebarProps = {
   activeView: View;
   setActiveView: (view: View) => void;
-  // This should be derived from user's subscription status in a real app
   isProUser: boolean; 
 };
 
@@ -50,7 +50,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
       <SidebarHeader>
         <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center size-9 bg-primary rounded-lg text-primary-foreground">
-                <BarChart className="h-5 w-5" />
+                <UserIcon className="h-5 w-5" />
             </div>
             <h1 className="font-headline text-xl font-semibold text-primary">交易笔记AI</h1>
         </div>
@@ -90,6 +90,16 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
           >
             <Book />
             <span>交易笔记</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={() => setActiveView('profile')}
+            isActive={activeView === 'profile'}
+            tooltip={{children: '个人中心'}}
+          >
+            <UserIcon />
+            <span>个人中心</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

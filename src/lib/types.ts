@@ -1,3 +1,4 @@
+
 import { Timestamp } from "firebase/firestore";
 import { z } from 'zod';
 
@@ -67,7 +68,7 @@ export type Subscription = {
   createdAt: Timestamp;
 }
 
-export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing';
+export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile';
 
 export const StockSchema = z.object({
   value: z.string(),
