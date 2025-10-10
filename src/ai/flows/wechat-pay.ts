@@ -24,7 +24,7 @@ export type WeChatPayInput = z.infer<typeof WeChatPayInputSchema>;
 export const WeChatPayOutputSchema = z.object({
   paymentUrl: z.string().optional().describe("The URL for payment (code_url for NATIVE, h5_url for H5)."),
   outTradeNo: z.string().optional().describe("The unique order ID."),
-  error: z.string().optional().describe("Error message if transaction creation fails."),
+  error: z.any().optional().describe("Error message if transaction creation fails."),
 });
 export type WeChatPayOutput = z.infer<typeof WeChatPayOutputSchema>;
 
@@ -123,7 +123,8 @@ const createWechatPayTransaction = ai.defineFlow(
 
     } catch (error: any) {
         console.error("Error creating WeChat Pay transaction:", error.response ? error.response.data : error.message);
-        const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred.';
+        // Safely extract the error message from WeChat's response if available
+        const errorMessage = error.response?.data ? (typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data)) : (error.message || 'An unexpected error occurred.');
         return { error: errorMessage };
     }
   }
