@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, createContext, useEffect } from 'react';
@@ -133,10 +134,10 @@ export function TradeInsightsApp() {
     }
   };
 
-  const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => addDocWithTimestamp(tradeLogsRef, log, '交易笔记');
-  const addDailyAnalysis = async (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => addDocWithTimestamp(dailyAnalysesRef, analysis, '每日分析');
-  const addWeeklyAnalysis = async (review: Omit<WeeklyReview, 'id' | 'userId'>) => addDocWithTimestamp(weeklyReviewsRef, review, '每周回顾');
-  const addMonthlySummary = async (summary: Omit<MonthlySummary, 'id' | 'userId'>) => addDocWithTimestamp(monthlySummariesRef, summary, '月度总结');
+  const addTradeLog = (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => addDocWithTimestamp(tradeLogsRef, log, '交易笔记');
+  const addDailyAnalysis = (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => addDocWithTimestamp(dailyAnalysesRef, analysis, '每日分析');
+  const addWeeklyAnalysis = (review: Omit<WeeklyReview, 'id' | 'userId'>) => addDocWithTimestamp(weeklyReviewsRef, review, '每周回顾');
+  const addMonthlySummary = (summary: Omit<MonthlySummary, 'id' | 'userId'>) => addDocWithTimestamp(monthlySummariesRef, summary, '月度总结');
 
   const updateTradeLog = async (updatedLog: Omit<TradeLog, 'userId' | 'createdAt'>) => {
     if (!user) return;
@@ -318,3 +319,5 @@ export function TradeInsightsApp() {
     </SidebarProvider>
   );
 }
+
+    
