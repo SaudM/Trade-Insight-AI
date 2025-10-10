@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { nativePay, h5Pay } from '@/lib/wxpay';
+import { wechatPay } from '@/ai/flows/wechat-pay';
 
 export const runtime = 'nodejs';
 
@@ -17,18 +17,16 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
 
-    const outTradeNo = `sub_${planId}_${userId}_${Date.now()}`;
+    const res = await wechatPay({ planId, price, userId, tradeType });
+    
+    const outTradeNo = `sub_${planId}_${userId}_${Date.now()}`; // This is not ideal, but we need it for polling.
 
-    if (tradeType === 'NATIVE') {
-      const res = await nativePay(price, outTradeNo);
-      return Response.json({ paymentUrl: res.code_url, outTradeNo });
+    if (res.error) {
+        return new Response(JSON.stringify({ error: res.error }), { status: 500 });
     }
-    if (tradeType === 'H5') {
-      const res = await h5Pay(price, outTradeNo);
-      return Response.json({ paymentUrl: res.h5_url, outTradeNo });
-    }
+    
+    return Response.json({ paymentUrl: res.paymentUrl, outTradeNo });
 
-    return new Response(JSON.stringify({ error: 'Unsupported trade type' }), { status: 400 });
   } catch (err: any) {
     console.error('subscription/create error:', err);
     return new Response(JSON.stringify({ error: err.message || 'Internal error' }), { status: 500 });
