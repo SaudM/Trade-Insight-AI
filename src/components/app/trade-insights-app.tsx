@@ -19,7 +19,9 @@ import { TradeInsightsProvider } from './trade-insights-context';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TradeLogForm, type TradeLogFormValues } from './trade-log-form';
+
 import { SubscriptionModal } from './subscription-modal';
+
 
 export function TradeInsightsApp() {
   const [activeView, setActiveView] = useState<View>('dashboard');
@@ -136,6 +138,7 @@ export function TradeInsightsApp() {
         return null;
     }
   };
+
 
   const addTradeLog = (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => addDocWithTimestamp(tradeLogsRef, log, '交易笔记');
   const addDailyAnalysis = (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => addDocWithTimestamp(dailyAnalysesRef, analysis, '每日分析');
