@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import type { TradeLog, View } from '@/lib/types';
@@ -133,7 +134,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
             </AppHeader>
             <ScrollArea className="flex-1">
               <main className="min-w-0 w-full p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6 overflow-x-hidden">
-                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
                       <div className="min-w-0 col-span-1">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -203,8 +204,8 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                   </div>
                   
 
-                   <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-5">
-                        <div className="min-w-0 md:col-span-1 xl:col-span-2">
+                   <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-5">
+                        <div className="min-w-0 lg:col-span-2">
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">盈亏比</CardTitle>
@@ -216,7 +217,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="min-w-0 md:col-span-1 xl:col-span-3">
+                        <div className="min-w-0 lg:col-span-3">
                             <Card className="flex flex-col">
                                <WinLossRatioChart profitableTrades={profitableTrades.length} lossTrades={losingTrades.length} />
                             </Card>
