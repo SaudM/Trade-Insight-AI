@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { WandSparkles, Sparkles } from 'lucide-react';
+import { WandSparkles, Sparkles, ExternalLink } from 'lucide-react';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -157,12 +157,12 @@ export function ReportView({
                             升级到Pro版，即可获得由AI驱动的深度交易分析、模式识别和个性化改进建议。
                         </p>
                         <div className="mt-6 flex gap-4">
-                             <Button onClick={handleAnalysis}>
-                                <Sparkles className="mr-2 h-4 w-4"/>
-                                立即升级到 Pro
-                            </Button>
-                            <Button variant="outline" asChild>
-                                <Link href="/pricing">查看所有方案</Link>
+                            <Button asChild>
+                                <Link href="/pricing" target="_blank">
+                                    <Sparkles className="mr-2 h-4 w-4"/>
+                                    查看订阅方案
+                                    <ExternalLink className="ml-2 h-4 w-4" />
+                                </Link>
                             </Button>
                         </div>
                     </div>
