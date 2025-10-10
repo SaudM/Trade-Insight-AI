@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { wechatPay } from '@/ai/flows/wechat-pay';
 
 export const runtime = 'nodejs';
+// Tell Next.js to not bundle these packages on the server.
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
