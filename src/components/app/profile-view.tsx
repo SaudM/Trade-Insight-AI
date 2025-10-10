@@ -15,6 +15,7 @@ import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import Link from "next/link";
+import { Separator } from "../ui/separator";
 
 export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }: { isProUser: boolean, subscription: Subscription | null, onOpenSubscriptionModal: () => void }) {
     const { user } = useFirebase();
@@ -78,16 +79,14 @@ export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }
                                 <CardDescription>{user?.email}</CardDescription>
                             </div>
                         </CardHeader>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>会员状态</CardTitle>
-                            <CardDescription>管理您的订阅和访问权限。</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                         <CardContent className="space-y-4">
+                            <Separator />
+                            <div className="pt-2">
+                                <h3 className="text-lg font-medium">会员状态</h3>
+                                <p className="text-sm text-muted-foreground">管理您的订阅和访问权限。</p>
+                            </div>
                             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                      <Crown className={`w-6 h-6 ${isProUser ? 'text-yellow-500' : 'text-muted-foreground'}`}/>
                                      <div>
                                         <p className="font-semibold">{isProUser ? '专业版会员' : '免费试用'}</p>
