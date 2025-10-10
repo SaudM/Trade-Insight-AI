@@ -1,0 +1,29 @@
+diff --git a/node_modules/wechatpay-node-v3/dist/wechatpay.js b/node_modules/wechatpay-node-v3/dist/wechatpay.js
+index c8e92f2..8f21915 100644
+--- a/node_modules/wechatpay-node-v3/dist/wechatpay.js
++++ b/node_modules/wechatpay-node-v3/dist/wechatpay.js
+@@ -2,7 +2,6 @@
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.SignType = void 0;
+ const tslib_1 = require("tslib");
+-const formidable_1 = tslib_1.__importDefault(require("formidable"));
+ const fs_1 = tslib_1.__importDefault(require("fs"));
+ const utils_1 = require("./utils");
+ var SignType;
+@@ -48,15 +47,7 @@
+      * @returns - The notification content.
+      */
+     async notification(req) {
+-        const form = new formidable_1.default.IncomingForm();
+-        return new Promise((resolve, reject) => {
+-            form.parse(req, (err, fields, files) => {
+-                if (err) {
+-                    return reject(err);
+-                }
+-                return resolve(fields);
+-            });
+-        });
++        return Promise.resolve({});
+     }
+     /**
+      * Decrypt the notification content.
