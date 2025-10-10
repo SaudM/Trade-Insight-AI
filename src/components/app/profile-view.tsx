@@ -79,12 +79,7 @@ export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }
                                 <CardDescription>{user?.email}</CardDescription>
                             </div>
                         </CardHeader>
-                         <CardContent className="space-y-4">
-                            <Separator />
-                            <div className="pt-2">
-                                <h3 className="text-lg font-medium">会员状态</h3>
-                                <p className="text-sm text-muted-foreground">管理您的订阅和访问权限。</p>
-                            </div>
+                         <CardContent>
                             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                                 <div className="flex items-center gap-3">
                                      <Crown className={`w-6 h-6 ${isProUser ? 'text-yellow-500' : 'text-muted-foreground'}`}/>
