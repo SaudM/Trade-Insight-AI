@@ -3,12 +3,16 @@ import * as crypto from 'crypto';
 import axios from 'axios';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 
 // Helper function to generate signature for WeChat Pay API v3
 const getAuthorizationHeader = (method: string, url: string, body: string = ''): string => {
     const mchid = process.env.WX_MCHID!;
     const serial_no = process.env.WX_SERIAL_NO!;
-    const private_key = process.env.WX_PRIVATE_KEY!;
+    const raw_private_key = process.env.WX_PRIVATE_KEY!;
+    
+    const private_key = raw_private_key.replace(/\\n/g, '\n');
 
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const nonce_str = Math.random().toString(36).substring(2, 15);

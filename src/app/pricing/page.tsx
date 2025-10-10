@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { QRCodeModal } from '@/components/app/qrcode-modal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
+import { activateSubscription } from '@/lib/subscription';
+import { useFirestore } from '@/firebase';
 
 const pricingPlans: PricingPlan[] = [
   {
@@ -83,6 +85,7 @@ const faqs = [
 
 export default function PricingPage() {
     const { user } = useUser();
+    const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
     const isMobile = useIsMobile();
@@ -125,7 +128,7 @@ export default function PricingPage() {
             if (result.paymentUrl && result.outTradeNo) {
                 if (tradeType === 'NATIVE') {
                     setQrCodeUrl(result.paymentUrl);
-                    pollStatus(result.outTradeNo);
+                    pollStatus(result.outTradeNo, plan.id);
                 } else if (tradeType === 'H5') {
                     window.location.href = result.paymentUrl;
                 }
@@ -146,16 +149,22 @@ export default function PricingPage() {
             });
         } finally {
             if (!isMobile) {
-              setIsLoading(null);
+              // For desktop, loading state is handled by QR code modal visibility
+            } else {
+              setIsLoading(null); // Reset loading for H5 redirection
             }
         }
     };
 
-    const pollStatus = (outTradeNo: string) => {
+    const pollStatus = (outTradeNo: string, planId: PricingPlan['id']) => {
         let attempts = 0;
         const maxAttempts = 60; // ~3 minutes at 3s interval
         const intervalId = setInterval(async () => {
             attempts++;
+            if (!user) {
+              clearInterval(intervalId);
+              return;
+            }
             try {
                 const res = await fetch(`/api/subscription/status?outTradeNo=${encodeURIComponent(outTradeNo)}`);
                 if (!res.ok) {
@@ -167,6 +176,8 @@ export default function PricingPage() {
                     clearInterval(intervalId);
                     setPollingIntervalId(null);
                     setQrCodeUrl(null);
+                    setIsLoading(null);
+                    await activateSubscription({ firestore, uid: user.uid, planId, paymentId: data.transaction_id });
                     toast({ title: '支付成功', description: '您的订阅已生效。即将跳转...' });
                     setTimeout(() => router.push('/'), 2000);
                 }
