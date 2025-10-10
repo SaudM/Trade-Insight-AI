@@ -106,7 +106,7 @@ const createWechatPayTransaction = ai.defineFlow(
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': 'Trade-Insight-AI/1.0',
+                'User-Agent': 'Trade-Insight-AI', // Corrected User-Agent
             }
         });
         
