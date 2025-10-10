@@ -1,29 +1,76 @@
 diff --git a/node_modules/wechatpay-node-v3/src/index.js b/node_modules/wechatpay-node-v3/src/index.js
-index 9276d49..f9f0951 100644
+index 92956f5..9c4a5c9 100644
 --- a/node_modules/wechatpay-node-v3/src/index.js
 +++ b/node_modules/wechatpay-node-v3/src/index.js
 @@ -1,5 +1,5 @@
- const Pem = require('./pem');
--const Formidable = require('formidable');
-+// const Formidable = require('formidable');
- const { createHash } = require('crypto');
- const { readFileSync, writeFileSync } = require('fs');
- const { Aes, Rsa, request, Download, `SignType` } = require('./utils');
-@@ -194,7 +194,7 @@
-    * @property {string} nonce_str - The nonce_str from wechat.
-    * @returns {object} - The payment detail.
-    */
--  async notification(request) {
-+  /*async notification(request) {
-     const {
-       'wechatpay-timestamp': timestamp,
-       'wechatpay-nonce': nonce,
-@@ -239,7 +239,7 @@
-         reject(err);
-       });
-     });
--  }
-+  }*/
- }
+ const { request } = require('./request');
+-const { Form, Formidable } = require('formidable');
++// const { Form, Formidable } = require('formidable');
+ const { Rsa } = require('./rsa');
+ const { SignType } = require('./sign-type');
  
- WechatPay.SignType = SignType;
+@@ -35,7 +35,7 @@
+     this.rsa = new Rsa(this.privateKey, this.publicKey);
+   }
+ 
+-  static Form = Form;
+-  static Formidable = Formidable;
++  // static Form = Form;
++  // static Formidable = Formidable;
+ 
+   /**
+    * V3 版本的支付签名
+@@ -219,6 +219,7 @@
+   /**
+    * 回调通知
+    */
++  /*
+   get Notification() {
+     const that = this;
+ 
+@@ -291,6 +292,7 @@
+ 
+     return Notification;
+   }
++  */
+ 
+   /**
+    * 获取平台证书
+diff --git a/node_modules/wechatpay-node-v3/src/index.mjs b/node_modules/wechatpay-node-v3/src/index.mjs
+index 28e833f..b7b4118 100644
+--- a/node_modules/wechatpay-node-v3/src/index.mjs
++++ b/node_modules/wechatpay-node-v3/src/index.mjs
+@@ -1,5 +1,5 @@
+ import { request } from './request.mjs';
+-import { Form, Formidable } from 'formidable';
++// import { Form, Formidable } from 'formidable';
+ import { Rsa } from './rsa.mjs';
+ import { SignType } from './sign-type.mjs';
+ 
+@@ -35,8 +35,8 @@
+     this.rsa = new Rsa(this.privateKey, this.publicKey);
+   }
+ 
+-  static Form = Form;
+-  static Formidable = Formidable;
++  // static Form = Form;
++  // static Formidable = Formidable;
+ 
+   /**
+    * V3 版本的支付签名
+@@ -219,6 +219,7 @@
+   /**
+    * 回调通知
+    */
++  /*
+   get Notification() {
+     const that = this;
+ 
+@@ -291,6 +292,7 @@
+ 
+     return Notification;
+   }
++  */
+ 
+   /**
+    * 获取平台证书
