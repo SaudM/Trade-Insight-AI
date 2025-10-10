@@ -49,16 +49,39 @@ export type MonthlySummary = {
     monthEndDate: string | Timestamp;
     performanceComparison: string;
     recurringIssues: string;
-    strategyExecutionAssessment: string;
+    strategyExecutionEvaluation: string;
     keyLessons: string;
     iterationSuggestions: string;
     createdAt: Timestamp;
 }
 
-export type View = 'dashboard' | 'tradelog' | 'analysis';
+export type Subscription = {
+  id: string;
+  userId: string;
+  planId: 'monthly' | 'quarterly' | 'semi_annually' | 'annually';
+  status: 'active' | 'inactive' | 'cancelled' | 'trialing';
+  startDate: string | Timestamp;
+  endDate: string | Timestamp;
+  paymentProvider: 'wechat_pay' | 'alipay' | 'stripe';
+  paymentId: string;
+  createdAt: Timestamp;
+}
+
+export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing';
 
 export const StockSchema = z.object({
   value: z.string(),
   label: z.string(),
 });
 export type Stock = z.infer<typeof StockSchema>;
+
+export interface PricingPlan {
+  id: 'monthly' | 'quarterly' | 'semi_annually' | 'annually';
+  name: string;
+  duration: string;
+  price: number;
+  originalPrice: number;
+  discount: string;
+  features: string[];
+  isPopular?: boolean;
+}

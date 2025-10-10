@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { WandSparkles } from 'lucide-react';
+import { WandSparkles, Sparkles } from 'lucide-react';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import type { DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 import type { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 
 type Report = DailyAnalysis | WeeklyReview | MonthlySummary;
 
@@ -32,10 +33,11 @@ type ReportViewProps = {
     reportType: string;
     reportName: string;
     reports: Report[];
-    onGenerate: () => Promise<Report | null>;
+    onGenerate: () => Promise<Report | null | void>;
     tradeLogs: any[];
     getReportDate: (report: Report) => string | Timestamp;
     cards: CardConfig[];
+    isProUser: boolean;
 };
 
 export function ReportView({ 
@@ -46,6 +48,7 @@ export function ReportView({
     tradeLogs,
     getReportDate,
     cards,
+    isProUser
 }: ReportViewProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [allReports, setAllReports] = useState(reports);
@@ -69,14 +72,16 @@ export function ReportView({
     const handleAnalysis = async () => {
         setIsLoading(true);
         try {
-             if (tradeLogs.length === 0) {
+             if (!isProUser && tradeLogs.length === 0) {
                 toast({ title: `无交易记录可供分析。`, description: `请确保所选时间范围内有交易记录以生成${reportType}${reportName}。` });
                 setIsLoading(false);
                 return;
             }
             
-            const newReport = await onGenerate();
-            if (newReport) {
+            const result = await onGenerate();
+
+            if (result) {
+                 const newReport = result as Report;
                 setAllReports(prev => [newReport, ...prev]);
                 setSelectedReportId(newReport.id);
                 toast({ title: `${reportType}${reportName}已生成并保存` });
@@ -121,7 +126,7 @@ export function ReportView({
                         </Select>
                     )}
                     <Button onClick={handleAnalysis} disabled={isLoading}>
-                        <WandSparkles className="mr-2" />
+                        <WandSparkles className="mr-2 h-4 w-4" />
                         {isLoading ? '分析中...' : `生成新${reportName}`}
                     </Button>
                 </div>
@@ -143,11 +148,23 @@ export function ReportView({
                   </div>
                 ) : (
                     <div className="flex flex-col flex-1 items-center justify-center text-center bg-card border rounded-lg p-8">
-                        <WandSparkles className="w-16 h-16 mb-4 text-primary" />
-                        <h2 className="text-2xl font-headline font-semibold">{`生成您的${reportType}AI${reportName}`}</h2>
+                        <div className="relative mb-4">
+                            <WandSparkles className="w-16 h-16 text-primary" />
+                            <Sparkles className="w-8 h-8 absolute -top-2 -right-3 text-accent animate-pulse" />
+                        </div>
+                        <h2 className="text-2xl font-headline font-semibold">{`解锁您的专属AI${reportName}`}</h2>
                         <p className="mt-2 max-w-md text-muted-foreground">
-                            请在仪表盘选择一个时间周期，然后点击上方的“{`生成新${reportName}`}”按钮，让AI分析您的交易记录，并提供专业的洞察和建议。
+                            升级到Pro版，即可获得由AI驱动的深度交易分析、模式识别和个性化改进建议。
                         </p>
+                        <div className="mt-6 flex gap-4">
+                             <Button onClick={handleAnalysis}>
+                                <Sparkles className="mr-2 h-4 w-4"/>
+                                立即升级到 Pro
+                            </Button>
+                            <Button variant="outline" asChild>
+                                <Link href="/pricing">查看所有方案</Link>
+                            </Button>
+                        </div>
                     </div>
                 )}
             </main>

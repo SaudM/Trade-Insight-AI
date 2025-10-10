@@ -1,7 +1,7 @@
 "use client"
 
 import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, Book, BarChart, LogOut, FileText } from 'lucide-react';
+import { LayoutDashboard, Book, BarChart, LogOut, FileText, Sparkles } from 'lucide-react';
 import type { View } from '@/lib/types';
 import { ThemeToggle } from '../theme-toggle';
 import { getAuth, signOut } from 'firebase/auth';
@@ -10,13 +10,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '../ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 type AppSidebarProps = {
   activeView: View;
   setActiveView: (view: View) => void;
+  // This should be derived from user's subscription status in a real app
+  isProUser: boolean; 
 };
 
-export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
+export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
@@ -71,6 +74,12 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           >
             <FileText />
             <span>分析报告</span>
+             {!isProUser && (
+              <Badge variant="outline" className="ml-auto h-5 bg-accent/20 border-accent/50 text-accent group-data-[active=true]:bg-accent/30">
+                <Sparkles className="mr-1 h-3 w-3" />
+                升级
+              </Badge>
+            )}
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>

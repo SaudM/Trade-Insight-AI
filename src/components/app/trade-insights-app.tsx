@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useMemo, createContext } from 'react';
+import { useState, useMemo, createContext, useEffect } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app/sidebar';
 import { Dashboard } from '@/components/app/dashboard';
 import { TradeLogView } from '@/components/app/trade-log-view';
 import { AnalysisView } from '@/components/app/analysis-view';
-import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary, Subscription } from '@/lib/types';
+import { useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
 import { Loader2 } from 'lucide-react';
@@ -17,6 +17,7 @@ import { TradeInsightsProvider } from './trade-insights-context';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TradeLogForm, type TradeLogFormValues } from './trade-log-form';
+import { SubscriptionModal } from './subscription-modal';
 
 export function TradeInsightsApp() {
   const [activeView, setActiveView] = useState<View>('dashboard');
@@ -26,6 +27,36 @@ export function TradeInsightsApp() {
   // --- Form Dialog State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<TradeLog | null>(null);
+  
+  // --- Subscription Modal State ---
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+
+
+  // --- Subscription ---
+  const subscriptionRef = useMemoFirebase(
+    () => user ? doc(firestore, 'users', user.uid, 'subscription', 'current') : null,
+    [user, firestore]
+  );
+  const { data: subscription, isLoading: isLoadingSubscription } = useDoc<Subscription>(subscriptionRef);
+  
+  // Simple logic to determine if the user is a pro user
+  // In a real app, you would also check if the subscription is active and within the end date.
+  // For new users, we can give a 30-day trial.
+  const isProUser = useMemo(() => {
+    if (!user) return false;
+    if (subscription) {
+        // Check if subscription is active
+        const now = new Date();
+        const endDate = (subscription.endDate as Timestamp).toDate();
+        return subscription.status === 'active' && endDate > now;
+    }
+    // New user trial (e.g., within 30 days of creation)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const userCreationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date();
+    return userCreationDate > thirtyDaysAgo;
+  }, [subscription, user]);
+
 
   // --- TradeLogs ---
   const tradeLogsRef = useMemoFirebase(
@@ -89,15 +120,11 @@ export function TradeInsightsApp() {
         const newDocRef = await addDoc(ref, docData);
         toast({ title: `${entityName}已添加` });
         
-        if (entityName === '每日分析') {
+        if (entityName === '每日分析' || entityName === '每周回顾' || entityName === '月度总结') {
           setActiveView('analysis');
-        } else if (entityName === '每周回顾') {
-            setActiveView('analysis');
-        } else if (entityName === '月度总结') {
-            setActiveView('analysis');
         }
 
-        return { ...docData, id: newDocRef.id };
+        return { ...docData, id: newDocRef.id, createdAt: Timestamp.now() };
 
     } catch (error) {
         console.error(error);
@@ -215,8 +242,10 @@ export function TradeInsightsApp() {
     });
   }, [tradeLogs]);
 
+  const isLoading = isLoadingLogs || isLoadingDaily || isLoadingWeekly || isLoadingMonthly || isLoadingSubscription;
+
   const renderView = () => {
-    if (isLoadingLogs || isLoadingDaily || isLoadingWeekly || isLoadingMonthly) {
+    if (isLoading) {
       return (
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -250,6 +279,8 @@ export function TradeInsightsApp() {
                   addDailyAnalysis={addDailyAnalysis}
                   addWeeklyAnalysis={addWeeklyAnalysis}
                   addMonthlySummary={addMonthlySummary}
+                  isProUser={isProUser}
+                  onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
                 />;
       default:
         return <Dashboard 
@@ -266,7 +297,7 @@ export function TradeInsightsApp() {
     <SidebarProvider>
       <TradeInsightsProvider value={{ activeView, setActiveView }}>
         <div className="flex h-screen bg-background text-foreground w-full">
-          <AppSidebar activeView={activeView} setActiveView={setActiveView} />
+          <AppSidebar activeView={activeView} setActiveView={setActiveView} isProUser={isProUser} />
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -280,6 +311,7 @@ export function TradeInsightsApp() {
                   </ScrollArea>
               </DialogContent>
             </Dialog>
+            <SubscriptionModal isOpen={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen} />
           </SidebarInset>
         </div>
       </TradeInsightsProvider>

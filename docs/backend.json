@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -27,6 +28,10 @@
           "type": "string",
           "description": "Timestamp of when the user account was created.",
           "format": "date-time"
+        },
+        "subscription": {
+          "$ref": "#/backend/entities/Subscription",
+          "description": "The user's current subscription details."
         }
       },
       "required": [
@@ -278,6 +283,52 @@
         "monthStartDate",
         "monthEndDate"
       ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a user's subscription to a plan.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Subscription entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User."
+        },
+        "planId": {
+          "type": "string",
+          "enum": ["monthly", "quarterly", "semi_annually", "annually"],
+          "description": "The subscribed plan identifier."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive", "cancelled", "trialing"],
+          "description": "The current status of the subscription."
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date of the subscription period."
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The end date of the subscription period."
+        },
+        "paymentProvider": {
+          "type": "string",
+          "enum": ["wechat_pay", "alipay", "stripe"],
+          "description": "The payment provider used for the transaction."
+        },
+        "paymentId": {
+          "type": "string",
+          "description": "The transaction ID from the payment provider."
+        }
+      },
+      "required": ["id", "userId", "planId", "status", "startDate", "endDate"]
     }
   },
   "auth": {
@@ -298,11 +349,27 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information.  Path-based ownership enforced via security rules.",
+          "description": "Stores user profile information. Path-based ownership enforced via security rules.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user.  Corresponds to the Firebase auth UID."
+              "description": "The unique identifier for the user. Corresponds to the Firebase auth UID."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/users/{userId}/subscription/current",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores the user's current subscription details as a single document for easy access.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
             }
           ]
         }
@@ -408,8 +475,6 @@
         }
       }
     ],
-    "reasoning": "This design prioritizes user data isolation in a multi-tenant environment by using path-based ownership. Each user's data is stored under a dedicated `/users/{userId}` path, ensuring data segregation and straightforward security rules. This approach also aligns with the principle of Authorization Independence, as access control can be directly enforced based on the `request.auth.uid` and the path structure, avoiding the need for `get()` calls to parent documents for authorization.\n\nThe structure supports the required QAPs by:\n\n1.  **Secure `list` operations:** Rules can easily restrict listing operations to the authenticated user's own data.\n2.  **Ownership Integrity:** Enforces ownership for each data by using hierarchical paths. No data can be created without being owned by the authenticated user."
+    "reasoning": "This design prioritizes user data isolation in a multi-tenant environment by using path-based ownership. Each user's data is stored under a dedicated `/users/{userId}` path, ensuring data segregation and straightforward security rules. A user's subscription is stored in a singleton document `/users/{userId}/subscription/current` for efficient lookup to control feature access. This approach also aligns with the principle of Authorization Independence, as access control can be directly enforced based on the `request.auth.uid` and the path structure, avoiding the need for `get()` calls to parent documents for authorization."
   }
 }
-
-    

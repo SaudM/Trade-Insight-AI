@@ -21,6 +21,8 @@ export function AnalysisView({
     addDailyAnalysis,
     addWeeklyAnalysis,
     addMonthlySummary,
+    isProUser,
+    onOpenSubscriptionModal,
 }: { 
     tradeLogs: any[], 
     filteredTradeLogs: any[],
@@ -30,84 +32,100 @@ export function AnalysisView({
     addDailyAnalysis: (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => Promise<any>,
     addWeeklyAnalysis: (review: Omit<WeeklyReview, 'id' | 'userId'>) => Promise<any>,
     addMonthlySummary: (summary: Omit<MonthlySummary, 'id' | 'userId'>) => Promise<any>,
+    isProUser: boolean;
+    onOpenSubscriptionModal: () => void;
 }) {
 
-    const handleDailyAnalysis = async () => {
-        const logsString = filteredTradeLogs.map(log => 
-          `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
-        ).join('\n');
-        
-        const result = await analyzeDailyTrades({ tradeLogs: logsString });
-        
-        const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId'> = {
-            date: new Date().toISOString(),
-            summary: result.summary,
-            strengths: result.strengths,
-            weaknesses: result.weaknesses,
-            emotionalImpact: result.emotionalImpactAnalysis,
-            improvementSuggestions: result.improvementSuggestions,
-        };
+    const handleAnalysisRequest = async (analysisFn: () => Promise<any>) => {
+        if (!isProUser) {
+            onOpenSubscriptionModal();
+            return null;
+        }
+        return analysisFn();
+    }
 
-        return addDailyAnalysis(newAnalysis as any);
+    const handleDailyAnalysis = async () => {
+        return handleAnalysisRequest(async () => {
+            const logsString = filteredTradeLogs.map(log => 
+              `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
+            ).join('\n');
+            
+            const result = await analyzeDailyTrades({ tradeLogs: logsString });
+            
+            const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId'> = {
+                date: new Date().toISOString(),
+                summary: result.summary,
+                strengths: result.strengths,
+                weaknesses: result.weaknesses,
+                emotionalImpact: result.emotionalImpactAnalysis,
+                improvementSuggestions: result.improvementSuggestions,
+            };
+    
+            return addDailyAnalysis(newAnalysis as any);
+        });
     };
 
     const handleWeeklyAnalysis = async () => {
-        const logsString = JSON.stringify(filteredTradeLogs, null, 2);
-        const result = await weeklyPatternDiscovery({ tradingLogs: logsString });
+        return handleAnalysisRequest(async () => {
+            const logsString = JSON.stringify(filteredTradeLogs, null, 2);
+            const result = await weeklyPatternDiscovery({ tradingLogs: logsString });
 
-        const now = new Date();
-        const newReview: Omit<WeeklyReview, 'id' | 'userId'> = {
-            startDate: startOfWeek(now, { weekStartsOn: 1 }).toISOString(),
-            endDate: now.toISOString(),
-            patternSummary: `${result.successPatterns}\n${result.errorPatterns}`,
-            errorPatterns: result.errorPatterns,
-            successPatterns: result.successPatterns,
-            positionSizingAnalysis: result.positionSizingAssessment,
-            emotionalCorrelation: result.emotionCorrelation,
-            improvementPlan: result.improvementPlan,
-        };
+            const now = new Date();
+            const newReview: Omit<WeeklyReview, 'id' | 'userId'> = {
+                startDate: startOfWeek(now, { weekStartsOn: 1 }).toISOString(),
+                endDate: now.toISOString(),
+                patternSummary: `${result.successPatterns}\n${result.errorPatterns}`,
+                errorPatterns: result.errorPatterns,
+                successPatterns: result.successPatterns,
+                positionSizingAnalysis: result.positionSizingAssessment,
+                emotionalCorrelation: result.emotionCorrelation,
+                improvementPlan: result.improvementPlan,
+            };
 
-        return addWeeklyAnalysis(newReview as any);
+            return addWeeklyAnalysis(newReview as any);
+        });
     };
 
     const handleMonthlyAnalysis = async () => {
-        const now = new Date();
-        const startOfCurrentMonth = startOfMonth(now);
-        const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
+        return handleAnalysisRequest(async () => {
+            const now = new Date();
+            const startOfCurrentMonth = startOfMonth(now);
+            const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
 
-        const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime as string) >= startOfCurrentMonth);
-        const previousMonthLogs = tradeLogs.filter(log => {
-            const logDate = new Date(log.tradeTime as string);
-            return logDate >= startOfPreviousMonth && logDate < startOfCurrentMonth;
+            const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime as string) >= startOfCurrentMonth);
+            const previousMonthLogs = tradeLogs.filter(log => {
+                const logDate = new Date(log.tradeTime as string);
+                return logDate >= startOfPreviousMonth && logDate < startOfCurrentMonth;
+            });
+
+            const toPlainObject = (log: TradeLog) => {
+              const plainLog: any = { ...log };
+              if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
+                plainLog.tradeTime = (plainLog.tradeTime as Timestamp).toDate().toISOString();
+              }
+               if (plainLog.createdAt && typeof plainLog.createdAt !== 'string') {
+                 plainLog.createdAt = (plainLog.createdAt as Timestamp).toDate().toISOString();
+              }
+              return plainLog;
+            };
+
+            const result = await monthlyPerformanceReview({ 
+                currentMonthLogs: currentMonthLogs.map(toPlainObject), 
+                previousMonthLogs: previousMonthLogs.map(toPlainObject) 
+            });
+
+            const newSummary: Omit<MonthlySummary, 'id' | 'userId'> = {
+                monthStartDate: startOfCurrentMonth.toISOString(),
+                monthEndDate: new Date().toISOString(),
+                performanceComparison: result.comparisonSummary,
+                recurringIssues: result.persistentIssues,
+                strategyExecutionEvaluation: result.strategyExecutionEvaluation,
+                keyLessons: result.keyLessons,
+                iterationSuggestions: result.iterationSuggestions,
+            };
+            
+            return addMonthlySummary(newSummary as any);
         });
-
-        const toPlainObject = (log: TradeLog) => {
-          const plainLog: any = { ...log };
-          if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
-            plainLog.tradeTime = (plainLog.tradeTime as Timestamp).toDate().toISOString();
-          }
-           if (plainLog.createdAt && typeof plainLog.createdAt !== 'string') {
-             plainLog.createdAt = (plainLog.createdAt as Timestamp).toDate().toISOString();
-          }
-          return plainLog;
-        };
-
-        const result = await monthlyPerformanceReview({ 
-            currentMonthLogs: currentMonthLogs.map(toPlainObject), 
-            previousMonthLogs: previousMonthLogs.map(toPlainObject) 
-        });
-
-        const newSummary: Omit<MonthlySummary, 'id' | 'userId'> = {
-            monthStartDate: startOfCurrentMonth.toISOString(),
-            monthEndDate: new Date().toISOString(),
-            performanceComparison: result.comparisonSummary,
-            recurringIssues: result.persistentIssues,
-            strategyExecutionEvaluation: result.strategyExecutionEvaluation,
-            keyLessons: result.keyLessons,
-            iterationSuggestions: result.iterationSuggestions,
-        };
-        
-        return addMonthlySummary(newSummary as any);
     };
 
     return (
@@ -129,6 +147,7 @@ export function AnalysisView({
                         onGenerate={handleDailyAnalysis}
                         tradeLogs={filteredTradeLogs}
                         getReportDate={(r) => (r as DailyAnalysis).date}
+                        isProUser={isProUser}
                         cards={[
                             { id: 'summary', title: '摘要', icon: BrainCircuit, content: (r) => (r as DailyAnalysis).summary },
                             { id: 'strengths', title: '优点', icon: Zap, content: (r) => (r as DailyAnalysis).strengths },
@@ -146,6 +165,7 @@ export function AnalysisView({
                         onGenerate={handleWeeklyAnalysis}
                         tradeLogs={filteredTradeLogs}
                         getReportDate={(r) => (r as WeeklyReview).endDate}
+                        isProUser={isProUser}
                         cards={[
                             { id: 'successPatterns', title: '成功模式', icon: Trophy, content: (r) => (r as WeeklyReview).successPatterns },
                             { id: 'errorPatterns', title: '错误模式', icon: Repeat, content: (r) => (r as WeeklyReview).errorPatterns },
@@ -163,6 +183,7 @@ export function AnalysisView({
                         onGenerate={handleMonthlyAnalysis}
                         tradeLogs={tradeLogs} // Monthly view uses all logs
                         getReportDate={(r) => (r as MonthlySummary).monthEndDate}
+                        isProUser={isProUser}
                         cards={[
                             { id: 'performanceComparison', title: '对比总结', icon: GitCompareArrows, content: (r) => (r as MonthlySummary).performanceComparison },
                             { id: 'recurringIssues', title: '持续性问题', icon: AlertTriangle, content: (r) => (r as MonthlySummary).recurringIssues },
