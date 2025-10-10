@@ -9,8 +9,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import WechatPay, { SignType } from 'wechatpay-node-v3';
+import { z } from 'zod';
+import WechatPay from 'wechatpay-node-v3';
 
 export const WeChatPayInputSchema = z.object({
   planId: z.string().describe("The ID of the pricing plan."),
@@ -43,11 +43,10 @@ const createWechatPayTransaction = ai.defineFlow(
     const pay = new WechatPay({
       appid: process.env.WX_APPID!,
       mchid: process.env.WX_MCHID!,
-      publicKey: '', // Public key is not required for v3 API calls
+      publicKey: '', // Public key is not required for v3 API calls.
       privateKey: process.env.WX_PRIVATE_KEY!.replace(/\\n/g, '\n'),
       serial_no: process.env.WX_SERIAL_NO!,
       v3key: process.env.WX_V3_CODE!,
-      signType: SignType.RSA_SHA256,
     });
     
     const out_trade_no = `plan_${input.planId}_${input.userId}_${Date.now()}`;
@@ -63,8 +62,8 @@ const createWechatPayTransaction = ai.defineFlow(
             out_trade_no,
             notify_url: process.env.WX_NOTIFY_URL!,
             amount,
-            appid: process.env.WX_APPID,
-            mchid: process.env.WX_MCHID,
+            // appid: process.env.WX_APPID,
+            // mchid: process.env.WX_MCHID,
         };
 
         let result: any;

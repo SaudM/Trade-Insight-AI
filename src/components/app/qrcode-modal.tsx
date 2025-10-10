@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
+import { Button } from '../ui/button';
 
 interface QRCodeModalProps {
   qrCodeUrl: string | null;
-  setQrCodeUrl: (url: string | null) => void;
+  onCancel: () => void;
 }
 
-export function QRCodeModal({ qrCodeUrl, setQrCodeUrl }: QRCodeModalProps) {
+export function QRCodeModal({ qrCodeUrl, onCancel }: QRCodeModalProps) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export function QRCodeModal({ qrCodeUrl, setQrCodeUrl }: QRCodeModalProps) {
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setQrCodeUrl(null);
+      onCancel();
     }
   };
 
@@ -60,6 +61,9 @@ export function QRCodeModal({ qrCodeUrl, setQrCodeUrl }: QRCodeModalProps) {
             </div>
           )}
         </div>
+         <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>取消支付</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

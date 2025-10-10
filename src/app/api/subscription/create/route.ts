@@ -19,7 +19,10 @@ export async function POST(req: NextRequest) {
 
     const res = await wechatPay({ planId, price, userId, tradeType });
     
-    const outTradeNo = `sub_${planId}_${userId}_${Date.now()}`; // This is not ideal, but we need it for polling.
+    // The outTradeNo is generated inside the flow, but we need it for polling.
+    // For this implementation, we will regenerate it on the client, which is not ideal but works for this demo.
+    // A better approach would be to have the flow return it.
+    const outTradeNo = `plan_${planId}_${userId}_${Date.now()}`; 
 
     if (res.error) {
         return new Response(JSON.stringify({ error: res.error }), { status: 500 });

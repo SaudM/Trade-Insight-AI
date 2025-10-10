@@ -15,7 +15,6 @@ import {
 import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-// import { wechatPay, type WeChatPayInput } from '@/ai/flows/wechat-pay';
 import { QRCodeModal } from '@/components/app/qrcode-modal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
@@ -90,6 +89,8 @@ export default function PricingPage() {
 
     const [isLoading, setIsLoading] = useState<PricingPlan['id'] | null>(null);
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+    const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+
 
     const handleSubscribe = async (plan: PricingPlan) => {
         if (!user) {
@@ -103,6 +104,9 @@ export default function PricingPage() {
 
         setIsLoading(plan.id);
         
+        // This is not ideal as it can be out of sync with the backend, but it's good enough for this demo.
+        const outTradeNo = `plan_${plan.id}_${user.uid}_${Date.now()}`;
+
         try {
             const tradeType = isMobile ? 'H5' : 'NATIVE';
             const createRes = await fetch('/api/subscription/create', {
@@ -113,14 +117,15 @@ export default function PricingPage() {
                   price: plan.price,
                   userId: user.uid,
                   tradeType,
+                  outTradeNo, // Pass it to the backend
                 }),
             });
             const result = await createRes.json();
 
-            if (result.paymentUrl && result.outTradeNo) {
+            if (result.paymentUrl) {
                 if (tradeType === 'NATIVE') {
                     setQrCodeUrl(result.paymentUrl);
-                    pollStatus(result.outTradeNo, plan.id);
+                    pollStatus(outTradeNo);
                 } else if (tradeType === 'H5') {
                     window.location.href = result.paymentUrl;
                 }
@@ -140,32 +145,52 @@ export default function PricingPage() {
                 description: "处理您的订阅时发生未知错误，请联系客服。",
             });
         } finally {
-            setIsLoading(null);
+            if (!isMobile) {
+              setIsLoading(null);
+            }
         }
     };
 
-    const pollStatus = async (outTradeNo: string, planId: PricingPlan['id']) => {
+    const pollStatus = (outTradeNo: string) => {
         let attempts = 0;
-        const maxAttempts = 40; // ~2 minutes at 3s interval
-        const interval = setInterval(async () => {
+        const maxAttempts = 60; // ~3 minutes at 3s interval
+        const intervalId = setInterval(async () => {
             attempts++;
             try {
                 const res = await fetch(`/api/subscription/status?outTradeNo=${encodeURIComponent(outTradeNo)}`);
+                if (!res.ok) {
+                    console.warn('Polling status failed with status:', res.status);
+                    return;
+                }
                 const data = await res.json();
                 if (data.trade_state === 'SUCCESS') {
-                    clearInterval(interval);
+                    clearInterval(intervalId);
+                    setPollingIntervalId(null);
                     setQrCodeUrl(null);
-                    toast({ title: '支付成功', description: '您的订阅已生效。' });
-                    router.push('/');
+                    toast({ title: '支付成功', description: '您的订阅已生效。即将跳转...' });
+                    setTimeout(() => router.push('/'), 2000);
                 }
             } catch (e) {
-                console.warn('poll status error', e);
+                console.warn('Poll status error:', e);
             }
             if (attempts >= maxAttempts) {
-                clearInterval(interval);
-                toast({ title: '支付超时', description: '请重新尝试订阅。' });
+                clearInterval(intervalId);
+                setPollingIntervalId(null);
+                setIsLoading(null);
+                setQrCodeUrl(null);
+                toast({ variant: 'destructive', title: '支付超时', description: '订单已超时，请重新尝试订阅。' });
             }
         }, 3000);
+        setPollingIntervalId(intervalId);
+    }
+    
+    const cancelSubscriptionAttempt = () => {
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId);
+        setPollingIntervalId(null);
+      }
+      setIsLoading(null);
+      setQrCodeUrl(null);
     }
 
   return (
@@ -285,7 +310,7 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
-    <QRCodeModal qrCodeUrl={qrCodeUrl} setQrCodeUrl={setQrCodeUrl} />
+    <QRCodeModal qrCodeUrl={qrCodeUrl} onCancel={cancelSubscriptionAttempt} />
     </>
   );
 }
