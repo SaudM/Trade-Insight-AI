@@ -15,7 +15,7 @@ import {
 import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { wechatPay, type WeChatPayInput } from '@/ai/flows/wechat-pay';
+// import { wechatPay, type WeChatPayInput } from '@/ai/flows/wechat-pay';
 import { QRCodeModal } from '@/components/app/qrcode-modal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
@@ -105,18 +105,22 @@ export default function PricingPage() {
         
         try {
             const tradeType = isMobile ? 'H5' : 'NATIVE';
-            const payload: WeChatPayInput = {
-                planId: plan.id,
-                price: plan.price, // Price in CNY
-                userId: user.uid,
-                tradeType: tradeType,
-            };
+            const createRes = await fetch('/api/subscription/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  planId: plan.id,
+                  price: plan.price,
+                  userId: user.uid,
+                  tradeType,
+                }),
+            });
+            const result = await createRes.json();
 
-            const result = await wechatPay(payload);
-
-            if (result.paymentUrl) {
+            if (result.paymentUrl && result.outTradeNo) {
                 if (tradeType === 'NATIVE') {
                     setQrCodeUrl(result.paymentUrl);
+                    pollStatus(result.outTradeNo, plan.id);
                 } else if (tradeType === 'H5') {
                     window.location.href = result.paymentUrl;
                 }
@@ -139,6 +143,30 @@ export default function PricingPage() {
             setIsLoading(null);
         }
     };
+
+    const pollStatus = async (outTradeNo: string, planId: PricingPlan['id']) => {
+        let attempts = 0;
+        const maxAttempts = 40; // ~2 minutes at 3s interval
+        const interval = setInterval(async () => {
+            attempts++;
+            try {
+                const res = await fetch(`/api/subscription/status?outTradeNo=${encodeURIComponent(outTradeNo)}`);
+                const data = await res.json();
+                if (data.trade_state === 'SUCCESS') {
+                    clearInterval(interval);
+                    setQrCodeUrl(null);
+                    toast({ title: '支付成功', description: '您的订阅已生效。' });
+                    router.push('/');
+                }
+            } catch (e) {
+                console.warn('poll status error', e);
+            }
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                toast({ title: '支付超时', description: '请重新尝试订阅。' });
+            }
+        }, 3000);
+    }
 
   return (
     <>
