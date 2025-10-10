@@ -114,7 +114,7 @@ export function ProfileView({ isProUser, subscription }: { isProUser: boolean, s
                                 )}
                             </div>
                         </CardContent>
-                        <CardFooter>
+                        <CardFooter className="justify-end">
                             {!subscription && (
                                  <Button asChild>
                                     <Link href="/pricing">
