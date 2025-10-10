@@ -104,19 +104,6 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
         </SidebarMenuItem>
       </SidebarMenu>
        <SidebarFooter className="mt-auto">
-        <div className="flex items-center gap-3 p-2 rounded-lg">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
-            <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-medium truncate">{user?.displayName || '匿名用户'}</span>
-            <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
-          </div>
-          <Button variant="ghost" size="icon" className="ml-auto" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
         <ThemeToggle />
       </SidebarFooter>
     </Sidebar>

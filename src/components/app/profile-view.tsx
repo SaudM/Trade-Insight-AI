@@ -8,19 +8,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AppHeader } from "./header";
 import type { Subscription } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink } from "lucide-react";
+import { Crown, ExternalLink, LogOut } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { format } from "date-fns";
-import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import { getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import Link from "next/link";
-import { Separator } from "../ui/separator";
+import { useRouter } from 'next/navigation';
 
 export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }: { isProUser: boolean, subscription: Subscription | null, onOpenSubscriptionModal: () => void }) {
     const { user } = useFirebase();
     const { toast } = useToast();
     const [isResetting, setIsResetting] = useState(false);
+    const router = useRouter();
 
     const getInitials = (name?: string | null) => {
         if (!name) return '...';
@@ -30,6 +31,18 @@ export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }
         }
         return name.substring(0, 2).toUpperCase();
     }
+    
+    const handleSignOut = async () => {
+        try {
+          const auth = getAuth();
+          await signOut(auth);
+          toast({ title: "已成功登出" });
+          router.push('/login');
+        } catch (error) {
+          toast({ variant: 'destructive', title: "登出失败", description: "无法登出，请稍后再试。" });
+        }
+    };
+
 
     const handleResetPassword = async () => {
         if (!user?.email) {
@@ -74,10 +87,14 @@ export function ProfileView({ isProUser, subscription, onOpenSubscriptionModal }
                                 <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
                                 <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
                             </Avatar>
-                            <div>
+                            <div className="flex-1">
                                 <CardTitle className="text-2xl">{user?.displayName}</CardTitle>
                                 <CardDescription>{user?.email}</CardDescription>
                             </div>
+                            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                                <LogOut className="h-5 w-5" />
+                                <span className="sr-only">退出登录</span>
+                            </Button>
                         </CardHeader>
                          <CardContent>
                             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
