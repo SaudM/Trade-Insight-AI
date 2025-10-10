@@ -88,8 +88,9 @@ const createWechatPayTransaction = ai.defineFlow(
       apiUrlPath = '/v3/pay/transactions/native';
     } else if (input.tradeType === 'H5') {
       apiUrlPath = '/v3/pay/transactions/h5';
+      // IP address is optional and can be problematic in dev environments.
+      // We remove it to avoid IP whitelist issues.
       requestBody.scene_info = {
-        payer_client_ip: '127.0.0.1', // This should be the user's actual IP in production
         h5_info: { type: 'Wap' },
       };
     } else {
@@ -106,7 +107,7 @@ const createWechatPayTransaction = ai.defineFlow(
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': 'Trade-Insight-AI', // Corrected User-Agent
+                'User-Agent': 'Trade-Insight-AI',
             }
         });
         
@@ -117,14 +118,21 @@ const createWechatPayTransaction = ai.defineFlow(
         } else if (result.h5_url) {
             return { paymentUrl: result.h5_url, outTradeNo: out_trade_no };
         } else {
-            console.error("WeChat Pay API response error:", result);
-            return { error: (result.message as string) || 'Failed to create payment transaction.' };
+            // This case should ideally not be reached if the API call is successful
+            // and returns a standard response.
+            console.error("WeChat Pay API call was successful but returned an unexpected response format:", result);
+            return { error: 'WeChat Pay returned an unexpected response.' };
         }
 
     } catch (error: any) {
-        console.error("Error creating WeChat Pay transaction:", error.response ? error.response.data : error.message);
-        // Safely extract the error message from WeChat's response if available
-        const errorMessage = error.response?.data ? (typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data)) : (error.message || 'An unexpected error occurred.');
+        // Log the full error for server-side debugging
+        console.error("Error creating WeChat Pay transaction:", JSON.stringify(error, null, 2));
+        
+        // Provide a structured error response to the client
+        const errorMessage = error.response?.data ? 
+            (typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data)) : 
+            (error.message || 'An unexpected error occurred during payment transaction creation.');
+
         return { error: errorMessage };
     }
   }
