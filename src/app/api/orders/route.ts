@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * 获取用户订单列表
- * GET /api/orders?userId=xxx&limit=10&offset=0
+ * GET /api/orders?userId=xxx
  */
 export async function GET(req: NextRequest) {
   const firestore = getAdminFirestore();
@@ -30,8 +30,6 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = parseInt(searchParams.get('offset') || '0');
 
     if (!userId) {
       return new Response(JSON.stringify({ error: 'Missing userId parameter' }), { 
@@ -41,51 +39,28 @@ export async function GET(req: NextRequest) {
 
     const ordersRef = firestore.collection('users').doc(userId).collection('orders');
     
-    // 按创建时间倒序排列，支持分页
-    let query = ordersRef.orderBy('createdAt', 'desc');
-    
-    if (offset > 0) {
-      // 如果有偏移量，需要先获取偏移位置的文档
-      const offsetSnapshot = await ordersRef
-        .orderBy('createdAt', 'desc')
-        .limit(offset)
-        .get();
-      
-      if (!offsetSnapshot.empty) {
-        const lastDoc = offsetSnapshot.docs[offsetSnapshot.docs.length - 1];
-        query = query.startAfter(lastDoc);
-      }
-    }
-    
-    const snapshot = await query.limit(limit).get();
+    // Simplified query: get all orders and sort by creation date
+    const snapshot = await ordersRef.orderBy('createdAt', 'desc').get();
     
     const orders = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      // 将Firestore Timestamp转换为ISO字符串
+      // Safely convert Firestore Timestamp to ISO string
       createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
       updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
       paidAt: doc.data().paidAt?.toDate?.()?.toISOString() || doc.data().paidAt,
     }));
 
-    // 获取总数（用于分页）
-    const totalSnapshot = await ordersRef.get();
-    const total = totalSnapshot.size;
-
+    // No complex pagination, just return all orders for the user
     return Response.json({
       orders,
-      pagination: {
-        total,
-        limit,
-        offset,
-        hasMore: offset + limit < total,
-      },
     });
 
   } catch (error: any) {
     console.error('Failed to fetch orders:', error);
+    // Provide a more generic error message to the client
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to fetch orders' 
+      error: 'An internal error occurred while fetching orders.' 
     }), { 
       status: 500 
     });
