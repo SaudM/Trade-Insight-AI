@@ -1,18 +1,18 @@
 
 "use client";
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Sparkles, ChevronRight } from "lucide-react";
+import { CheckCircle, Sparkles, ChevronRight, Gift } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import type { PricingPlan } from "@/lib/types";
+import type { PricingPlan, Subscription } from "@/lib/types";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { useUser } from "@/firebase";
+import { useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeModal } from '@/components/app/qrcode-modal';
@@ -20,34 +20,35 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
 import { activateSubscription } from '@/lib/subscription';
 import { useFirestore } from '@/firebase';
+import { doc, Timestamp } from 'firebase/firestore';
 
 const pricingPlans: PricingPlan[] = [
   {
     id: 'monthly',
     name: '月度会员',
     duration: '/月',
-    price: 28,
-    originalPrice: 35,
-    discount: '限时8折',
+    price: 14,
+    originalPrice: 28,
+    discount: '新用户专享',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
   },
   {
     id: 'quarterly',
     name: '季度会员',
     duration: '/季',
-    price: 78,
-    originalPrice: 105,
-    pricePerMonth: 26,
-    discount: '节省25%',
+    price: 39,
+    originalPrice: 84,
+    pricePerMonth: 13,
+    discount: '节省35%',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
   },
   {
     id: 'semi_annually',
     name: '半年会员',
     duration: '/半年',
-    price: 148,
-    originalPrice: 210,
-    pricePerMonth: 24.6,
+    price: 74,
+    originalPrice: 168,
+    pricePerMonth: 12.3,
     discount: '推荐',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
     isPopular: true,
@@ -56,9 +57,9 @@ const pricingPlans: PricingPlan[] = [
     id: 'annually',
     name: '年度会员',
     duration: '/年',
-    price: 268,
-    originalPrice: 420,
-    pricePerMonth: 22.3,
+    price: 134,
+    originalPrice: 336,
+    pricePerMonth: 11.2,
     discount: '最佳性价比',
     features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步', '优先客服支持', '新功能尝鲜'],
   },
@@ -90,9 +91,45 @@ export default function PricingPage() {
     const { toast } = useToast();
     const isMobile = useIsMobile();
 
-    const [isLoading, setIsLoading] = useState<PricingPlan['id'] | null>(null);
+    const [isLoading, setIsLoading] = useState<PricingPlan['id'] | 'trial' | null>(null);
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+    
+    // --- Subscription ---
+    const subscriptionRef = useMemoFirebase(
+      () => user ? doc(firestore, 'users', user.uid, 'subscription', 'current') : null,
+      [user, firestore]
+    );
+    const { data: subscription } = useDoc<Subscription>(subscriptionRef);
+
+    const isTrialUser = useMemo(() => {
+        if (!user || subscription) return false;
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const userCreationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date();
+        return userCreationDate > thirtyDaysAgo;
+    }, [user, subscription]);
+
+
+    const handleActivateTrial = async () => {
+        if (!user) return;
+        setIsLoading('trial');
+        try {
+            // 在这里，我们仅仅是给用户一个积极的反馈然后跳转
+            // 真正的“试用”状态是由isProUser逻辑在整个App中控制的
+            // 所以这里不需要写入数据库
+            toast({
+                title: "免费试用已激活！",
+                description: "您现在可以无限制使用所有AI功能30天。",
+            });
+            setTimeout(() => {
+                router.push('/');
+            }, 2000);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "激活失败", description: error.message });
+            setIsLoading(null);
+        }
+    }
 
 
     const handleSubscribe = async (plan: PricingPlan) => {
@@ -122,7 +159,7 @@ export default function PricingPage() {
             const result = await createRes.json();
 
             if (result.error) {
-              throw new Error(result.error);
+              throw new Error(typeof result.error === 'object' ? JSON.stringify(result.error) : result.error);
             }
 
             if (result.paymentUrl && result.outTradeNo) {
@@ -138,7 +175,6 @@ export default function PricingPage() {
                     title: "创建订单失败",
                     description: "无法获取支付链接，请稍后重试。",
                 });
-                // Reset loading state on desktop when order creation fails
                 setIsLoading(null);
             }
 
@@ -149,16 +185,9 @@ export default function PricingPage() {
                 title: "支付出错",
                 description: error.message || "处理您的订阅时发生未知错误，请联系客服。",
              });
-             // Ensure desktop loading state is cleared on error
              if (!isMobile) {
                setIsLoading(null);
              }
-        } finally {
-            if (!isMobile) {
-              // For desktop, loading state is handled by QR code modal visibility
-            } else {
-              setIsLoading(null); // Reset loading for H5 redirection
-            }
         }
     };
 
@@ -209,6 +238,98 @@ export default function PricingPage() {
       setIsLoading(null);
       setQrCodeUrl(null);
     }
+    
+    const renderPlan = (plan: PricingPlan) => {
+        const isMonthlyTrial = isTrialUser && plan.id === 'monthly';
+        return (
+            <div
+              key={plan.id}
+              className={cn(
+                "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
+                plan.isPopular ? "border-primary/50 shadow-xl ring-2 ring-primary/80" : "border-border/50",
+                isMonthlyTrial && "border-green-500/50 shadow-xl ring-2 ring-green-500/80"
+              )}
+            >
+              {plan.isPopular && (
+                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                    <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+                        {plan.discount}
+                    </div>
+                </div>
+              )}
+             {isMonthlyTrial && (
+                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                    <div className="rounded-full bg-green-600 px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+                        新用户限免
+                    </div>
+                </div>
+             )}
+
+              <div className="flex-1">
+                <h3 className="text-xl font-bold font-headline text-center mt-2">{plan.name}</h3>
+                
+                {isMonthlyTrial ? (
+                     <div className="my-6 text-center flex flex-col items-center justify-center h-[90px]">
+                        <Gift className="w-12 h-12 text-green-500 mb-2"/>
+                        <p className="text-lg font-bold text-green-600">免费体验30天</p>
+                    </div>
+                ) : (
+                    <div className="my-6 text-center h-[90px]">
+                      <span className="text-5xl font-bold">¥{plan.price}</span>
+                      <span className="text-muted-foreground">{plan.duration}</span>
+                      <div className="h-6 mt-1">
+                        <span className="text-sm text-muted-foreground line-through">原价 ¥{plan.originalPrice}</span>
+                        {plan.pricePerMonth && <span className="ml-2 text-sm text-accent"> (折合 ¥{plan.pricePerMonth.toFixed(1)}/月)</span>}
+                      </div>
+                    </div>
+                )}
+                
+                <ul className="space-y-3 text-sm mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                      <span className="text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+             {isMonthlyTrial ? (
+                 <Button
+                    onClick={handleActivateTrial}
+                    size="lg"
+                    disabled={isLoading !== null}
+                    className="w-full text-base font-bold group bg-green-600 hover:bg-green-600/90"
+                 >
+                     {isLoading === 'trial' ? (
+                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                     ) : (
+                       "立即激活试用"
+                     )}
+                 </Button>
+             ) : (
+                <Button
+                    onClick={() => handleSubscribe(plan)}
+                    size="lg"
+                    disabled={isLoading !== null}
+                    className={cn(
+                      "w-full text-base font-bold group",
+                      plan.isPopular ? "bg-primary hover:bg-primary/90 shadow-lg" : "bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
+                    )}
+                >
+                    {isLoading === plan.id ? (
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                      <>
+                        立即订阅
+                        <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                      </>
+                    )}
+                </Button>
+             )}
+            </div>
+        )
+    }
 
   return (
     <>
@@ -223,7 +344,7 @@ export default function PricingPage() {
                 <span className="font-headline">交易笔记AI</span>
             </Link>
             <Button asChild>
-                <Link href="/login">返回应用</Link>
+                <Link href={user ? '/' : '/login'}>{user ? '返回应用' : '登录'}</Link>
             </Button>
         </div>
       </header>
@@ -239,64 +360,7 @@ export default function PricingPage() {
         </div>
         
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {pricingPlans.map((plan) => (
-            <div
-              key={plan.id}
-              className={cn(
-                "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
-                plan.isPopular ? "border-primary/50 shadow-xl ring-2 ring-primary/80" : "border-border/50"
-              )}
-            >
-              {plan.isPopular && (
-                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                    <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
-                        {plan.discount}
-                    </div>
-                </div>
-              )}
-
-              <div className="flex-1">
-                <h3 className="text-xl font-bold font-headline text-center mt-2">{plan.name}</h3>
-                
-                <div className="my-6 text-center">
-                  <span className="text-5xl font-bold">¥{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.duration}</span>
-                  <div className="h-6 mt-1">
-                    <span className="text-sm text-muted-foreground line-through">原价 ¥{plan.originalPrice}</span>
-                    {plan.pricePerMonth && <span className="ml-2 text-sm text-accent"> (折合 ¥{plan.pricePerMonth}/月)</span>}
-                  </div>
-                </div>
-                
-                <ul className="space-y-3 text-sm mb-8">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                      <span className="text-muted-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <Button
-                onClick={() => handleSubscribe(plan)}
-                size="lg"
-                disabled={isLoading !== null}
-                className={cn(
-                  "w-full text-base font-bold group",
-                  plan.isPopular ? "bg-primary hover:bg-primary/90 shadow-lg" : "bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
-                )}
-              >
-                {isLoading === plan.id ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    立即订阅
-                    <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </>
-                )}
-              </Button>
-            </div>
-          ))}
+          {pricingPlans.map(renderPlan)}
         </div>
       </main>
 
