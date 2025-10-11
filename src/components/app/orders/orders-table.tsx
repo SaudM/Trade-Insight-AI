@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useUser } from '@/firebase/provider';
+import React from 'react';
+import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +12,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ReceiptText } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 function formatAmount(amount: number) {
   return `￥${amount.toFixed(2)}`;
@@ -60,11 +62,11 @@ const OrdersEmptyState = () => (
     </div>
 );
 
-const OrdersErrorState = ({ error }: { error: string }) => (
+const OrdersErrorState = ({ error }: { error: Error | null }) => (
     <div className="text-center py-10 text-destructive">
         <h3 className="font-semibold">无法加载订单列表</h3>
-        <p className="text-sm mt-1">{error}</p>
-        {error.includes('Unauthorized') && 
+        <p className="text-sm mt-1">{error?.message || '未知错误'}</p>
+        {(error?.message.includes('permission') || error?.message.includes('Unauthorized')) && 
             <p className="text-sm mt-2">请尝试重新登录。</p>
         }
     </div>
@@ -72,38 +74,18 @@ const OrdersErrorState = ({ error }: { error: string }) => (
 
 
 export default function OrdersTable() {
-  const { user } = useUser();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user, firestore } = useUser();
+  const router = useRouter();
 
-  useEffect(() => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-
-    async function fetchOrders() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('/api/orders');
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Failed to fetch orders with status: ${response.status}`);
-        }
-        const data = await response.json();
-        setOrders(data.orders || []);
-      } catch (err: any) {
-        console.error("Failed to fetch orders:", err);
-        setError(err.message || 'An unexpected error occurred.');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchOrders();
-  }, [user]);
+  const ordersRef = useMemoFirebase(
+    () => user ? collection(firestore, 'users', user.uid, 'orders') : null,
+    [user, firestore]
+  );
+  const ordersQuery = useMemoFirebase(
+    () => ordersRef ? query(ordersRef, orderBy('createdAt', 'desc')) : null,
+    [ordersRef]
+  );
+  const { data: orders, isLoading, error } = useCollection<Order>(ordersQuery);
 
   const renderContent = () => {
     if (isLoading) {
@@ -149,6 +131,11 @@ export default function OrdersTable() {
       </Table>
     );
   };
+
+  if (!user && !isLoading) {
+      router.push('/login?redirect=/profile/orders');
+      return null;
+  }
 
   return (
     <Card>
