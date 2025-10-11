@@ -1,183 +1,235 @@
 /**
  * @file Firestore Security Rules
  * @description This ruleset enforces a strict user-ownership model for all data.
+ * All data is nested under /users/{userId}, ensuring only the authenticated user can access their own data.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, providing a clear hierarchical structure
- * that simplifies authorization logic.  The subscription document is found at
- * `/users/{userId}/subscription/current`.
+ * - /users/{userId}: User profile information. Only the user can read/write their own profile.
+ * - /users/{userId}/subscription/current: User's current subscription. Only the user can read/write.
+ * - /users/{userId}/tradeLogs/{tradeLogId}: Trade log entries. Only the user can read/write their own logs.
+ * - /users/{userId}/dailyAnalyses/{dailyAnalysisId}: Daily analysis reports. Only the user can read/write.
+ * - /users/{userId}/weeklyReviews/{weeklyReviewId}: Weekly review reports. Only the user can read/write.
+ * - /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan: Weekly improvement plans. Only the user can read/write.
+ * - /users/{userId}/monthlySummaries/{monthlySummaryId}: Monthly summaries. Only the user can read/write.
  *
  * Key Security Decisions:
- * - Users can only access their own data. Listing all users is disallowed.
- * - Data stored under a user's path is considered private.
- * - All write operations are validated against the authenticated user's ID.
- * - The subscription document is treated as part of the user's private data and
- *   is accessible only to the user.
+ * - User data is isolated using path-based ownership.
+ * - No user listing is allowed.
+ * - The rules do NOT validate the data model (data types, required fields) except for ownership and relational integrity.
+ *   The data shape is flexible to allow for rapid prototyping.
+ * - All write operations are strictly controlled by ownership checks.
+ *
+ * Denormalization for Authorization:
+ * - The rules rely on path-based ownership, eliminating the need for `get()` calls to parent documents.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @return {bool} True if the request is authenticated, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against.
-     * @return {bool} True if the user is signed in and the UID matches, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the existing document.
-     * @param {string} userId The user ID to compare against.
-     * @return {bool} True if the user is signed in, the UID matches, and the resource exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Enforces path-based ownership for user profiles.
+     * @description Enforces access control for user profile information.
      * @path /users/{userId}
-     * @allow (create) - A user can create their own profile if the userId matches their auth.uid.
-     * @allow (get, list) - A user can read their own profile.
-     * @allow (update, delete) - A user can update or delete their own profile if it exists.
-     * @deny (create) - A user cannot create a profile with a userId that doesn't match their auth.uid.
-     * @deny (get, list) - A user cannot read another user's profile.
-     * @deny (update, delete) - A user cannot update or delete another user's profile.
-     * @principle Enforces strict ownership for user data.
+     * @allow (create) User with matching auth UID can create their profile.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their profile.
+     * @deny (create) User trying to create a profile with a mismatched UID.
+     * @deny (get, update, delete) User trying to access another user's profile.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
-       /**
-     * @description Enforces path-based ownership for user subscriptions.
-     * @path /users/{userId}/subscription/current
-     * @allow (get) - A user can get their subscription data.
-     * @allow (create) - A user can create their own subscription data.
-     * @allow (update) - A user can update their own subscription data if it exists.
-     * @allow (delete) - A user can delete their own subscription data if it exists.
-     * @deny (get) - A user cannot read another user's subscription data.
-     * @deny (create) - A user cannot create a subscription with a userId that doesn't match their auth.uid.
-     * @deny (update, delete) - A user cannot update or delete another user's subscription if the userId doesn't match or the resource doesn't exist.
-     * @principle Enforces strict ownership for subscription data.
-     */
-    match /users/{userId}/subscription/current {
+     /**
+      * @description Enforces access control for a user's current subscription.
+      * @path /users/{userId}/subscription/current
+      * @allow (get, create, update, delete) User with matching auth UID can manage their subscription.
+      * @deny (get, create, update, delete) User trying to access another user's subscription.
+      * @principle Enforces document ownership for all operations.
+      */
+     match /users/{userId}/subscription/current {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
+
 
     /**
-     * @description Enforces path-based ownership for trade logs.
+     * @description Enforces access control for trade log entries.
      * @path /users/{userId}/tradeLogs/{tradeLogId}
-     * @allow (create) - A user can create trade logs under their own user ID.
-     * @allow (get, list) - A user can read their own trade logs.
-     * @allow (update, delete) - A user can update or delete their own trade logs if they exist.
-     * @deny (create) - A user cannot create trade logs under another user's ID.
-     * @deny (get, list) - A user cannot read trade logs from other users.
-     * @deny (update, delete) - A user cannot update or delete trade logs from other users.
-     * @principle Enforces ownership for trade log data.
+     * @allow (create) User with matching auth UID can create a trade log.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their own trade logs.
+     * @allow (list) User with matching auth UID can list their own trade logs.
+     * @deny (create) User trying to create a trade log for another user.
+     * @deny (get, update, delete) User trying to access another user's trade logs.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/tradeLogs/{tradeLogId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for daily analysis reports.
+     * @description Enforces access control for daily analysis reports.
      * @path /users/{userId}/dailyAnalyses/{dailyAnalysisId}
-     * @allow (create) - A user can create daily analysis reports under their own user ID.
-     * @allow (get, list) - A user can read their own daily analysis reports.
-     * @allow (update, delete) - A user can update or delete their own daily analysis reports if they exist.
-     * @deny (create) - A user cannot create daily analysis reports under another user's ID.
-     * @deny (get, list) - A user cannot read daily analysis reports from other users.
-     * @deny (update, delete) - A user cannot update or delete daily analysis reports from other users.
-     * @principle Enforces ownership for daily analysis data.
+     * @allow (create) User with matching auth UID can create a daily analysis report.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their own daily analysis reports.
+     * @allow (list) User with matching auth UID can list their own daily analysis reports.
+     * @deny (create) User trying to create a daily analysis report for another user.
+     * @deny (get, update, delete) User trying to access another user's daily analysis reports.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/dailyAnalyses/{dailyAnalysisId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for weekly review reports.
+     * @description Enforces access control for weekly review reports.
      * @path /users/{userId}/weeklyReviews/{weeklyReviewId}
-     * @allow (create) - A user can create weekly review reports under their own user ID.
-     * @allow (get, list) - A user can read their own weekly review reports.
-     * @allow (update, delete) - A user can update or delete their own weekly review reports if they exist.
-     * @deny (create) - A user cannot create weekly review reports under another user's ID.
-     * @deny (get, list) - A user cannot read weekly review reports from other users.
-     * @deny (update, delete) - A user cannot update or delete weekly review reports from other users.
-     * @principle Enforces ownership for weekly review data.
+     * @allow (create) User with matching auth UID can create a weekly review report.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their own weekly review reports.
+     * @allow (list) User with matching auth UID can list their own weekly review reports.
+     * @deny (create) User trying to create a weekly review report for another user.
+     * @deny (get, update, delete) User trying to access another user's weekly review reports.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/weeklyReviews/{weeklyReviewId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for weekly improvement plans.
-     *  Since `weeklyImprovementPlan` is a subcollection directly under a weekly review document,
-     *  the security rules automatically inherit the ownership constraint defined on the parent.
+     * @description Enforces access control for weekly improvement plans.
      * @path /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan
-     * @allow (create) - A user can create a weekly improvement plan under their own weekly review.
-     * @allow (get, list) - A user can read their own weekly improvement plans.
-     * @allow (update, delete) - A user can update or delete their own weekly improvement plans if they exist.
-     * @deny (create) - A user cannot create weekly improvement plans under another user's weekly review.
-     * @deny (get, list) - A user cannot read weekly improvement plans from other users.
-     * @deny (update, delete) - A user cannot update or delete weekly improvement plans from other users.
-     * @principle Enforces ownership for weekly improvement plan data.
+     * @allow (create) User with matching auth UID can create a weekly improvement plan.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their own weekly improvement plan.
+     * @deny (create) User trying to create a weekly improvement plan for another user.
+     * @deny (get, update, delete) User trying to access another user's weekly improvement plan.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces path-based ownership for monthly summary reports.
+     * @description Enforces access control for monthly summary reports.
      * @path /users/{userId}/monthlySummaries/{monthlySummaryId}
-     * @allow (create) - A user can create monthly summary reports under their own user ID.
-     * @allow (get, list) - A user can read their own monthly summary reports.
-     * @allow (update, delete) - A user can update or delete their own monthly summary reports if they exist.
-     * @deny (create) - A user cannot create monthly summary reports under another user's ID.
-     * @deny (get, list) - A user cannot read monthly summary reports from other users.
-     * @deny (update, delete) - A user cannot update or delete monthly summary reports from other users.
-     * @principle Enforces ownership for monthly summary data.
+     * @allow (create) User with matching auth UID can create a monthly summary report.
+     * @allow (get, update, delete) User with matching auth UID can read, update, and delete their own monthly summary reports.
+     * @allow (list) User with matching auth UID can list their own monthly summary reports.
+     * @deny (create) User trying to create a monthly summary report for another user.
+     * @deny (get, update, delete) User trying to access another user's monthly summary reports.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/monthlySummaries/{monthlySummaryId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
   }
 }
