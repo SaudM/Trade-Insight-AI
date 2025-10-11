@@ -5,13 +5,13 @@
 
 import { Firestore, Timestamp } from 'firebase-admin/firestore';
 import { getAdminFirestore } from './firebase-admin';
-import { Order } from './types';
+import type { Order } from './types';
 
 /**
  * 创建新订单记录（服务端版本）
  * @param userId 用户ID
  * @param orderData 订单数据
- * @returns 创建的订单ID
+ * @returns 创建的订单文档的引用
  */
 export async function createOrderAdmin(
   userId: string,
@@ -20,39 +20,42 @@ export async function createOrderAdmin(
   const firestore = getAdminFirestore();
   
   const now = Timestamp.now();
-  const order: any = {
+  // We use outTradeNo as the document ID for easy lookup
+  const orderRef = firestore.collection('users').doc(userId).collection('orders').doc(orderData.outTradeNo);
+
+  const newOrder: Omit<Order, 'id'> = {
     ...orderData,
     createdAt: now,
     updatedAt: now,
   };
 
   try {
-    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc();
-    await orderRef.set(order);
+    // Use set() with the specific doc ID
+    await orderRef.set(newOrder);
     
     console.log(`Order created successfully: ${orderRef.id} for user: ${userId}`);
     return orderRef.id;
   } catch (error) {
-    console.error('Failed to create order:', error);
-    throw new Error('Failed to create order');
+    console.error(`Failed to create order ${orderData.outTradeNo}:`, error);
+    throw new Error('Failed to create order in database');
   }
 }
 
 /**
  * 标记订单为已支付（服务端版本）
  * @param userId 用户ID
- * @param orderId 订单ID
+ * @param outTradeNo 商户订单号
  * @param paymentId 支付ID
  */
 export async function markOrderAsPaidAdmin(
   userId: string,
-  orderId: string,
+  outTradeNo: string,
   paymentId: string
 ): Promise<void> {
   const firestore = getAdminFirestore();
   
   try {
-    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc(orderId);
+    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc(outTradeNo);
     
     await orderRef.update({
       status: 'paid',
@@ -61,42 +64,41 @@ export async function markOrderAsPaidAdmin(
       updatedAt: Timestamp.now(),
     });
     
-    console.log(`Order marked as paid: ${orderId} for user: ${userId}`);
+    console.log(`Order marked as paid: ${outTradeNo} for user: ${userId}`);
   } catch (error) {
     console.error('Failed to mark order as paid:', error);
-    throw new Error('Failed to update order status');
+    throw new Error('Failed to update order status to paid');
   }
 }
 
 /**
  * 标记订单为失败（服务端版本）
  * @param userId 用户ID
- * @param orderId 订单ID
+ * @param outTradeNo 商户订单号
  */
 export async function markOrderAsFailedAdmin(
   userId: string,
-  orderId: string
+  outTradeNo: string
 ): Promise<void> {
   const firestore = getAdminFirestore();
   
   try {
-    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc(orderId);
+    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc(outTradeNo);
     
     await orderRef.update({
       status: 'failed',
       updatedAt: Timestamp.now(),
     });
     
-    console.log(`Order marked as failed: ${orderId} for user: ${userId}`);
+    console.log(`Order marked as failed: ${outTradeNo} for user: ${userId}`);
   } catch (error) {
     console.error('Failed to mark order as failed:', error);
-    throw new Error('Failed to update order status');
+    throw new Error('Failed to update order status to failed');
   }
 }
 
 /**
  * 根据商户订单号查找订单（服务端版本）
- * @param userId 用户ID
  * @param outTradeNo 商户订单号
  * @returns 订单数据或null
  */
@@ -113,18 +115,25 @@ export async function findOrderByOutTradeNoAdmin(
       .get();
     
     if (snapshot.empty) {
+      console.log(`Order with outTradeNo ${outTradeNo} not found.`);
       return null;
     }
     
     const doc = snapshot.docs[0];
-    const parentUserId = doc.ref.parent.parent?.id || '';
+    const parentUserId = doc.ref.parent.parent?.id;
+
+    if (!parentUserId) {
+        console.error(`Could not determine parent user for order ${doc.id}`);
+        return null;
+    }
+
     return {
-      ...doc.data() as Order,
+      ...(doc.data() as Order),
       id: doc.id,
       userId: parentUserId,
     };
   } catch (error) {
     console.error('Failed to find order by outTradeNo:', error);
-    throw new Error('Failed to find order');
+    throw new Error('Failed to find order by outTradeNo');
   }
 }

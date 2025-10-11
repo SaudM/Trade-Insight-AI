@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
     if (res?.trade_state === 'SUCCESS') {
       try {
         const order = await findOrderByOutTradeNoAdmin(outTradeNo);
+        // Use order.id for the document ID, which is now the outTradeNo
         if (order && order.status !== 'paid') {
           await markOrderAsPaidAdmin(order.userId, order.id, res.transaction_id || '');
         }
