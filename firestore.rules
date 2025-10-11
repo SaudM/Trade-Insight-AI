@@ -1,226 +1,214 @@
 /**
- * @fileoverview Firestore Security Rules for the application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. All data is nested under
- * /users/{userId}, and only the authenticated user with a matching UID can
- * read and write their own data.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for all data.
  *
  * Data Structure:
- * All data is nested under /users/{userId} to ensure user-level data isolation.
- *  - /users/{userId}: Stores user profile information.
- *  - /users/{userId}/tradeLogs/{tradeLogId}: Stores individual trade log entries.
- *  - /users/{userId}/dailyAnalyses/{dailyAnalysisId}: Stores AI-generated daily analysis.
- *  - /users/{userId}/weeklyReviews/{weeklyReviewId}: Stores weekly review reports.
- *  - /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan: Stores weekly improvement plans.
- *  - /users/{userId}/monthlySummaries/{monthlySummaryId}: Stores monthly summary reports.
- *  - /users/{userId}/subscription/current: Singleton document storing the user's current subscription.
+ * All data is nested under /users/{userId}, with subcollections for trade logs, daily analyses,
+ * weekly reviews, and monthly summaries.  A singleton `subscription/current` document stores the user's current
+ * subscription status.
  *
  * Key Security Decisions:
- *  - User listing is disallowed to prevent unauthorized enumeration of user accounts.
- *  - Strict ownership is enforced on all write operations to prevent data modification by other users.
+ * - Users can only access their own data.
+ * - Data validation is minimized in this prototyping phase.  Only checks critical for authorization are performed.
+ * - Listing of user subcollections is allowed only for the owner.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by a signed-in user.
-     * @return {bool} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
      * @description Checks if the request is made by the owner of the resource.
      * @param {string} userId The user ID to compare against the request's auth UID.
-     * @return {bool} True if the user is the owner, false otherwise.
+     * @return {bool} True if the request is made by the owner, false otherwise.
      */
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the request is made by the owner of an existing resource.
-     * @param {string} userId The user ID to compare against the resource's userId.
-     * @return {bool} True if the user is the owner and the resource exists, false otherwise.
+     * @description Checks if the request is made by an existing owner of the resource.
+     * @param {string} userId The user ID to compare against the request's auth UID.
+     * @return {bool} True if the request is made by an existing owner, false otherwise.
      */
     function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+      return isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Enforces ownership for user profile data.
+     * @description Checks if the incoming data for User object is valid.  Only id field needs to match the `userId`
+     * @return {bool} True if the data is valid, false otherwise.
+     */
+    function isValidUserCreateData(userId) {
+      return request.resource.data.id == userId;
+    }
+
+   /**
+     * @description Enforces that the ownership field (`id`) is immutable and matches the path.
+     * @param {string} userId The user ID from the path.
+     * @return {bool} True if the `id` field is immutable and correct.
+     */
+    function isValidUserUpdateData(userId) {
+      return request.resource.data.id == resource.data.id && request.resource.data.id == userId;
+    }
+
+    /**
+     * @description
+     * Applies to the root user document.
+     * Only the user can read, update, or delete their own document.
      * @path /users/{userId}
-     * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create their own profile.
-     * @allow (get) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can read their profile.
-     * @allow (update) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can update their profile.
-     * @allow (delete) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can delete their profile.
-     * @deny (create) - User with UID ' অন্যUID' cannot create a profile for 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (get) - User with UID ' অন্যUID' cannot read the profile of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (update) - User with UID ' অন্যUID' cannot update the profile of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (delete) - User with UID ' অন্যUID' cannot delete the profile of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (create) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' creates their own document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' and request.resource.data.id == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (get) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' reads their own document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (update) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' updates their own document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (delete) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' deletes their own document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @deny (create) - User with ID 'AttackerId' attempts to create a document with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (get) - User with ID 'AttackerId' attempts to read the document of user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (update) - User with ID 'AttackerId' attempts to update the document of user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (delete) - User with ID 'AttackerId' attempts to delete the document of user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
+      allow create: if isOwner(userId) && isValidUserCreateData(userId);
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow update: if isExistingOwner(userId) && isValidUserUpdateData(userId);
       allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Enforces ownership for user subscription data.
+     /**
+     * @description
+     * Applies to the singleton subscription document.
+     * Only the user can read, create, update, or delete their own subscription.
      * @path /users/{userId}/subscription/current
-     * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create their own subscription.
-     * @allow (get) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can read their subscription.
-     * @allow (update) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can update their subscription.
-     * @allow (delete) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can delete their subscription.
-     * @deny (create) - User with UID ' অন্যUID' cannot create a subscription for 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (get) - User with UID ' অন্যUID' cannot read the subscription of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (update) - User with UID ' অন্যUID' cannot update the subscription of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (delete) - User with UID ' অন্যUID' cannot delete the subscription of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (create) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' creates their own subscription document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (get) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' reads their own subscription document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (update) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' updates their own subscription document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (delete) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' deletes their own subscription document. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @deny (create) - User with ID 'AttackerId' attempts to create the subscription document of user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (get) - User with ID 'AttackerId' attempts to read the subscription document of user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (update) - User with ID 'AttackerId' attempts to update the subscription document of user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (delete) - User with ID 'AttackerId' attempts to delete the subscription document of user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/subscription/current {
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Enforces ownership for user order data.
-     * @path /users/{userId}/orders/{orderId}
-     * @allow (create) - User can create their own orders.
-     * @allow (get) - User can read their own orders.
-     * @allow (list) - User can list their own orders.
-     * @allow (update) - User can update their own orders.
-     * @deny (delete) - Orders cannot be deleted for audit purposes.
-     * @principle Enforces document ownership for all operations except delete.
-     */
-    match /users/{userId}/orders/{orderId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if false; // 订单不允许删除，保留审计记录
-    }
 
     /**
-     * @description Enforces ownership for trade log entries.
+     * @description
+     * Applies to trade logs for a specific user.
+     * Only the user can read, create, update, or delete their own trade logs.
      * @path /users/{userId}/tradeLogs/{tradeLogId}
-     * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create a trade log.
-     * @allow (get) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can read their own trade log.
-     * @allow (list) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can list their own trade logs.
-     * @allow (update) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can update their own trade log.
-     * @allow (delete) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can delete their own trade log.
-     * @deny (create) - User with UID ' অন্যUID' cannot create a trade log for 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (get) - User with UID ' অন্যUID' cannot read a trade log of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (list) - User with UID ' অন্যUID' cannot list the trade logs of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (update) - User with UID ' অন্যUID' cannot update a trade log of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (delete) - User with UID ' অন্যUID' cannot delete a trade log of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (create) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' creates a trade log. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (get) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' reads their own trade log. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (update) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' updates their own trade log. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (delete) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' deletes their own trade log. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @deny (create) - User with ID 'AttackerId' attempts to create a trade log for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (get) - User with ID 'AttackerId' attempts to read a trade log for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (update) - User with ID 'AttackerId' attempts to update a trade log for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (delete) - User with ID 'AttackerId' attempts to delete a trade log for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/tradeLogs/{tradeLogId} {
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces ownership for daily analysis reports.
+     * @description
+     * Applies to daily analyses for a specific user.
+     * Only the user can read, create, update, or delete their own daily analyses.
      * @path /users/{userId}/dailyAnalyses/{dailyAnalysisId}
-     * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create a daily analysis report.
-     * @allow (get) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can read their own daily analysis report.
-     * @allow (list) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can list their own daily analysis reports.
-     * @allow (update) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can update their own daily analysis report.
-     * @allow (delete) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can delete their own daily analysis report.
-     * @deny (create) - User with UID ' অন্যUID' cannot create a daily analysis report for 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (get) - User with UID ' অন্যUID' cannot read a daily analysis report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (list) - User with UID ' অন্যUID' cannot list the daily analysis reports of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (update) - User with UID ' অন্যUID' cannot update a daily analysis report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (delete) - User with UID ' অন্যUID' cannot delete a daily analysis report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (create) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' creates a daily analysis. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (get) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' reads their own daily analysis. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (update) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' updates their own daily analysis. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (delete) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' deletes their own daily analysis. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @deny (create) - User with ID 'AttackerId' attempts to create a daily analysis for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (get) - User with ID 'AttackerId' attempts to read a daily analysis for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (update) - User with ID 'AttackerId' attempts to update a daily analysis for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (delete) - User with ID 'AttackerId' attempts to delete a daily analysis for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/dailyAnalyses/{dailyAnalysisId} {
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces ownership for weekly review reports.
+     * @description
+     * Applies to weekly reviews for a specific user.
+     * Only the user can read, create, update, or delete their own weekly reviews.
      * @path /users/{userId}/weeklyReviews/{weeklyReviewId}
-     * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create a weekly review report.
-     * @allow (get) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can read their own weekly review report.
-     * @allow (list) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can list their own weekly review reports.
-     * @allow (update) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can update their own weekly review report.
-     * @allow (delete) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can delete their own weekly review report.
-     * @deny (create) - User with UID ' অন্যUID' cannot create a weekly review report for 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (get) - User with UID ' অন্যUID' cannot read a weekly review report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (list) - User with UID ' অন্যUID' cannot list the weekly review reports of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (update) - User with UID ' অন্যUID' cannot update a weekly review report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (delete) - User with UID ' অন্যUID' cannot delete a weekly review report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (create) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' creates a weekly review. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (get) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' reads their own weekly review. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (update) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' updates their own weekly review. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (delete) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' deletes their own weekly review. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @deny (create) - User with ID 'AttackerId' attempts to create a weekly review for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (get) - User with ID 'AttackerId' attempts to read a weekly review for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (update) - User with ID 'AttackerId' attempts to update a weekly review for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (delete) - User with ID 'AttackerId' attempts to delete a weekly review for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/weeklyReviews/{weeklyReviewId} {
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces ownership for weekly improvement plans.
+     * @description
+     * Applies to weekly improvement plans for a specific user and weekly review.
+     * Only the user can read, create, update, or delete their own weekly improvement plan.
      * @path /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan
-     * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create a weekly improvement plan.
-     * @allow (get) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can read their own weekly improvement plan.
-     * @allow (list) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can list their own weekly improvement plans.
-     * @allow (update) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can update their own weekly improvement plan.
-     * @allow (delete) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can delete their own weekly improvement plan.
-     * @deny (create) - User with UID ' অন্যUID' cannot create a weekly improvement plan for 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (get) - User with UID ' অন্যUID' cannot read a weekly improvement plan of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (list) - User with UID ' অন্যUID' cannot list the weekly improvement plans of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (update) - User with UID ' অন্যUID' cannot update a weekly improvement plan of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (delete) - User with UID ' অন্যUID' cannot delete a weekly improvement plan of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (create) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' creates a weekly improvement plan. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (get) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' reads their own weekly improvement plan. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (update) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' updates their own weekly improvement plan. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (delete) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' deletes their own weekly improvement plan. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @deny (create) - User with ID 'AttackerId' attempts to create a weekly improvement plan for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (get) - User with ID 'AttackerId' attempts to read a weekly improvement plan for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (update) - User with ID 'AttackerId' attempts to update a weekly improvement plan for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (delete) - User with ID 'AttackerId' attempts to delete a weekly improvement plan for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if false;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces ownership for monthly summary reports.
+     * @description
+     * Applies to monthly summaries for a specific user.
+     * Only the user can read, create, update, or delete their own monthly summaries.
      * @path /users/{userId}/monthlySummaries/{monthlySummaryId}
-     * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create a monthly summary report.
-     * @allow (get) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can read their own monthly summary report.
-     * @allow (list) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can list their own monthly summary reports.
-     * @allow (update) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can update their own monthly summary report.
-     * @allow (delete) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can delete their own monthly summary report.
-     * @deny (create) - User with UID ' অন্যUID' cannot create a monthly summary report for 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (get) - User with UID ' অন্যUID' cannot read a monthly summary report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (list) - User with UID ' অন্যUID' cannot list the monthly summary reports of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (update) - User with UID ' অন্যUID' cannot update a monthly summary report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
-     * @deny (delete) - User with UID ' অন্যUID' cannot delete a monthly summary report of 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (create) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' creates a monthly summary. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (get) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' reads their own monthly summary. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (update) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' updates their own monthly summary. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @allow (delete) - User with ID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' deletes their own monthly summary. request.auth.uid == 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'.
+     * @deny (create) - User with ID 'AttackerId' attempts to create a monthly summary for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (get) - User with ID 'AttackerId' attempts to read a monthly summary for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (update) - User with ID 'AttackerId' attempts to update a monthly summary for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
+     * @deny (delete) - User with ID 'AttackerId' attempts to delete a monthly summary for user 'dKA5w1X5uMZUGAMF5GHrYtA6QB82'. Fails because request.auth.uid != userId.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/monthlySummaries/{monthlySummaryId} {
+      allow create: if isOwner(userId);
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
