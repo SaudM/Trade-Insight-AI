@@ -93,6 +93,24 @@ service cloud.firestore {
     }
 
     /**
+     * @description Enforces ownership for user order data.
+     * @path /users/{userId}/orders/{orderId}
+     * @allow (create) - User can create their own orders.
+     * @allow (get) - User can read their own orders.
+     * @allow (list) - User can list their own orders.
+     * @allow (update) - User can update their own orders.
+     * @deny (delete) - Orders cannot be deleted for audit purposes.
+     * @principle Enforces document ownership for all operations except delete.
+     */
+    match /users/{userId}/orders/{orderId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if false; // 订单不允许删除，保留审计记录
+    }
+
+    /**
      * @description Enforces ownership for trade log entries.
      * @path /users/{userId}/tradeLogs/{tradeLogId}
      * @allow (create) - User with UID 'dKA5w1X5uMZUGAMF5GHrYtA6QB82' can create a trade log.

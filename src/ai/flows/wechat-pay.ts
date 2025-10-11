@@ -62,7 +62,18 @@ const createWechatPayTransaction = ai.defineFlow(
     outputSchema: WeChatPayOutputSchema,
   },
   async (input) => {
-    const out_trade_no = `plan_${input.planId}_${input.userId}_${Date.now()}`;
+    // Build short, compliant out_trade_no (<=32 chars)
+    const planMap: Record<string, string> = {
+      monthly: 'M',
+      quarterly: 'Q',
+      semi_annually: 'S',
+      annually: 'A',
+    };
+    const pid = planMap[input.planId] || 'P';
+    const uid = input.userId.replace(/[^a-zA-Z0-9]/g, '').slice(-8);
+    const ts = Date.now().toString(36);
+    const rnd = Math.random().toString(36).slice(2, 6);
+    const out_trade_no = `${pid}${uid}${ts}${rnd}`.slice(0, 32);
     const description = `交易笔记AI - ${input.planId} 订阅`;
     const amount = {
         total: input.price * 100, // Amount in cents

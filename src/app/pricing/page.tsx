@@ -138,6 +138,8 @@ export default function PricingPage() {
                     title: "创建订单失败",
                     description: "无法获取支付链接，请稍后重试。",
                 });
+                // Reset loading state on desktop when order creation fails
+                setIsLoading(null);
             }
 
         } catch (error: any) {
@@ -146,7 +148,11 @@ export default function PricingPage() {
                 variant: "destructive",
                 title: "支付出错",
                 description: error.message || "处理您的订阅时发生未知错误，请联系客服。",
-            });
+             });
+             // Ensure desktop loading state is cleared on error
+             if (!isMobile) {
+               setIsLoading(null);
+             }
         } finally {
             if (!isMobile) {
               // For desktop, loading state is handled by QR code modal visibility

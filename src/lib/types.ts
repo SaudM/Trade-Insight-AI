@@ -69,6 +69,27 @@ export type Subscription = {
   createdAt: Timestamp;
 }
 
+/**
+ * 订单数据类型定义
+ * 用于存储用户的订阅订单记录
+ */
+export type Order = {
+  id: string;
+  userId: string;
+  outTradeNo: string; // 商户订单号
+  planId: 'monthly' | 'quarterly' | 'semi_annually' | 'annually';
+  planName: string; // 订阅计划名称
+  amount: number; // 支付金额（元）
+  status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded';
+  paymentProvider: 'wechat_pay' | 'alipay' | 'stripe';
+  paymentId?: string; // 支付平台交易ID
+  paymentUrl?: string; // 支付链接（用于二维码等）
+  tradeType: 'NATIVE' | 'H5' | 'JSAPI'; // 支付方式
+  createdAt: Timestamp;
+  paidAt?: Timestamp; // 支付完成时间
+  updatedAt: Timestamp;
+}
+
 export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile';
 
 export const StockSchema = z.object({
