@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { getUserOrdersQuery } from '@/lib/orders';
+import React, { useState, useEffect } from 'react';
+import { useFirebase } from '@/firebase';
 import type { Order } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,11 +16,6 @@ function formatAmount(amount: number) {
 function formatDate(value: any) {
   try {
     if (!value) return '-';
-    // Firebase Timestamps have a toDate() method
-    if (value && typeof value.toDate === 'function') {
-      return format(value.toDate(), 'yyyy-MM-dd HH:mm:ss');
-    }
-    // Handle ISO strings
     const date = new Date(value);
     if (!isNaN(date.getTime())) {
       return format(date, 'yyyy-MM-dd HH:mm:ss');
@@ -50,13 +44,37 @@ function StatusBadge({ status }: { status: Order['status'] }) {
 }
 
 export default function OrdersTable() {
-  const { firestore, user } = useFirebase();
+  const { user } = useFirebase();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const ordersQuery = useMemoFirebase(
-    () => (user ? getUserOrdersQuery(firestore, user.uid) : null),
-    [firestore, user]
-  );
-  const { data: orders, isLoading } = useCollection<Order>(ordersQuery);
+  useEffect(() => {
+    if (user) {
+      const fetchOrders = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const response = await fetch(`/api/orders?userId=${user.uid}`);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Failed to fetch orders with status: ${response.status}`);
+          }
+          const data = await response.json();
+          setOrders(data.orders || []);
+        } catch (err: any) {
+          console.error("Failed to fetch orders:", err);
+          setError(err.message || '无法加载订单列表。');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchOrders();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   return (
     <Card>
@@ -71,6 +89,8 @@ export default function OrdersTable() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
+        ) : error ? (
+            <div className="text-center py-10 text-destructive">{error}</div>
         ) : !orders || orders.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">暂无订单记录。</div>
         ) : (
