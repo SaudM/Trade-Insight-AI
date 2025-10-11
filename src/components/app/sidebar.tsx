@@ -1,8 +1,8 @@
 
 "use client"
 
-import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { LayoutDashboard, Book, LogOut, FileText, Sparkles, User as UserIcon } from 'lucide-react';
+import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from '@/components/ui/sidebar';
+import { LayoutDashboard, Book, LogOut, FileText, Sparkles, User as UserIcon, ReceiptText } from 'lucide-react';
 import type { View } from '@/lib/types';
 import { ThemeToggle } from '../theme-toggle';
 import { getAuth, signOut } from 'firebase/auth';

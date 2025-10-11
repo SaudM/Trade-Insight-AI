@@ -90,7 +90,7 @@ export type Order = {
   updatedAt: Timestamp;
 }
 
-export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile';
+export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile' | 'orders';
 
 export const StockSchema = z.object({
   value: z.string(),
@@ -109,5 +109,3 @@ export interface PricingPlan {
   features: string[];
   isPopular?: boolean;
 }
-
-    

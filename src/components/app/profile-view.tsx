@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AppHeader } from "./header";
 import type { Subscription } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink, LogOut } from "lucide-react";
+import { Crown, ExternalLink, LogOut, ReceiptText } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { format } from "date-fns";
 import { getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
@@ -124,6 +124,27 @@ export function ProfileView({ isProUser, subscription }: { isProUser: boolean, s
                                 </Button>
                             )}
                         </CardFooter>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>订阅管理</CardTitle>
+                            <CardDescription>查看您的订阅历史和管理您的订单。</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium">订单历史</p>
+                                    <p className="text-sm text-muted-foreground">查看您所有的购买和订阅记录。</p>
+                                </div>
+                                <Button asChild variant="outline">
+                                    <Link href="/profile/orders">
+                                        <ReceiptText className="mr-2 h-4 w-4" />
+                                        查看订单
+                                    </Link>
+                                </Button>
+                            </div>
+                        </CardContent>
                     </Card>
                     
                     <Card>
