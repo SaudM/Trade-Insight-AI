@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -17,13 +18,13 @@ function formatAmount(amount: number) {
 function formatDate(value: any) {
   try {
     if (!value) return '-';
+    // Handle Firestore Timestamp objects
+    if (value && typeof value.toDate === 'function') {
+      return format(value.toDate(), 'yyyy-MM-dd HH:mm:ss');
+    }
     const date = new Date(value);
     if (!isNaN(date.getTime())) {
       return format(date, 'yyyy-MM-dd HH:mm:ss');
-    }
-    // Handle Firestore Timestamp objects that might not be converted yet
-    if (value && typeof value.toDate === 'function') {
-      return format(value.toDate(), 'yyyy-MM-dd HH:mm:ss');
     }
     return String(value);
   } catch {
@@ -52,13 +53,9 @@ export default function OrdersTable() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const ordersRef = useMemoFirebase(
-    () => user ? collection(firestore, 'users', user.uid, 'orders') : null,
-    [user, firestore]
-  );
   const ordersQuery = useMemoFirebase(
-    () => ordersRef ? query(ordersRef, orderBy('createdAt', 'desc')) : null,
-    [ordersRef]
+    () => user ? query(collection(firestore, 'users', user.uid, 'orders'), orderBy('createdAt', 'desc')) : null,
+    [user, firestore]
   );
   
   const { data: orders, isLoading, error } = useCollection<Order>(ordersQuery);
@@ -77,14 +74,14 @@ export default function OrdersTable() {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : error ? (
-            <div className="text-center py-10 text-destructive">无法加载订单列表，请检查您的网络连接或稍后再试。</div>
+            <div className="text-center py-10 text-destructive">无法加载订单列表。请检查您的网络连接或稍后再试。</div>
         ) : !orders || orders.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">暂无订单记录。</div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[240px]">订单号</TableHead>
+                <TableHead className="w-[240px] hidden md:table-cell">订单号</TableHead>
                 <TableHead>创建时间</TableHead>
                 <TableHead>订阅计划</TableHead>
                 <TableHead>状态</TableHead>
@@ -94,7 +91,7 @@ export default function OrdersTable() {
             <TableBody>
               {orders.map((o) => (
                 <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs">{o.outTradeNo}</TableCell>
+                  <TableCell className="font-mono text-xs hidden md:table-cell">{o.outTradeNo}</TableCell>
                   <TableCell>{formatDate(o.createdAt)}</TableCell>
                   <TableCell>{o.planName}</TableCell>
                   <TableCell><StatusBadge status={o.status} /></TableCell>

@@ -1,197 +1,185 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for all data.
+ * All data is nested under /users/{userId}, ensuring only the authenticated user
+ * can access their own data.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information.
+ * - /users/{userId}/subscription/current: Stores the user's current subscription.
+ * - /users/{userId}/tradeLogs/{tradeLogId}: Stores individual trade log entries.
+ * - /users/{userId}/dailyAnalyses/{dailyAnalysisId}: Stores daily analysis reports.
+ * - /users/{userId}/weeklyReviews/{weeklyReviewId}: Stores weekly review reports.
+ * - /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan: Stores weekly improvement plans.
+ * - /users/{userId}/monthlySummaries/{monthlySummaryId}: Stores monthly summaries.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed.
+ * - All write operations are restricted to the authenticated user matching the path's userId.
+ * - Data validation is relaxed in this prototype phase, focusing on authorization.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces access control for user profiles. Only the authenticated user
-     *              can read or write their own profile data.
+     * @description Enforces user-ownership for user profiles.
      * @path /users/{userId}
-     * @allow (create) - If the authenticated user's UID matches the userId.
-     * @allow (get, list, update, delete) - If the authenticated user's UID matches the userId.
-     * @deny (create) - If the authenticated user's UID does not match the userId.
-     * @deny (get, list, update, delete) - If the authenticated user's UID does not match the userId.
+     * @allow (create) - User 'abc' can create their own profile if authenticated as 'abc'.
+     * @allow (get) - User 'abc' can read their own profile if authenticated as 'abc'.
+     * @allow (update) - User 'abc' can update their own profile if authenticated as 'abc'.
+     * @allow (delete) - User 'abc' can delete their own profile if authenticated as 'abc'.
+     * @deny (create) - User 'def' cannot create a profile for user 'abc'.
+     * @deny (get) - User 'def' cannot read the profile of user 'abc'.
+     * @deny (update) - User 'def' cannot update the profile of user 'abc'.
+     * @deny (delete) - User 'def' cannot delete the profile of user 'abc'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
       allow get: if isOwner(userId);
-      allow list: if false; // User listing is not allowed.
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
-    }
-
-       /**
-        * @description Enforces access control for user subscriptions. Only the authenticated user
-        *              can read or write their own subscription data.
-        * @path /users/{userId}/subscription/current
-        * @allow (create) - If the authenticated user's UID matches the userId.
-        * @allow (get, list, update, delete) - If the authenticated user's UID matches the userId.
-        * @deny (create) - If the authenticated user's UID does not match the userId.
-        * @deny (get, list, update, delete) - If the authenticated user's UID does not match the userId.
-        * @principle Enforces document ownership for all operations.
-        */
-    match /users/{userId}/subscription/current {
-       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      allow get: if isOwner(userId);
-      allow list: if false; // Listing subscriptions is not allowed.
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for trade logs. Only the authenticated user
-     *              can read or write their own trade log entries.
+     * @description Enforces user-ownership for user subscriptions.
+     * @path /users/{userId}/subscription/current
+     * @allow (create) - User 'abc' can create their subscription if authenticated as 'abc'.
+     * @allow (get) - User 'abc' can read their subscription if authenticated as 'abc'.
+     * @allow (update) - User 'abc' can update their subscription if authenticated as 'abc'.
+     * @allow (delete) - User 'abc' can delete their subscription if authenticated as 'abc'.
+     * @deny (create) - User 'def' cannot create a subscription for user 'abc'.
+     * @deny (get) - User 'def' cannot read the subscription of user 'abc'.
+     * @deny (update) - User 'def' cannot update the subscription of user 'abc'.
+     * @deny (delete) - User 'def' cannot delete the subscription of user 'abc'.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/subscription/current {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for trade logs.
      * @path /users/{userId}/tradeLogs/{tradeLogId}
-     * @allow (create) - If the authenticated user's UID matches the userId.
-     * @allow (get, list, update) - If the authenticated user's UID matches the userId.
-     * @deny (delete) - Delete operation is not allowed as user requested.
-     * @deny (create) - If the authenticated user's UID does not match the userId.
-     * @deny (get, list, update) - If the authenticated user's UID does not match the userId.
+     * @allow (create) - User 'abc' can create a trade log if authenticated as 'abc'.
+     * @allow (get) - User 'abc' can read their own trade log if authenticated as 'abc'.
+     * @allow (update) - User 'abc' can update their own trade log if authenticated as 'abc'.
+     * @allow (delete) - User 'abc' can delete their own trade log if authenticated as 'abc'.
+     * @deny (create) - User 'def' cannot create a trade log for user 'abc'.
+     * @deny (get) - User 'def' cannot read the trade log of user 'abc'.
+     * @deny (update) - User 'def' cannot update the trade log of user 'abc'.
+     * @deny (delete) - User 'def' cannot delete the trade log of user 'abc'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/tradeLogs/{tradeLogId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if false;
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for daily analysis reports. Only the authenticated user
-     *              can read or write their own analysis reports.
+     * @description Enforces user-ownership for daily analyses.
      * @path /users/{userId}/dailyAnalyses/{dailyAnalysisId}
-     * @allow (create) - If the authenticated user's UID matches the userId.
-     * @allow (get, list, update, delete) - If the authenticated user's UID matches the userId.
-     * @deny (create) - If the authenticated user's UID does not match the userId.
-     * @deny (get, list, update, delete) - If the authenticated user's UID does not match the userId.
+     * @allow (create) - User 'abc' can create a daily analysis if authenticated as 'abc'.
+     * @allow (get) - User 'abc' can read their own daily analysis if authenticated as 'abc'.
+     * @allow (update) - User 'abc' can update their own daily analysis if authenticated as 'abc'.
+     * @allow (delete) - User 'abc' can delete their own daily analysis if authenticated as 'abc'.
+     * @deny (create) - User 'def' cannot create a daily analysis for user 'abc'.
+     * @deny (get) - User 'def' cannot read the daily analysis of user 'abc'.
+     * @deny (update) - User 'def' cannot update the daily analysis of user 'abc'.
+     * @deny (delete) - User 'def' cannot delete the daily analysis of user 'abc'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/dailyAnalyses/{dailyAnalysisId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for weekly review reports. Only the authenticated user
-     *              can read or write their own review reports.
+     * @description Enforces user-ownership for weekly reviews.
      * @path /users/{userId}/weeklyReviews/{weeklyReviewId}
-     * @allow (create) - If the authenticated user's UID matches the userId.
-     * @allow (get, list, update, delete) - If the authenticated user's UID matches the userId.
-     * @deny (create) - If the authenticated user's UID does not match the userId.
-     * @deny (get, list, update, delete) - If the authenticated user's UID does not match the userId.
+     * @allow (create) - User 'abc' can create a weekly review if authenticated as 'abc'.
+     * @allow (get) - User 'abc' can read their own weekly review if authenticated as 'abc'.
+     * @allow (update) - User 'abc' can update their own weekly review if authenticated as 'abc'.
+     * @allow (delete) - User 'abc' can delete their own weekly review if authenticated as 'abc'.
+     * @deny (create) - User 'def' cannot create a weekly review for user 'abc'.
+     * @deny (get) - User 'def' cannot read the weekly review of user 'abc'.
+     * @deny (update) - User 'def' cannot update the weekly review of user 'abc'.
+     * @deny (delete) - User 'def' cannot delete the weekly review of user 'abc'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/weeklyReviews/{weeklyReviewId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for weekly improvement plans. Only the authenticated user
-     *              can read or write their own improvement plans.
+     * @description Enforces user-ownership for weekly improvement plans.
      * @path /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan
-     * @allow (create) - If the authenticated user's UID matches the userId.
-     * @allow (get, list, update, delete) - If the authenticated user's UID matches the userId.
-     * @deny (create) - If the authenticated user's UID does not match the userId.
-     * @deny (get, list, update, delete) - If the authenticated user's UID does not match the userId.
+     * @allow (create) - User 'abc' can create a weekly improvement plan if authenticated as 'abc'.
+     * @allow (get) - User 'abc' can read their own weekly improvement plan if authenticated as 'abc'.
+     * @allow (update) - User 'abc' can update their own weekly improvement plan if authenticated as 'abc'.
+     * @allow (delete) - User 'abc' can delete their own weekly improvement plan if authenticated as 'abc'.
+     * @deny (create) - User 'def' cannot create a weekly improvement plan for user 'abc'.
+     * @deny (get) - User 'def' cannot read the weekly improvement plan of user 'abc'.
+     * @deny (update) - User 'def' cannot update the weekly improvement plan of user 'abc'.
+     * @deny (delete) - User 'def' cannot delete the weekly improvement plan of user 'abc'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/weeklyReviews/{weeklyReviewId}/weeklyImprovementPlan {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
       allow get: if isOwner(userId);
-      allow list: if false; // Listing improvement plans is not useful at this path.
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces access control for monthly summary reports. Only the authenticated user
-     *              can read or write their own summary reports.
+     * @description Enforces user-ownership for monthly summaries.
      * @path /users/{userId}/monthlySummaries/{monthlySummaryId}
-     * @allow (create) - If the authenticated user's UID matches the userId.
-     * @allow (get, list, update, delete) - If the authenticated user's UID matches the userId.
-     * @deny (create) - If the authenticated user's UID does not match the userId.
-     * @deny (get, list, update, delete) - If the authenticated user's UID does not match the userId.
+     * @allow (create) - User 'abc' can create a monthly summary if authenticated as 'abc'.
+     * @allow (get) - User 'abc' can read their own monthly summary if authenticated as 'abc'.
+     * @allow (update) - User 'abc' can update their own monthly summary if authenticated as 'abc'.
+     * @allow (delete) - User 'abc' can delete their own monthly summary if authenticated as 'abc'.
+     * @deny (create) - User 'def' cannot create a monthly summary for user 'abc'.
+     * @deny (get) - User 'def' cannot read the monthly summary of user 'abc'.
+     * @deny (update) - User 'def' cannot update the monthly summary of user 'abc'.
+     * @deny (delete) - User 'def' cannot delete the monthly summary of user 'abc'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/monthlySummaries/{monthlySummaryId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Enforces access control for user orders. Only the authenticated user
-     *              can read or write their own orders. Orders cannot be deleted to retain audit trail.
-     * @path /users/{userId}/orders/{orderId}
-     * @allow (create) - If the authenticated user's UID matches the userId.
-     * @allow (get, list, update) - If the authenticated user's UID matches the userId.
-     * @deny (delete) - Orders cannot be deleted.
-     * @principle Enforces document ownership for all operations except delete.
-     */
-    match /users/{userId}/orders/{orderId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if false; // 订单不允许删除，保留审计记录
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
     }
   }
 }

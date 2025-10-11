@@ -1,3 +1,4 @@
-// This file is intentionally left empty as the functionality
-// has been moved to a secure client-side query in OrdersTable.tsx
-// to resolve persistent server-side authentication issues.
+
+// This API route is no longer needed as we are switching back to
+// a secure client-side query using Firestore security rules.
+// This file is intentionally left empty.
