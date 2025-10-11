@@ -4,66 +4,71 @@
  * which is used in API routes for tasks requiring elevated privileges.
  */
 
-import { initializeApp, getApps, App, applicationDefault, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, App, applicationDefault, getApp } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { firebaseConfig } from '@/firebase/config';
 
-let adminApp: App | null = null;
-let adminFirestore: Firestore | null = null;
-let initializationError: Error | null = null;
+let adminApp: App;
 
 /**
- * Initializes the Firebase Admin SDK.
- * This function is designed to be robust for both production and local development.
- * It will only attempt to initialize once.
- * @returns An object containing the Firebase Admin App instance and the Firestore instance.
+ * Initializes the Firebase Admin SDK idempotently.
  */
 function initializeFirebaseAdmin() {
-  if (getApps().length === 0) {
+  if (!getApps().length) {
+    console.log("Initializing Firebase Admin SDK...");
     try {
-      // In production environments (like App Hosting/Cloud Run), ADC will work automatically.
-      // For local dev, `gcloud auth application-default login` is required.
-      console.log("Attempting to initialize Firebase Admin SDK with Application Default Credentials...");
+      // In production (e.g., App Hosting), ADC works out-of-the-box.
+      // For local dev, `gcloud auth application-default login` is needed.
       adminApp = initializeApp({
         credential: applicationDefault(),
         projectId: process.env.GCLOUD_PROJECT || firebaseConfig.projectId,
       });
-      adminFirestore = getFirestore(adminApp);
-      console.log("Firebase Admin SDK initialized successfully with ADC.");
+       console.log("Firebase Admin SDK initialized successfully with Application Default Credentials.");
     } catch (e: any) {
-      // This catch block is expected in local dev if ADC is not set up.
-      initializationError = e;
       console.warn(
-        "Firebase Admin SDK initialization with Application Default Credentials failed. " +
-        "This is expected in some local development environments. " +
-        "The API routes using the Admin SDK will not work until credentials are provided. " +
-        "Original error:", e.message
+        "Admin SDK initialization with ADC failed, falling back to default app instance. Error:",
+        e.message
       );
-      // We set them to null so subsequent calls know initialization failed.
-      adminApp = null;
-      adminFirestore = null;
+      // Fallback for environments where ADC isn't set up but a default app might be available
+      // This is less common but provides another layer of resilience.
+       try {
+        adminApp = initializeApp();
+        console.log("Firebase Admin SDK initialized with default instance.");
+       } catch (fallbackError: any) {
+        console.error("CRITICAL: All Firebase Admin SDK initialization attempts failed.", fallbackError);
+        throw new Error("Could not initialize Firebase Admin SDK.");
+       }
     }
   } else {
-    adminApp = getApps()[0];
-    adminFirestore = getFirestore(adminApp);
+    adminApp = getApp();
   }
 }
 
-// Initialize on first import.
+
+// Initialize on module load
 initializeFirebaseAdmin();
 
 /**
  * Gets the initialized Admin Firestore instance.
- * @returns The Firestore instance for server-side operations, or null if initialization failed.
+ * @returns The Firestore instance.
+ * @throws If the admin app is not initialized.
  */
-export function getAdminFirestore(): Firestore | null {
-  return adminFirestore;
+export function getAdminFirestore(): Firestore {
+  if (!adminApp) {
+    throw new Error('Firebase Admin App not initialized. Cannot get Firestore.');
+  }
+  return getFirestore(adminApp);
 }
 
 /**
- * Returns the error that occurred during Admin SDK initialization, if any.
- * @returns The initialization error or null.
+ * Gets the initialized Admin Auth instance.
+ * @returns The Auth instance.
+ * @throws If the admin app is not initialized.
  */
-export function getAdminInitializationError(): Error | null {
-  return initializationError;
+export function getAdminAuth() {
+    if (!adminApp) {
+        throw new Error('Firebase Admin App not initialized. Cannot get Auth.');
+    }
+    return getAuth(adminApp);
 }

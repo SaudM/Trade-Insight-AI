@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useUser, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { useUser } from '@/firebase';
 import type { Order } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,8 +46,6 @@ function StatusBadge({ status }: { status: Order['status'] }) {
     refunded: '已退款'
   };
 
-  // Assuming you have a `success` variant for Badge, if not, change it to `default` or another existing variant.
-  // We'll add it to the badge variants.
   return <Badge variant={variant as any} className="capitalize">{statusTextMap[status] || status}</Badge>;
 }
 
@@ -63,34 +60,69 @@ const OrdersEmptyState = () => (
     </div>
 );
 
-const OrdersErrorState = ({ error }: { error: Error | null }) => (
+const OrdersErrorState = ({ error, onRetry }: { error: Error | null, onRetry: () => void }) => (
     <div className="text-center py-10 px-6">
         <h3 className="font-semibold text-destructive">无法加载订单列表</h3>
         <p className="text-sm mt-1 text-muted-foreground">{error?.message || '未知错误'}</p>
-        {(error?.message.includes('permission') || error?.message.includes('Unauthorized')) && 
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground">这通常是权限问题，请尝试重新登录。</p>
-              <Button asChild variant="outline" className="mt-2">
-                <Link href="/login">去登录</Link>
-              </Button>
-            </div>
-        }
+        <div className="mt-4 flex justify-center gap-2">
+            <Button onClick={onRetry} variant="outline">重试</Button>
+            {(error?.message.toLowerCase().includes('unauthorized') || error?.message.toLowerCase().includes('permission')) &&
+                <Button asChild variant="default">
+                    <Link href="/login">重新登录</Link>
+                </Button>
+            }
+        </div>
     </div>
 );
 
-
 export default function OrdersTable() {
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  const [orders, setOrders] = useState<Order[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const ordersQuery = useMemoFirebase(
-    () => (user && firestore) ? query(collection(firestore, 'users', user.uid, 'orders'), orderBy('createdAt', 'desc')) : null,
-    [user, firestore]
-  );
-  const { data: orders, isLoading, error } = useCollection<Order>(ordersQuery);
+  const fetchOrders = async () => {
+    if (!user) {
+      setError(new Error("用户未登录。"));
+      setIsLoading(false);
+      return;
+    }
 
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/orders', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to fetch orders with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setOrders(data.orders || []);
+
+    } catch (e: any) {
+      console.error("Error fetching orders:", e);
+      setError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isUserLoading) {
+      fetchOrders();
+    }
+  }, [user, isUserLoading]);
+  
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || isUserLoading) {
       return (
         <div className="space-y-2 p-4">
           <Skeleton className="h-10 w-full" />
@@ -101,7 +133,7 @@ export default function OrdersTable() {
     }
     
     if (error) {
-      return <OrdersErrorState error={error} />;
+      return <OrdersErrorState error={error} onRetry={fetchOrders} />;
     }
     
     if (!orders || orders.length === 0) {
