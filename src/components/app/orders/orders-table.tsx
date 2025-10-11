@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFirebase } from '@/firebase';
+import { useUser } from '@/firebase/provider';
 import type { Order } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -44,7 +44,7 @@ function StatusBadge({ status }: { status: Order['status'] }) {
 }
 
 export default function OrdersTable() {
-  const { user } = useFirebase();
+  const { user } = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
