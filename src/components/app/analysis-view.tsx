@@ -132,7 +132,7 @@ export function AnalysisView({
         <div className="flex flex-col h-full">
             <AppHeader title="分析报告" />
             <Tabs defaultValue="daily" className="flex flex-col flex-1">
-                <div className="px-4 md:px-6 lg:px-8 border-b">
+                <div className="px-4 md:px-6 lg:px-8">
                     <TabsList>
                         <TabsTrigger value="daily">每日分析</TabsTrigger>
                         <TabsTrigger value="weekly">每周回顾</TabsTrigger>

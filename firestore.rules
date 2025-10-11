@@ -170,5 +170,28 @@ service cloud.firestore {
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
     }
+
+    /**
+     * @description Enforces access control for user orders. Only the authenticated user
+     *              can read or write their own orders. Orders cannot be deleted to retain audit trail.
+     * @path /users/{userId}/orders/{orderId}
+     * @allow (create) - If the authenticated user's UID matches the userId.
+     * @allow (get, list, update) - If the authenticated user's UID matches the userId.
+     * @deny (delete) - Orders cannot be deleted.
+     * @principle Enforces document ownership for all operations except delete.
+     */
+    match /users/{userId}/orders/{orderId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if false; // 订单不允许删除，保留审计记录
+    }
   }
 }

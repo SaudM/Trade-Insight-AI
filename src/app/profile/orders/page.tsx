@@ -26,8 +26,16 @@ export default function OrdersPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">我的订单</h1>
-      <p className="text-muted-foreground">这里是您所有的订阅和购买记录。</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">我的订单</h1>
+          <p className="text-muted-foreground">这里是您所有的订阅和购买记录。</p>
+        </div>
+        {/* 保留并显示“去订阅页面”按钮入口 */}
+        <Button asChild>
+          <Link href="/pricing">去订阅页面</Link>
+        </Button>
+      </div>
       <OrdersTable />
     </div>
   );

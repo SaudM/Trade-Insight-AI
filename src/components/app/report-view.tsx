@@ -105,7 +105,7 @@ export function ReportView({
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="flex h-16 shrink-0 items-center justify-end border-b px-4 md:px-6">
+            <div className={`flex h-16 shrink-0 items-center justify-end px-4 md:px-6 ${isLoading || displayedReport || (sortedReports && sortedReports.length > 0) ? 'border-b' : ''}`}>
                 <div className="flex items-center gap-2">
                     {sortedReports && sortedReports.length > 0 && (
                         <Select onValueChange={setSelectedReportId} value={selectedReportId}>
@@ -147,7 +147,7 @@ export function ReportView({
                       ))}
                   </div>
                 ) : (
-                    <div className="flex flex-col flex-1 items-center justify-center text-center bg-card border rounded-lg p-8">
+                    <div className="flex flex-col flex-1 items-center justify-center text-center rounded-lg p-8">
                         <div className="relative mb-4">
                             <WandSparkles className="w-16 h-16 text-primary" />
                             <Sparkles className="w-8 h-8 absolute -top-2 -right-3 text-accent animate-pulse" />
