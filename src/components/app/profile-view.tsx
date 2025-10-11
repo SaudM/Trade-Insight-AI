@@ -115,14 +115,12 @@ export function ProfileView({ isProUser, subscription }: { isProUser: boolean, s
                             </div>
                         </CardContent>
                         <CardFooter className="justify-end">
-                            {!subscription && (
-                                 <Button asChild>
-                                    <Link href="/pricing">
-                                        <Crown className="mr-2 h-4 w-4" />
-                                        升级到专业版
-                                    </Link>
-                                </Button>
-                            )}
+                            <Button asChild>
+                               <Link href="/pricing">
+                                   <Crown className="mr-2 h-4 w-4" />
+                                   查看订阅方案
+                               </Link>
+                           </Button>
                         </CardFooter>
                     </Card>
 
