@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,6 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ReceiptText } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 function formatAmount(amount: number) {
   return `￥${amount.toFixed(2)}`;
@@ -36,7 +35,7 @@ function formatDate(value: any) {
 
 function StatusBadge({ status }: { status: Order['status'] }) {
   const variant =
-    status === 'paid' ? 'default' :
+    status === 'paid' ? 'success' :
     status === 'pending' ? 'secondary' :
     status === 'failed' ? 'destructive' : 'outline';
   
@@ -48,7 +47,9 @@ function StatusBadge({ status }: { status: Order['status'] }) {
     refunded: '已退款'
   };
 
-  return <Badge variant={variant} className="capitalize">{statusTextMap[status] || status}</Badge>;
+  // Assuming you have a `success` variant for Badge, if not, change it to `default` or another existing variant.
+  // We'll add it to the badge variants.
+  return <Badge variant={variant as any} className="capitalize">{statusTextMap[status] || status}</Badge>;
 }
 
 const OrdersEmptyState = () => (
@@ -63,27 +64,28 @@ const OrdersEmptyState = () => (
 );
 
 const OrdersErrorState = ({ error }: { error: Error | null }) => (
-    <div className="text-center py-10 text-destructive">
-        <h3 className="font-semibold">无法加载订单列表</h3>
-        <p className="text-sm mt-1">{error?.message || '未知错误'}</p>
+    <div className="text-center py-10 px-6">
+        <h3 className="font-semibold text-destructive">无法加载订单列表</h3>
+        <p className="text-sm mt-1 text-muted-foreground">{error?.message || '未知错误'}</p>
         {(error?.message.includes('permission') || error?.message.includes('Unauthorized')) && 
-            <p className="text-sm mt-2">请尝试重新登录。</p>
+            <div className="mt-4">
+              <p className="text-sm text-muted-foreground">这通常是权限问题，请尝试重新登录。</p>
+              <Button asChild variant="outline" className="mt-2">
+                <Link href="/login">去登录</Link>
+              </Button>
+            </div>
         }
     </div>
 );
 
 
 export default function OrdersTable() {
-  const { user, firestore } = useUser();
-  const router = useRouter();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-  const ordersRef = useMemoFirebase(
-    () => user ? collection(firestore, 'users', user.uid, 'orders') : null,
-    [user, firestore]
-  );
   const ordersQuery = useMemoFirebase(
-    () => ordersRef ? query(ordersRef, orderBy('createdAt', 'desc')) : null,
-    [ordersRef]
+    () => (user && firestore) ? query(collection(firestore, 'users', user.uid, 'orders'), orderBy('createdAt', 'desc')) : null,
+    [user, firestore]
   );
   const { data: orders, isLoading, error } = useCollection<Order>(ordersQuery);
 
@@ -131,11 +133,6 @@ export default function OrdersTable() {
       </Table>
     );
   };
-
-  if (!user && !isLoading) {
-      router.push('/login?redirect=/profile/orders');
-      return null;
-  }
 
   return (
     <Card>
