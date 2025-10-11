@@ -4,7 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { getAdminFirestore, getAdminInitializationError } from '@/lib/firebase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,19 @@ export const dynamic = 'force-dynamic';
  * GET /api/orders?userId=xxx&limit=10&offset=0
  */
 export async function GET(req: NextRequest) {
+  const firestore = getAdminFirestore();
+  const initError = getAdminInitializationError();
+
+  // If Admin SDK failed to initialize, return a service unavailable error.
+  if (!firestore || initError) {
+    console.error('API Error: Firebase Admin SDK is not available.', initError);
+    return new Response(JSON.stringify({ 
+      error: 'Firebase Admin not configured. The service is temporarily unavailable.'
+    }), { 
+      status: 503 // Service Unavailable
+    });
+  }
+  
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
@@ -26,7 +39,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const firestore = getAdminFirestore();
     const ordersRef = firestore.collection('users').doc(userId).collection('orders');
     
     // 按创建时间倒序排列，支持分页

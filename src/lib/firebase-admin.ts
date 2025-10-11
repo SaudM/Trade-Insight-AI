@@ -4,62 +4,66 @@
  * which is used in API routes for tasks requiring elevated privileges.
  */
 
-import { initializeApp, getApps, App, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApps, App, applicationDefault, cert } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
 let adminApp: App | null = null;
 let adminFirestore: Firestore | null = null;
+let initializationError: Error | null = null;
 
 /**
  * Initializes the Firebase Admin SDK.
  * This function is designed to be robust for both production and local development.
+ * It will only attempt to initialize once.
  * @returns An object containing the Firebase Admin App instance and the Firestore instance.
  */
 function initializeFirebaseAdmin() {
-  // If already initialized, return the existing instances to avoid re-initialization.
-  if (adminApp && adminFirestore) {
-    return { adminApp, adminFirestore };
-  }
-
-  try {
-    const existingApps = getApps();
-    if (existingApps.length > 0) {
-      adminApp = existingApps[0];
-    } else {
-        const projectId = firebaseConfig?.projectId || process.env.GCLOUD_PROJECT;
-        // In production environments (like Firebase App Hosting, Cloud Run),
-        // this will use the environment's automatically provided credentials.
-        // For local development, you must have run `gcloud auth application-default login`.
-        if (!projectId) {
-            throw new Error("Failed to initialize Firebase Admin: Project ID is missing.");
-        }
-        adminApp = initializeApp({
-            credential: applicationDefault(),
-            projectId: projectId,
-        });
+  if (getApps().length === 0) {
+    try {
+      // In production environments (like App Hosting/Cloud Run), ADC will work automatically.
+      // For local dev, `gcloud auth application-default login` is required.
+      console.log("Attempting to initialize Firebase Admin SDK with Application Default Credentials...");
+      adminApp = initializeApp({
+        credential: applicationDefault(),
+        projectId: process.env.GCLOUD_PROJECT || firebaseConfig.projectId,
+      });
+      adminFirestore = getFirestore(adminApp);
+      console.log("Firebase Admin SDK initialized successfully with ADC.");
+    } catch (e: any) {
+      // This catch block is expected in local dev if ADC is not set up.
+      initializationError = e;
+      console.warn(
+        "Firebase Admin SDK initialization with Application Default Credentials failed. " +
+        "This is expected in some local development environments. " +
+        "The API routes using the Admin SDK will not work until credentials are provided. " +
+        "Original error:", e.message
+      );
+      // We set them to null so subsequent calls know initialization failed.
+      adminApp = null;
+      adminFirestore = null;
     }
-
-    // Get the Firestore instance.
+  } else {
+    adminApp = getApps()[0];
     adminFirestore = getFirestore(adminApp);
-    
-    return { adminApp, adminFirestore };
-  } catch (error) {
-    console.error('Firebase Admin SDK initialization failed:', error);
-    // This is a critical error, so we re-throw to make it visible.
-    throw new Error('Firebase Admin SDK initialization failed');
   }
 }
 
+// Initialize on first import.
+initializeFirebaseAdmin();
+
 /**
  * Gets the initialized Admin Firestore instance.
- * @returns The Firestore instance for server-side operations.
+ * @returns The Firestore instance for server-side operations, or null if initialization failed.
  */
-export function getAdminFirestore(): Firestore {
-  // Initialize on first call.
-  if (!adminFirestore) {
-    const { adminFirestore: firestore } = initializeFirebaseAdmin();
-    return firestore;
-  }
+export function getAdminFirestore(): Firestore | null {
   return adminFirestore;
+}
+
+/**
+ * Returns the error that occurred during Admin SDK initialization, if any.
+ * @returns The initialization error or null.
+ */
+export function getAdminInitializationError(): Error | null {
+  return initializationError;
 }
