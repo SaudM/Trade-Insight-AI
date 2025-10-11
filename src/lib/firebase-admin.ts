@@ -26,31 +26,24 @@ export function initializeFirebaseAdmin() {
     if (existingApps.length > 0) {
       adminApp = existingApps[0];
     } else {
-      // 在生产环境中，Firebase会自动提供服务账户凭据
-      // 在开发环境中，可以通过环境变量或服务账户密钥文件进行配置
-      const projectId =
-        process.env.FIREBASE_PROJECT_ID ||
-        process.env.GOOGLE_CLOUD_PROJECT ||
-        process.env.GCLOUD_PROJECT ||
-        process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-        firebaseConfig?.projectId ||
-        undefined;
-
-      if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        // 使用服务账户密钥
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-        adminApp = initializeApp({
-          credential: cert(serviceAccount),
-          // 显式传入 projectId，避免本地或非托管环境下无法检测到 Project Id
-          projectId: (serviceAccount.project_id as string | undefined) || projectId,
-        });
-      } else {
-        // 使用默认凭据（在Firebase托管环境中自动可用）。为本地环境显式设置 projectId。
-        adminApp = initializeApp({
-          credential: applicationDefault(),
-          projectId,
-        });
-      }
+        const projectId = firebaseConfig?.projectId || process.env.GCLOUD_PROJECT;
+        try {
+            // 在生产环境中（如Firebase App Hosting, Cloud Run），这会利用环境自动提供的凭据
+            adminApp = initializeApp({
+                credential: applicationDefault(),
+                projectId: projectId,
+            });
+        } catch (e) {
+            console.warn("Admin SDK default initialization failed, likely in local dev. Falling back. Error:", e);
+            // 本地开发回退方案：如果默认凭证失败，仅使用projectId初始化。
+            // 这在本地可能功能受限，但可以避免应用崩溃。
+            // 确保本地运行 `firebase login` 或 `gcloud auth application-default login`
+            if (projectId) {
+                 adminApp = initializeApp({ projectId });
+            } else {
+                throw new Error("Failed to initialize Firebase Admin: Project ID is missing.");
+            }
+        }
     }
 
     // 获取 Firestore 实例，并为 Admin SDK 操作覆盖安全规则的 auth 变量
