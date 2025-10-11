@@ -36,7 +36,7 @@ const pricingPlans: PricingPlan[] = [
     id: 'quarterly',
     name: '季度会员',
     duration: '/季',
-    price: 39,
+    price: 0.01,
     originalPrice: 84,
     pricePerMonth: 13,
     discount: '节省35%',
