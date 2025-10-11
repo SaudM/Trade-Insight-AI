@@ -4,11 +4,10 @@
 // 4. Paste it here.
 
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID" // Optional
+  apiKey: "AIzaSyCqD9Yhli0SyOSIjmBhbQb3QbWzGcUToWI",
+  authDomain: "studio-4954880629-a3af8.firebaseapp.com",
+  projectId: "studio-4954880629-a3af8",
+  storageBucket: "studio-4954880629-a3af8.appspot.com",
+  messagingSenderId: "420859068847",
+  appId: "1:420859068847:web:15def5b01930d1eb11ef5a"
 };
