@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useUser } from '@/firebase/provider';
+import React from 'react';
+import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,6 +20,10 @@ function formatDate(value: any) {
     const date = new Date(value);
     if (!isNaN(date.getTime())) {
       return format(date, 'yyyy-MM-dd HH:mm:ss');
+    }
+    // Handle Firestore Timestamp objects that might not be converted yet
+    if (value && typeof value.toDate === 'function') {
+      return format(value.toDate(), 'yyyy-MM-dd HH:mm:ss');
     }
     return String(value);
   } catch {
@@ -45,36 +50,18 @@ function StatusBadge({ status }: { status: Order['status'] }) {
 
 export default function OrdersTable() {
   const { user } = useUser();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    if (user) {
-      const fetchOrders = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const response = await fetch(`/api/orders?userId=${user.uid}`);
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Failed to fetch orders with status: ${response.status}`);
-          }
-          const data = await response.json();
-          setOrders(data.orders || []);
-        } catch (err: any) {
-          console.error("Failed to fetch orders:", err);
-          setError(err.message || '无法加载订单列表。');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchOrders();
-    } else {
-      setIsLoading(false);
-    }
-  }, [user]);
+  const ordersRef = useMemoFirebase(
+    () => user ? collection(firestore, 'users', user.uid, 'orders') : null,
+    [user, firestore]
+  );
+  const ordersQuery = useMemoFirebase(
+    () => ordersRef ? query(ordersRef, orderBy('createdAt', 'desc')) : null,
+    [ordersRef]
+  );
+  
+  const { data: orders, isLoading, error } = useCollection<Order>(ordersQuery);
 
   return (
     <Card>
@@ -90,7 +77,7 @@ export default function OrdersTable() {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : error ? (
-            <div className="text-center py-10 text-destructive">{error}</div>
+            <div className="text-center py-10 text-destructive">无法加载订单列表，请检查您的网络连接或稍后再试。</div>
         ) : !orders || orders.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">暂无订单记录。</div>
         ) : (
