@@ -1,10 +1,9 @@
 import { NextRequest } from 'next/server';
-import { createPayment } from '@/lib/wxpay';
+import { wechatPay } from '@/ai/flows/wechat-pay';
 import { createOrderAdmin } from '@/lib/orders-admin';
 import { PLAN_NAMES } from '@/lib/orders';
 
 export const runtime = 'nodejs';
-// Tell Next.js to not bundle these packages on the server.
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -21,17 +20,19 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
 
-    const res = await createPayment({ planId, price, userId, tradeType });
+    // Call the Genkit flow to create payment
+    const res = await wechatPay({ planId, price, userId, tradeType });
     
     if (res.error) {
         console.error('subscription/create payment error:', res.error);
         return new Response(JSON.stringify({ error: res.error }), { status: 500 });
     }
 
-    // 创建支付订单成功后，保存订单记录到数据库
+    // After successful payment creation, save the order record
     try {
       const planName = PLAN_NAMES[planId as keyof typeof PLAN_NAMES] || planId;
       
+      // Use the simplified order creation function
       await createOrderAdmin(userId, {
         userId,
         outTradeNo: res.outTradeNo!,
@@ -47,8 +48,8 @@ export async function POST(req: NextRequest) {
       console.log(`Order record created for user ${userId}, outTradeNo: ${res.outTradeNo}`);
     } catch (orderError) {
       console.error('Failed to create order record:', orderError);
-      // 即使订单记录创建失败，也返回支付信息，因为支付订单已经创建成功
-      // 可以通过后续的支付回调来补充订单记录
+      // Even if order record creation fails, return payment info.
+      // The payment callback can be used to reconcile the order record.
     }
     
     return Response.json({ paymentUrl: res.paymentUrl, outTradeNo: res.outTradeNo });
