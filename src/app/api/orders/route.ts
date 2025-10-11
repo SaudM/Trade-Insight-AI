@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   }
   
   // In App Hosting, the user's auth state is automatically provided.
-  // In local dev, we check for a session cookie.
+  // In local dev, we check for a session cookie as a fallback.
   let userId = req.headers.get('X-Firebase-Auth-UID');
   
   if (!userId) {
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized. Please log in again.' }, { status: 401 });
   }
 
   try {

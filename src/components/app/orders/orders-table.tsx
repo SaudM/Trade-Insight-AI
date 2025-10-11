@@ -8,6 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { ReceiptText } from 'lucide-react';
+import Link from 'next/link';
 
 function formatAmount(amount: number) {
   return `￥${amount.toFixed(2)}`;
@@ -46,6 +49,28 @@ function StatusBadge({ status }: { status: Order['status'] }) {
   return <Badge variant={variant} className="capitalize">{statusTextMap[status] || status}</Badge>;
 }
 
+const OrdersEmptyState = () => (
+    <div className="flex flex-col items-center justify-center text-center py-10 px-4">
+        <ReceiptText className="w-12 h-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold">暂无订单记录</h3>
+        <p className="text-sm text-muted-foreground mt-1">您还没有任何购买记录。进行订阅后，您的订单将显示在这里。</p>
+        <Button asChild className="mt-6">
+            <Link href="/pricing">去订阅</Link>
+        </Button>
+    </div>
+);
+
+const OrdersErrorState = ({ error }: { error: string }) => (
+    <div className="text-center py-10 text-destructive">
+        <h3 className="font-semibold">无法加载订单列表</h3>
+        <p className="text-sm mt-1">{error}</p>
+        {error.includes('Unauthorized') && 
+            <p className="text-sm mt-2">请尝试重新登录。</p>
+        }
+    </div>
+);
+
+
 export default function OrdersTable() {
   const { user } = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -80,47 +105,59 @@ export default function OrdersTable() {
     fetchOrders();
   }, [user]);
 
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-2 p-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      );
+    }
+    
+    if (error) {
+      return <OrdersErrorState error={error} />;
+    }
+    
+    if (!orders || orders.length === 0) {
+      return <OrdersEmptyState />;
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[240px] hidden md:table-cell">订单号</TableHead>
+            <TableHead>创建时间</TableHead>
+            <TableHead>订阅计划</TableHead>
+            <TableHead>状态</TableHead>
+            <TableHead className="text-right">金额</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.map((o) => (
+            <TableRow key={o.id}>
+              <TableCell className="font-mono text-xs hidden md:table-cell">{o.outTradeNo}</TableCell>
+              <TableCell>{formatDate(o.createdAt)}</TableCell>
+              <TableCell>{o.planName}</TableCell>
+              <TableCell><StatusBadge status={o.status} /></TableCell>
+              <TableCell className="text-right font-medium">{formatAmount(o.amount)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>订单记录</CardTitle>
         <CardDescription>您最近的购买记录。</CardDescription>
       </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : error ? (
-            <div className="text-center py-10 text-destructive">无法加载订单列表: {error}</div>
-        ) : !orders || orders.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">暂无订单记录。</div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[240px] hidden md:table-cell">订单号</TableHead>
-                <TableHead>创建时间</TableHead>
-                <TableHead>订阅计划</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead className="text-right">金额</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((o) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs hidden md:table-cell">{o.outTradeNo}</TableCell>
-                  <TableCell>{formatDate(o.createdAt)}</TableCell>
-                  <TableCell>{o.planName}</TableCell>
-                  <TableCell><StatusBadge status={o.status} /></TableCell>
-                  <TableCell className="text-right font-medium">{formatAmount(o.amount)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+      <CardContent className="p-0">
+        {renderContent()}
       </CardContent>
     </Card>
   );
