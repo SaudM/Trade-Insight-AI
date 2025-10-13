@@ -53,10 +53,8 @@ export function initializeFirebaseAdmin() {
       }
     }
 
-    // 获取 Firestore 实例，并为 Admin SDK 操作覆盖安全规则的 auth 变量
-    adminFirestore = getFirestore(adminApp, {
-      databaseAuthVariableOverride: null, // 明确 Admin SDK 的 auth 对象为 null
-    });
+    // 获取 Firestore 实例，使用默认数据库
+    adminFirestore = getFirestore(adminApp);
     
     return { adminApp, adminFirestore };
   } catch (error) {

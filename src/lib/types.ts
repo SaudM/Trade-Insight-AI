@@ -57,6 +57,10 @@ export type MonthlySummary = {
     createdAt: Timestamp;
 }
 
+/**
+ * 订阅数据类型定义
+ * 支持多套餐累加的订阅系统
+ */
 export type Subscription = {
   id: string;
   userId: string;
@@ -67,6 +71,26 @@ export type Subscription = {
   paymentProvider: 'wechat_pay' | 'alipay' | 'stripe';
   paymentId: string;
   createdAt: Timestamp;
+  // 新增字段支持多套餐累加
+  totalDaysAdded?: number; // 本次订阅添加的总天数
+  accumulatedFrom?: string | Timestamp; // 累加前的到期时间
+  subscriptionHistory?: SubscriptionRecord[]; // 订阅历史记录
+}
+
+/**
+ * 订阅记录类型
+ * 用于记录每次订阅的详细信息
+ */
+export type SubscriptionRecord = {
+  planId: 'monthly' | 'quarterly' | 'semi_annually' | 'annually';
+  planName: string;
+  daysAdded: number; // 本次订阅添加的天数
+  amount: number; // 支付金额
+  paymentId: string;
+  paymentProvider: 'wechat_pay' | 'alipay' | 'stripe';
+  purchaseDate: string | Timestamp;
+  previousEndDate?: string | Timestamp; // 购买前的到期时间
+  newEndDate: string | Timestamp; // 购买后的到期时间
 }
 
 /**
