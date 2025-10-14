@@ -214,7 +214,7 @@ export default function PricingPage() {
                     setIsLoading(null);
                     await activateSubscription({ firestore, uid: user.uid, planId, paymentId: data.transaction_id, amount: pricingPlans.find(p => p.id === planId)?.price || 0 });
                     toast({ title: '支付成功', description: '您的订阅已生效。即将跳转到个人中心...' });
-                    setTimeout(() => router.push('/profile'), 2000);
+                    setTimeout(() => router.push('/'), 2000);
                 }
             } catch (e) {
                 console.warn('Poll status error:', e);
