@@ -10,8 +10,7 @@ import { TradeLogView } from '@/components/app/trade-log-view';
 import { AnalysisView } from '@/components/app/analysis-view';
 import { ProfileView } from '@/components/app/profile-view';
 import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary, Subscription } from '@/lib/types';
-import { useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -19,13 +18,20 @@ import { TradeInsightsProvider } from './trade-insights-context';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TradeLogForm, type TradeLogFormValues } from './trade-log-form';
+import { useUserData } from '@/hooks/use-user-data';
+import { 
+  useTradeLogsPostgres, 
+  useDailyAnalysesPostgres, 
+  useWeeklyReviewsPostgres, 
+  useMonthlySummariesPostgres 
+} from '@/hooks/use-postgres-data';
 
 import { SubscriptionModal } from './subscription-modal';
 
 
 export function TradeInsightsApp() {
   const [activeView, setActiveView] = useState<View>('dashboard');
-  const { user, firestore } = useFirebase();
+  const { user } = useFirebase();
   const { toast } = useToast();
   
   // --- Form Dialog State ---
@@ -35,127 +41,150 @@ export function TradeInsightsApp() {
   // --- Subscription Modal State ---
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
-
-  // --- Subscription ---
-  const subscriptionRef = useMemoFirebase(
-    () => user ? doc(firestore, 'users', user.uid, 'subscription', 'current') : null,
-    [user, firestore]
-  );
-  const { data: subscription, isLoading: isLoadingSubscription } = useDoc<Subscription>(subscriptionRef);
+  // --- User Data from PostgreSQL (with Firebase fallback) ---
+  const { userData, isLoading: isLoadingUserData, error: userDataError } = useUserData();
   
-  // Simple logic to determine if the user is a pro user
-  // In a real app, you would also check if the subscription is active and within the end date.
-  // For new users, we can give a 30-day trial.
-  const isProUser = useMemo(() => {
-    if (!user) return false;
-    if (subscription) {
-        // Check if subscription is active
-        const now = new Date();
-        const endDate = (subscription.endDate as Timestamp).toDate();
-        return subscription.status === 'active' && endDate > now;
-    }
-    // New user trial (e.g., within 30 days of creation)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const userCreationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date();
-    return userCreationDate > thirtyDaysAgo;
-  }, [subscription, user]);
+  // Extract user info and subscription status
+  // 将试用用户也视为VIP用户，确保有效期内的用户都能使用分析功能
+  const isProUser = userData?.isProUser || false;
+  const isTrialUser = userData?.isTrialUser || false;
+  const isVipUser = isProUser || isTrialUser; // VIP用户包括付费用户和试用用户
+  const subscription = userData?.subscription;
+  const isLoadingSubscription = isLoadingUserData;
 
-
-  // --- TradeLogs ---
-  const tradeLogsRef = useMemoFirebase(
-    () => user ? collection(firestore, 'users', user.uid, 'tradeLogs') : null,
-    [user, firestore]
-  );
-  const tradeLogsQuery = useMemoFirebase(
-    () => tradeLogsRef ? query(tradeLogsRef, orderBy('tradeTime', 'desc')) : null,
-    [tradeLogsRef]
-  );
-  const { data: tradeLogs, isLoading: isLoadingLogs } = useCollection<TradeLog>(tradeLogsQuery);
-
-  // --- DailyAnalyses ---
-  const dailyAnalysesRef = useMemoFirebase(
-    () => user ? collection(firestore, 'users', user.uid, 'dailyAnalyses') : null,
-    [user, firestore]
-  );
-  const dailyAnalysesQuery = useMemoFirebase(
-    () => dailyAnalysesRef ? query(dailyAnalysesRef, orderBy('date', 'desc')) : null,
-    [dailyAnalysesRef]
-  );
-  const { data: dailyAnalyses, isLoading: isLoadingDaily } = useCollection<DailyAnalysis>(dailyAnalysesQuery);
-
-  // --- WeeklyReviews ---
-  const weeklyReviewsRef = useMemoFirebase(
-    () => user ? collection(firestore, 'users', user.uid, 'weeklyReviews') : null,
-    [user, firestore]
-  );
-  const weeklyReviewsQuery = useMemoFirebase(
-    () => weeklyReviewsRef ? query(weeklyReviewsRef, orderBy('endDate', 'desc')) : null,
-    [weeklyReviewsRef]
-  );
-  const { data: weeklyReviews, isLoading: isLoadingWeekly } = useCollection<WeeklyReview>(weeklyReviewsQuery);
-
-  // --- MonthlySummaries ---
-  const monthlySummariesRef = useMemoFirebase(
-    () => user ? collection(firestore, 'users', user.uid, 'monthlySummaries') : null,
-    [user, firestore]
-  );
-  const monthlySummariesQuery = useMemoFirebase(
-    () => monthlySummariesRef ? query(monthlySummariesRef, orderBy('monthEndDate', 'desc')) : null,
-    [monthlySummariesRef]
-  );
-  const { data: monthlySummaries, isLoading: isLoadingMonthly } = useCollection<MonthlySummary>(monthlySummariesQuery);
+  // --- PostgreSQL Data Hooks ---
+  const { data: tradeLogs, isLoading: isLoadingLogs, error: tradeLogsError } = useTradeLogsPostgres(user?.uid || null);
+  const { data: dailyAnalyses, isLoading: isLoadingDaily, error: dailyAnalysesError } = useDailyAnalysesPostgres(user?.uid || null);
+  const { data: weeklyReviews, isLoading: isLoadingWeekly, error: weeklyReviewsError } = useWeeklyReviewsPostgres(user?.uid || null);
+  const { data: monthlySummaries, isLoading: isLoadingMonthly, error: monthlySummariesError } = useMonthlySummariesPostgres(user?.uid || null);
 
   const [timePeriod, setTimePeriod] = useState<'today' | '7d' | '30d' | 'all'>('all');
 
+  // --- 用户验证辅助函数 ---
+  const validateUser = (): boolean => {
+    if (!user) {
+      toast({ variant: 'destructive', title: "未登录", description: "请先登录。" });
+      return false;
+    }
+    
+    if (isLoadingUserData) {
+      toast({ variant: 'destructive', title: "请稍候", description: "正在加载用户数据，请稍后再试。" });
+      return false;
+    }
+    
+    if (!userData?.user) {
+      toast({ variant: 'destructive', title: "用户错误", description: "用户数据未找到，请重新登录。" });
+      return false;
+    }
+    
+    return true;
+  };
+
   // --- CRUD Operations ---
-  const addDocWithTimestamp = async (ref: any, data: any, entityName: string) => {
-    if (!ref || !user) return;
+  const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => {
+    if (!validateUser()) return;
+    
     try {
-        const docData = { ...data, userId: user.uid, createdAt: serverTimestamp() };
-        // Ensure date fields are Timestamps for consistent querying
-        if (docData.date && typeof docData.date === 'string') docData.date = Timestamp.fromDate(new Date(docData.date));
-        if (docData.tradeTime && typeof docData.tradeTime === 'string') docData.tradeTime = Timestamp.fromDate(new Date(docData.tradeTime));
-        if (docData.startDate && typeof docData.startDate === 'string') docData.startDate = Timestamp.fromDate(new Date(docData.startDate));
-        if (docData.endDate && typeof docData.endDate === 'string') docData.endDate = Timestamp.fromDate(new Date(docData.endDate));
-        if (docData.monthStartDate && typeof docData.monthStartDate === 'string') docData.monthStartDate = Timestamp.fromDate(new Date(docData.monthStartDate));
-        if (docData.monthEndDate && typeof docData.monthEndDate === 'string') docData.monthEndDate = Timestamp.fromDate(new Date(docData.monthEndDate));
-        
-        const newDocRef = await addDoc(ref, docData);
-        toast({ title: `${entityName}已添加` });
-        
-        const newDoc = { ...docData, id: newDocRef.id, createdAt: Timestamp.now() };
-
-        if (entityName === '每日分析' || entityName === '每周回顾' || entityName === '月度总结') {
-          setActiveView('analysis');
-        }
-
-        return newDoc;
-
+      const response = await fetch('/api/trade-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...log, userId: user!.uid }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create trade log');
+      }
+      
+      toast({ title: '交易笔记已添加' });
+      // 刷新数据 - 这里可以考虑使用 SWR 的 mutate 功能
+      window.location.reload();
     } catch (error) {
-        console.error(error);
-        toast({ variant: 'destructive', title: "添加失败", description: `无法保存您的${entityName}。` });
-        return null;
+      console.error(error);
+      toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的交易笔记。" });
     }
   };
 
+  const addDailyAnalysis = async (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => {
+    if (!validateUser()) return;
+    try {
+      const response = await fetch('/api/daily-analyses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...analysis, userId: user!.uid }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create daily analysis');
+      }
+      
+      toast({ title: '每日分析已添加' });
+      setActiveView('analysis');
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的每日分析。" });
+    }
+  };
 
-  const addTradeLog = (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => addDocWithTimestamp(tradeLogsRef, log, '交易笔记');
-  const addDailyAnalysis = (analysis: Omit<DailyAnalysis, 'id' | 'userId'>) => addDocWithTimestamp(dailyAnalysesRef, analysis, '每日分析');
-  const addWeeklyAnalysis = (review: Omit<WeeklyReview, 'id' | 'userId'>) => addDocWithTimestamp(weeklyReviewsRef, review, '每周回顾');
-  const addMonthlySummary = (summary: Omit<MonthlySummary, 'id' | 'userId'>) => addDocWithTimestamp(monthlySummariesRef, summary, '月度总结');
+  const addWeeklyAnalysis = async (review: Omit<WeeklyReview, 'id' | 'userId'>) => {
+    if (!validateUser()) return;
+    try {
+      const response = await fetch('/api/weekly-reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...review, userId: user!.uid }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create weekly review');
+      }
+      
+      toast({ title: '每周回顾已添加' });
+      setActiveView('analysis');
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的每周回顾。" });
+    }
+  };
+
+  const addMonthlySummary = async (summary: Omit<MonthlySummary, 'id' | 'userId'>) => {
+    if (!validateUser()) return;
+    try {
+      const response = await fetch('/api/monthly-summaries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...summary, userId: user!.uid }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create monthly summary');
+      }
+      
+      toast({ title: '月度总结已添加' });
+      setActiveView('analysis');
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的月度总结。" });
+    }
+  };
 
   const updateTradeLog = async (updatedLog: Omit<TradeLog, 'userId' | 'createdAt'>) => {
-    if (!user) return;
+    if (!validateUser()) return;
     try {
-      const logRef = doc(firestore, 'users', user.uid, 'tradeLogs', updatedLog.id);
-      const dataToUpdate: any = { ...updatedLog };
-      if (typeof dataToUpdate.tradeTime === 'string') {
-        dataToUpdate.tradeTime = Timestamp.fromDate(new Date(dataToUpdate.tradeTime));
+      const response = await fetch(`/api/trade-logs/${updatedLog.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...updatedLog, userId: user!.uid }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update trade log');
       }
-      delete dataToUpdate.id; // Don't save id field in the document
-      await updateDoc(logRef, dataToUpdate);
+      
       toast({ title: "交易笔记已更新" });
+      window.location.reload();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "更新失败", description: "无法更新您的交易笔记。" });
@@ -165,9 +194,16 @@ export function TradeInsightsApp() {
   const deleteTradeLog = async (id: string) => {
     if (!user) return;
     try {
-      const logRef = doc(firestore, 'users', user.uid, 'tradeLogs', id);
-      await deleteDoc(logRef);
+      const response = await fetch(`/api/trade-logs/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete trade log');
+      }
+      
       toast({ title: "交易笔记已删除" });
+      window.location.reload();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "删除失败", description: "无法删除您的交易笔记。" });
@@ -214,13 +250,17 @@ export function TradeInsightsApp() {
   const filteredTradeLogs = useMemo(() => {
     if (!tradeLogs) return [];
     const now = new Date();
-    const toDate = (time: string | Timestamp) => {
-      if (time instanceof Timestamp) return time.toDate();
+    const toDate = (time: string | any) => {
+      // 处理 Timestamp 类型（Firebase）
+      if (time && typeof time === 'object' && time.toDate) {
+        return time.toDate();
+      }
+      // 处理字符串类型（PostgreSQL）
       if (typeof time === 'string') {
         const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(time);
         return new Date(isDateOnly ? `${time}T00:00` : time);
       }
-      return new Date(time as any);
+      return new Date(time);
     };
     
     if (timePeriod === 'today') {
@@ -240,11 +280,15 @@ export function TradeInsightsApp() {
   const allLogsForViews = useMemo(() => {
     if (!tradeLogs) return [];
     return tradeLogs.map(log => {
-      const date = log.tradeTime instanceof Timestamp
-        ? log.tradeTime.toDate()
-        : /^\d{4}-\d{2}-\d{2}$/.test(log.tradeTime as string)
-          ? new Date(`${log.tradeTime}T00:00`)
-          : new Date(log.tradeTime as string);
+      // 处理 Timestamp 类型（Firebase）
+      if (log.tradeTime && typeof log.tradeTime === 'object' && (log.tradeTime as any).toDate) {
+        return { ...log, tradeTime: (log.tradeTime as any).toDate().toISOString() };
+      }
+      // 处理字符串类型（PostgreSQL）
+      const timeStr = log.tradeTime as string;
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(timeStr)
+        ? new Date(`${timeStr}T00:00`)
+        : new Date(timeStr);
       return { ...log, tradeTime: date.toISOString() };
     });
   }, [tradeLogs]);
@@ -286,14 +330,11 @@ export function TradeInsightsApp() {
                   addDailyAnalysis={addDailyAnalysis}
                   addWeeklyAnalysis={addWeeklyAnalysis}
                   addMonthlySummary={addMonthlySummary}
-                  isProUser={isProUser}
+                  isProUser={isVipUser}
                   onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
                 />;
       case 'profile':
-        return <ProfileView 
-                  isProUser={isProUser} 
-                  subscription={subscription} 
-                />;
+        return <ProfileView />;
       default:
         return <Dashboard 
                   tradeLogs={filteredTradeLogs} 
@@ -309,7 +350,7 @@ export function TradeInsightsApp() {
     <SidebarProvider>
       <TradeInsightsProvider value={{ activeView, setActiveView }}>
         <div className="flex h-screen bg-background text-foreground w-full">
-          <AppSidebar activeView={activeView} setActiveView={setActiveView} isProUser={isProUser} />
+          <AppSidebar activeView={activeView} setActiveView={setActiveView} isProUser={isVipUser} />
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

@@ -21,6 +21,7 @@ import { Loader2 } from 'lucide-react';
 import { activateSubscription } from '@/lib/subscription';
 import { useFirestore } from '@/firebase';
 import { doc, Timestamp } from 'firebase/firestore';
+import { useUserData } from '@/hooks/use-user-data';
 
 const pricingPlans: PricingPlan[] = [
   {
@@ -95,12 +96,9 @@ export default function PricingPage() {
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
     
-    // --- Subscription ---
-    const subscriptionRef = useMemoFirebase(
-      () => user ? doc(firestore, 'users', user.uid, 'subscription', 'current') : null,
-      [user, firestore]
-    );
-    const { data: subscription } = useDoc<Subscription>(subscriptionRef);
+    // --- User Data from PostgreSQL (with Firebase fallback) ---
+    const { userData, isLoading: isLoadingUserData } = useUserData();
+    const subscription = userData?.subscription;
 
     const isTrialUser = useMemo(() => {
         if (!user || subscription) return false;

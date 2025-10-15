@@ -84,7 +84,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
                         {payload?.map((entry, index) => (
                             <div key={`item-${index}`} className="flex items-center gap-1.5">
                             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                            <span>{entry.value} ({entry.payload.value})</span>
+                            <span>{entry.value} ({entry.payload?.value})</span>
                             </div>
                         ))}
                         </div>

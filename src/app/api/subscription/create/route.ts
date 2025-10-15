@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
 import { createPayment } from '@/lib/wxpay';
+import { createOrderPostgres } from '@/lib/orders-postgres';
 import { createOrderAdmin } from '@/lib/orders-admin';
 import { PLAN_NAMES } from '@/lib/orders';
+import { checkDatabaseConnection } from '@/lib/db';
 
 export const runtime = 'nodejs';
 // Tell Next.js to not bundle these packages on the server.
@@ -31,22 +33,39 @@ export async function POST(req: NextRequest) {
     // 创建支付订单成功后，保存订单记录到数据库
     try {
       const planName = PLAN_NAMES[planId as keyof typeof PLAN_NAMES] || planId;
-      
-      await createOrderAdmin(userId, {
+      const orderData = {
         userId,
         outTradeNo: res.outTradeNo!,
         planId: planId as 'monthly' | 'quarterly' | 'semi_annually' | 'annually',
         planName,
         amount: price,
-        status: 'pending',
-        paymentProvider: 'wechat_pay',
+        status: 'pending' as const,
+        paymentProvider: 'wechat_pay' as const,
         paymentUrl: res.paymentUrl,
         tradeType,
-      });
+      };
+
+      // 检查数据库连接，优先使用PostgreSQL
+      const isDbConnected = await checkDatabaseConnection();
       
-      console.log(`Order record created for user ${userId}, outTradeNo: ${res.outTradeNo}`);
+      if (isDbConnected) {
+        try {
+          await createOrderPostgres(userId, orderData);
+          console.log(`PostgreSQL订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
+        } catch (pgError) {
+          console.error('PostgreSQL订单创建失败，回退到Firebase:', pgError);
+          // 回退到Firebase
+          await createOrderAdmin(userId, orderData);
+          console.log(`Firebase订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
+        }
+      } else {
+        // 数据库连接失败，使用Firebase
+        await createOrderAdmin(userId, orderData);
+        console.log(`Firebase订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
+      }
+      
     } catch (orderError) {
-      console.error('Failed to create order record:', orderError);
+      console.error('订单记录创建失败:', orderError);
       // 即使订单记录创建失败，也返回支付信息，因为支付订单已经创建成功
       // 可以通过后续的支付回调来补充订单记录
     }

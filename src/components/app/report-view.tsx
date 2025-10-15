@@ -105,7 +105,8 @@ export function ReportView({
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="flex h-16 shrink-0 items-center justify-end border-b px-4 md:px-6">
+            {/* 固定高度的按钮容器，确保一致的顶部距离 */}
+            <div className="flex h-16 shrink-0 items-center justify-end border-b px-4 md:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex items-center gap-2">
                     {sortedReports && sortedReports.length > 0 && (
                         <Select onValueChange={setSelectedReportId} value={selectedReportId}>
@@ -132,41 +133,45 @@ export function ReportView({
                 </div>
             </div>
             
-            <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 flex-1 flex flex-col">
-                {(isLoading || displayedReport) ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {cards.map(card => (
-                          <div key={card.id} className={card.colSpan ? `lg:col-span-${card.colSpan}`: ''}>
-                              <AiAnalysisCard 
-                                  title={card.title}
-                                  icon={card.icon}
-                                  isLoading={isLoading && !displayedReport}
-                                  content={displayedReport ? card.content(displayedReport) : null}
-                              />
-                          </div>
-                      ))}
-                  </div>
-                ) : (
-                    <div className="flex flex-col flex-1 items-center justify-center text-center bg-card border rounded-lg p-8">
-                        <div className="relative mb-4">
-                            <WandSparkles className="w-16 h-16 text-primary" />
-                            <Sparkles className="w-8 h-8 absolute -top-2 -right-3 text-accent animate-pulse" />
+            {/* 主内容区域，设置最小高度防止布局跳动 */}
+            <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 flex-1 flex flex-col min-h-[calc(100vh-12rem)]">
+                {/* 内容容器，确保一致的布局高度 */}
+                <div className="flex-1 flex flex-col">
+                    {(isLoading || displayedReport) ? (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
+                          {cards.map(card => (
+                              <div key={card.id} className={card.colSpan ? `lg:col-span-${card.colSpan}`: ''}>
+                                  <AiAnalysisCard 
+                                      title={card.title}
+                                      icon={card.icon}
+                                      isLoading={isLoading && !displayedReport}
+                                      content={displayedReport ? (card.content(displayedReport) || null) : null}
+                                  />
+                              </div>
+                          ))}
+                      </div>
+                    ) : (
+                        <div className="flex flex-col flex-1 items-center justify-center text-center bg-card border rounded-lg p-8 min-h-[500px]">
+                            <div className="relative mb-4">
+                                <WandSparkles className="w-16 h-16 text-primary" />
+                                <Sparkles className="w-8 h-8 absolute -top-2 -right-3 text-accent animate-pulse" />
+                            </div>
+                            <h2 className="text-2xl font-headline font-semibold">{`解锁您的专属AI${reportName}`}</h2>
+                            <p className="mt-2 max-w-md text-muted-foreground">
+                                升级到Pro版，即可获得由AI驱动的深度交易分析、模式识别和个性化改进建议。
+                            </p>
+                            <div className="mt-6 flex gap-4">
+                                <Button asChild>
+                                    <Link href="/pricing" target="_blank">
+                                        <Sparkles className="mr-2 h-4 w-4"/>
+                                        查看订阅方案
+                                        <ExternalLink className="ml-2 h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
-                        <h2 className="text-2xl font-headline font-semibold">{`解锁您的专属AI${reportName}`}</h2>
-                        <p className="mt-2 max-w-md text-muted-foreground">
-                            升级到Pro版，即可获得由AI驱动的深度交易分析、模式识别和个性化改进建议。
-                        </p>
-                        <div className="mt-6 flex gap-4">
-                            <Button asChild>
-                                <Link href="/pricing" target="_blank">
-                                    <Sparkles className="mr-2 h-4 w-4"/>
-                                    查看订阅方案
-                                    <ExternalLink className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </main>
         </div>
     );

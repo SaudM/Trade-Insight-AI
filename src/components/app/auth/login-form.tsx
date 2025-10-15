@@ -84,11 +84,46 @@ export function LoginForm() {
     }
   }
 
+  /**
+   * 在数据库中创建用户记录
+   * @param user Firebase用户对象
+   * @param name 用户名称
+   */
+  const createUserInDatabase = async (user: any, name: string) => {
+    // 使用PostgreSQL API创建用户记录
+    const response = await fetch('/api/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        firebaseUid: user.uid,
+        email: user.email,
+        name: name,
+        googleId: user.providerData.find((p: any) => p.providerId === 'google.com')?.uid,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '创建用户记录失败');
+    }
+
+    return response.json();
+  };
+
+  /**
+   * 处理Google登录
+   */
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      
+      // 确保用户数据存储到PostgreSQL数据库
+      await createUserInDatabase(result.user, result.user.displayName || 'Google User');
+      
       // Let the useEffect handle the redirect
     } catch (error) {
       console.error(error);

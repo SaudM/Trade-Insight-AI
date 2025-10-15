@@ -1,0 +1,98 @@
+
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:15-alpine
+    container_name: trade-insight-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: trade_insight_ai
+      POSTGRES_USER: trade_user
+      POSTGRES_PASSWORD: trade_password_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - trade-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trade_user -d trade_insight_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存服务（可选，用于会话和缓存）
+  redis:
+    image: redis:7-alpine
+    container_name: trade-insight-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - trade-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js 应用服务
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: trade-insight-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://trade_user:trade_password_2024@postgres:5432/trade_insight_ai
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-nextauth-secret-key-here
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - trade-network
+    volumes:
+      - ./logs:/app/logs
+
+  # 数据库管理工具 (可选)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: trade-insight-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@tradeinsight.ai
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - trade-network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  trade-network:
+    driver: bridge

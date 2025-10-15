@@ -3,6 +3,7 @@
 import React from 'react';
 import OrdersTable from '@/components/app/orders/orders-table';
 import { useUser } from '@/firebase/provider';
+import { useUserData } from '@/hooks/use-user-data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 

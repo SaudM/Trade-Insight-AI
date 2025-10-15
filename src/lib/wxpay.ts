@@ -22,13 +22,13 @@ export interface CreatePaymentResult {
 
 export const getPayment = () =>
   new Payment({
-    appid: process.env.WX_APPID,
-    mchid: process.env.WX_MCHID,
-    private_key: process.env.WX_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    serial_no: process.env.WX_SERIAL_NO,
+    appid: process.env.WX_APPID!,
+    mchid: process.env.WX_MCHID!,
+    private_key: process.env.WX_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
+    serial_no: process.env.WX_SERIAL_NO!,
     // Support both common env names used across projects
     v3key: process.env.WX_API_V3_KEY || process.env.WX_V3_CODE,
-    apiv3_private_key: process.env.WX_V3_CODE,
+    apiv3_private_key: process.env.WX_V3_CODE!,
     notify_url: process.env.WX_NOTIFY_URL,
   });
 

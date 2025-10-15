@@ -1,10 +1,13 @@
 /**
  * 订单查询API接口
  * 提供用户订单列表查询功能
+ * 已迁移至PostgreSQL数据库
  */
 
 import { NextRequest } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { OrderAdapter, generateMockOrders } from '@/lib/adapters/order-adapter';
+import { checkDatabaseConnection } from '@/lib/db';
+import { UserAdapter } from '@/lib/adapters/user-adapter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,64 +19,102 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const firebaseUid = searchParams.get('userId'); // 这里实际是Firebase UID
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const status = searchParams.get('status') as any;
 
-    if (!userId) {
+    if (!firebaseUid) {
       return new Response(JSON.stringify({ error: 'Missing userId parameter' }), { 
         status: 400 
       });
     }
 
-    const firestore = getAdminFirestore();
-    const ordersRef = firestore.collection('users').doc(userId).collection('orders');
+    // 检查数据库连接
+    const isDbConnected = await checkDatabaseConnection();
     
-    // 按创建时间倒序排列，支持分页
-    let query = ordersRef.orderBy('createdAt', 'desc');
-    
-    if (offset > 0) {
-      // 如果有偏移量，需要先获取偏移位置的文档
-      const offsetSnapshot = await ordersRef
-        .orderBy('createdAt', 'desc')
-        .limit(offset)
-        .get();
-      
-      if (!offsetSnapshot.empty) {
-        const lastDoc = offsetSnapshot.docs[offsetSnapshot.docs.length - 1];
-        query = query.startAfter(lastDoc);
-      }
+    if (!isDbConnected) {
+      console.warn('数据库连接失败，使用模拟数据');
+      // 数据库连接失败时返回模拟数据
+      const mockOrders = generateMockOrders(firebaseUid, limit);
+      return Response.json({
+        orders: mockOrders,
+        pagination: {
+          total: mockOrders.length,
+          limit,
+          offset,
+          hasMore: false,
+        },
+        source: 'mock', // 标识数据来源
+      });
     }
-    
-    const snapshot = await query.limit(limit).get();
-    
-    const orders = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      // 将Firestore Timestamp转换为ISO字符串
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-      updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
-      paidAt: doc.data().paidAt?.toDate?.()?.toISOString() || doc.data().paidAt,
-    }));
 
-    // 获取总数（用于分页）
-    const totalSnapshot = await ordersRef.get();
-    const total = totalSnapshot.size;
+    try {
+      // 先通过Firebase UID查找PostgreSQL用户ID
+      const user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
+      
+      if (!user) {
+        // 用户不存在，返回空订单列表
+        return Response.json({
+          orders: [],
+          pagination: {
+            total: 0,
+            limit,
+            offset,
+            hasMore: false,
+          },
+          source: 'postgresql',
+        });
+      }
 
-    return Response.json({
-      orders,
-      pagination: {
-        total,
+      // 使用PostgreSQL用户ID获取订单
+      const orders = await OrderAdapter.getUserOrders({
+        userId: user.id, // 使用PostgreSQL用户ID
         limit,
         offset,
-        hasMore: offset + limit < total,
-      },
-    });
+        status,
+      });
+
+      // 获取订单统计信息用于分页
+      const stats = await OrderAdapter.getOrderStats(user.id);
+
+      return Response.json({
+        orders: orders.map(order => ({
+          ...order,
+          // 确保日期格式一致
+          createdAt: order.createdAt.toISOString(),
+          updatedAt: order.updatedAt.toISOString(),
+          paidAt: order.paidAt?.toISOString(),
+        })),
+        pagination: {
+          total: stats.totalOrders,
+          limit,
+          offset,
+          hasMore: offset + limit < stats.totalOrders,
+        },
+        source: 'postgresql', // 标识数据来源
+      });
+
+    } catch (dbError) {
+      console.error('PostgreSQL查询失败，回退到模拟数据:', dbError);
+      // PostgreSQL查询失败时返回模拟数据
+      const mockOrders = generateMockOrders(firebaseUid, limit);
+      return Response.json({
+        orders: mockOrders,
+        pagination: {
+          total: mockOrders.length,
+          limit,
+          offset,
+          hasMore: false,
+        },
+        source: 'mock_fallback', // 标识数据来源
+      });
+    }
 
   } catch (error: any) {
-    console.error('Failed to fetch orders:', error);
+    console.error('订单API处理失败:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to fetch orders' 
+      error: error.message || '获取订单列表失败' 
     }), { 
       status: 500 
     });

@@ -59,6 +59,7 @@ export function AnalysisView({
                 weaknesses: result.weaknesses,
                 emotionalImpact: result.emotionalImpactAnalysis,
                 improvementSuggestions: result.improvementSuggestions,
+                createdAt: new Date() as any,
             };
     
             return addDailyAnalysis(newAnalysis as any);
@@ -80,6 +81,7 @@ export function AnalysisView({
                 positionSizingAnalysis: result.positionSizingAssessment,
                 emotionalCorrelation: result.emotionCorrelation,
                 improvementPlan: result.improvementPlan,
+                createdAt: new Date() as any,
             };
 
             return addWeeklyAnalysis(newReview as any);
@@ -122,6 +124,7 @@ export function AnalysisView({
                 strategyExecutionEvaluation: result.strategyExecutionEvaluation,
                 keyLessons: result.keyLessons,
                 iterationSuggestions: result.iterationSuggestions,
+                createdAt: new Date() as any,
             };
             
             return addMonthlySummary(newSummary as any);
@@ -139,7 +142,8 @@ export function AnalysisView({
                         <TabsTrigger value="monthly">月度总结</TabsTrigger>
                     </TabsList>
                 </div>
-                <TabsContent value="daily" className="flex-1 mt-0 flex flex-col">
+                {/* 每日分析标签页 - 添加平滑过渡效果 */}
+                <TabsContent value="daily" className="flex-1 mt-0 flex flex-col transition-all duration-300 ease-in-out">
                     <ReportView
                         reportType="每日"
                         reportName="分析"
@@ -157,7 +161,8 @@ export function AnalysisView({
                         ]}
                     />
                 </TabsContent>
-                <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col">
+                {/* 每周回顾标签页 - 添加平滑过渡效果 */}
+                <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col transition-all duration-300 ease-in-out">
                      <ReportView
                         reportType="每周"
                         reportName="回顾"
@@ -175,7 +180,8 @@ export function AnalysisView({
                         ]}
                     />
                 </TabsContent>
-                <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col">
+                {/* 月度总结标签页 - 添加平滑过渡效果 */}
+                <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col transition-all duration-300 ease-in-out">
                     <ReportView
                         reportType="月度"
                         reportName="总结"
@@ -187,7 +193,7 @@ export function AnalysisView({
                         cards={[
                             { id: 'performanceComparison', title: '对比总结', icon: GitCompareArrows, content: (r) => (r as MonthlySummary).performanceComparison },
                             { id: 'recurringIssues', title: '持续性问题', icon: AlertTriangle, content: (r) => (r as MonthlySummary).recurringIssues },
-                            { id: 'strategyExecutionAssessment', title: '策略执行评估', icon: Target, content: (r) => (r as MonthlySummary).strategyExecutionAssessment },
+                            { id: 'strategyExecutionEvaluation', title: '策略执行评估', icon: Target, content: (r) => (r as MonthlySummary).strategyExecutionEvaluation },
                             { id: 'keyLessons', title: '关键心得', icon: BookCheck, content: (r) => (r as MonthlySummary).keyLessons },
                             { id: 'iterationSuggestions', title: '系统迭代建议', icon: Telescope, content: (r) => (r as MonthlySummary).iterationSuggestions, colSpan: 2 },
                         ]}

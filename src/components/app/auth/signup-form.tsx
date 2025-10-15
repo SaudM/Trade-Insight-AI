@@ -24,8 +24,7 @@ import {
   signInWithPopup,
   updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+
 import { Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
@@ -43,7 +42,6 @@ export function SignupForm() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = getAuth();
-  const firestore = useFirestore();
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -54,14 +52,26 @@ export function SignupForm() {
     },
   });
 
-  const createUserInFirestore = async (user: any, name: string) => {
-    const userRef = doc(firestore, "users", user.uid);
-    await setDoc(userRef, {
-      id: user.uid,
-      email: user.email,
-      name: name,
-      createdAt: new Date().toISOString(),
+  const createUserInDatabase = async (user: any, name: string) => {
+    // 使用PostgreSQL API创建用户记录
+    const response = await fetch('/api/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        firebaseUid: user.uid,
+        email: user.email,
+        name: name,
+      }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '创建用户记录失败');
+    }
+
+    return response.json();
   };
 
   async function onSubmit(values: SignupFormValues) {
@@ -69,7 +79,7 @@ export function SignupForm() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.name });
-      await createUserInFirestore(userCredential.user, values.name);
+      await createUserInDatabase(userCredential.user, values.name);
       router.push('/');
     } catch (error: any) {
       console.error(error);
@@ -93,7 +103,7 @@ export function SignupForm() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      await createUserInFirestore(result.user, result.user.displayName || 'Google User');
+      await createUserInDatabase(result.user, result.user.displayName || 'Google User');
       router.push('/');
     } catch (error) {
       console.error(error);

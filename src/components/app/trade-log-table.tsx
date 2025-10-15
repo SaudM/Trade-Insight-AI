@@ -25,6 +25,25 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Timestamp } from 'firebase/firestore';
+
+/**
+ * 格式化时间显示
+ * @param tradeTime 交易时间（字符串或Firebase Timestamp）
+ * @returns 格式化后的时间字符串
+ */
+const formatTradeTime = (tradeTime: string | Timestamp): string => {
+  try {
+    if (typeof tradeTime === 'string') {
+      return new Date(tradeTime).toLocaleString();
+    } else if (tradeTime && typeof tradeTime.toDate === 'function') {
+      return tradeTime.toDate().toLocaleString();
+    }
+    return new Date().toLocaleString();
+  } catch {
+    return new Date().toLocaleString();
+  }
+};
 
 const getDirectionBadge = (direction: TradeLog['direction']) => {
     switch (direction) {
@@ -54,7 +73,7 @@ const TradeLogMobileCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog
                     </span>
                 </CardTitle>
                 <div className="text-sm text-muted-foreground pt-1">
-                    {new Date(log.tradeTime).toLocaleString()}
+                    {formatTradeTime(log.tradeTime)}
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
@@ -156,7 +175,7 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
                         return (
                             <React.Fragment key={log.id}>
                                 <TableRow className="hover:bg-muted/50" data-state={isExpanded ? 'open' : 'closed'}>
-                                    <TableCell>{new Date(log.tradeTime).toLocaleString()}</TableCell>
+                                    <TableCell>{formatTradeTime(log.tradeTime)}</TableCell>
                                     <TableCell className="font-medium">{log.symbol}</TableCell>
                                     <TableCell>
                                         {getDirectionBadge(log.direction)}

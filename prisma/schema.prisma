@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email            String           @unique @db.VarChar(255)
+  name             String           @db.VarChar(255)
+  googleId         String?          @unique @map("google_id") @db.VarChar(255)
+  firebaseUid      String?          @unique @map("firebase_uid") @db.VarChar(255)
+  createdAt        DateTime?        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  dailyAnalyses    DailyAnalysis[]
+  monthlySummaries MonthlySummary[]
+  orders           Order[]
+  subscriptions    Subscription[]
+  tradeLogs        TradeLog[]
+  weeklyReviews    WeeklyReview[]
+
+  @@map("users")
+}
+
+model TradeLog {
+  id             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  tradeTime      DateTime       @map("trade_time") @db.Timestamptz(6)
+  symbol         String         @db.VarChar(50)
+  direction      TradeDirection
+  positionSize   String         @map("position_size") @db.VarChar(100)
+  entryReason    String?        @map("entry_reason")
+  exitReason     String?        @map("exit_reason")
+  tradeResult    String         @map("trade_result")
+  mindsetState   String         @map("mindset_state")
+  lessonsLearned String         @map("lessons_learned")
+  createdAt      DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([symbol], map: "idx_trade_logs_symbol")
+  @@index([tradeTime], map: "idx_trade_logs_trade_time")
+  @@index([userId], map: "idx_trade_logs_user_id")
+  @@map("trade_logs")
+}
+
+model Subscription {
+  id                  String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId              String               @map("user_id") @db.Uuid
+  planId              PlanId               @map("plan_id")
+  status              SubscriptionStatus   @default(inactive)
+  startDate           DateTime             @map("start_date") @db.Timestamptz(6)
+  endDate             DateTime             @map("end_date") @db.Timestamptz(6)
+  paymentProvider     PaymentProvider      @map("payment_provider")
+  paymentId           String               @map("payment_id") @db.VarChar(255)
+  totalDaysAdded      Int?                 @map("total_days_added")
+  accumulatedFrom     DateTime?            @map("accumulated_from") @db.Timestamptz(6)
+  createdAt           DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  subscriptionRecords SubscriptionRecord[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([endDate], map: "idx_subscriptions_end_date")
+  @@index([status], map: "idx_subscriptions_status")
+  @@index([userId], map: "idx_subscriptions_user_id")
+  @@map("subscriptions")
+}
+
+model SubscriptionRecord {
+  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  subscriptionId  String          @map("subscription_id") @db.Uuid
+  planId          PlanId          @map("plan_id")
+  planName        String          @map("plan_name") @db.VarChar(100)
+  daysAdded       Int             @map("days_added")
+  amount          Decimal         @db.Decimal(10, 2)
+  paymentId       String          @map("payment_id") @db.VarChar(255)
+  paymentProvider PaymentProvider @map("payment_provider")
+  purchaseDate    DateTime        @map("purchase_date") @db.Timestamptz(6)
+  previousEndDate DateTime?       @map("previous_end_date") @db.Timestamptz(6)
+  newEndDate      DateTime        @map("new_end_date") @db.Timestamptz(6)
+  createdAt       DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  subscription    Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("subscription_records")
+}
+
+model Order {
+  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId          String          @map("user_id") @db.Uuid
+  outTradeNo      String          @unique @map("out_trade_no") @db.VarChar(255)
+  planId          PlanId          @map("plan_id")
+  planName        String          @map("plan_name") @db.VarChar(100)
+  amount          Decimal         @db.Decimal(10, 2)
+  status          OrderStatus     @default(pending)
+  paymentProvider PaymentProvider @map("payment_provider")
+  paymentId       String?         @map("payment_id") @db.VarChar(255)
+  paymentUrl      String?         @map("payment_url")
+  tradeType       TradeType       @map("trade_type")
+  createdAt       DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  paidAt          DateTime?       @map("paid_at") @db.Timestamptz(6)
+  updatedAt       DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([createdAt], map: "idx_orders_created_at")
+  @@index([outTradeNo], map: "idx_orders_out_trade_no")
+  @@index([status], map: "idx_orders_status")
+  @@index([userId], map: "idx_orders_user_id")
+  @@map("orders")
+}
+
+model DailyAnalysis {
+  id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId                 String    @map("user_id") @db.Uuid
+  date                   DateTime  @db.Date
+  summary                String
+  strengths              String
+  weaknesses             String
+  emotionalImpact        String    @map("emotional_impact")
+  improvementSuggestions String    @map("improvement_suggestions")
+  createdAt              DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, date])
+  @@index([date], map: "idx_daily_analyses_date")
+  @@index([userId], map: "idx_daily_analyses_user_id")
+  @@map("daily_analyses")
+}
+
+model WeeklyReview {
+  id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId                 String    @map("user_id") @db.Uuid
+  startDate              DateTime  @map("start_date") @db.Date
+  endDate                DateTime  @map("end_date") @db.Date
+  patternSummary         String    @map("pattern_summary")
+  errorPatterns          String    @map("error_patterns")
+  successPatterns        String    @map("success_patterns")
+  positionSizingAnalysis String    @map("position_sizing_analysis")
+  emotionalCorrelation   String    @map("emotional_correlation")
+  improvementPlan        String    @map("improvement_plan")
+  createdAt              DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, startDate, endDate])
+  @@index([startDate], map: "idx_weekly_reviews_start_date")
+  @@index([userId], map: "idx_weekly_reviews_user_id")
+  @@map("weekly_reviews")
+}
+
+model MonthlySummary {
+  id                          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId                      String    @map("user_id") @db.Uuid
+  monthStartDate              DateTime  @map("month_start_date") @db.Date
+  monthEndDate                DateTime  @map("month_end_date") @db.Date
+  performanceComparison       String    @map("performance_comparison")
+  recurringIssues             String    @map("recurring_issues")
+  strategyExecutionEvaluation String    @map("strategy_execution_evaluation")
+  keyLessons                  String    @map("key_lessons")
+  iterationSuggestions        String    @map("iteration_suggestions")
+  createdAt                   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, monthStartDate, monthEndDate])
+  @@index([monthStartDate], map: "idx_monthly_summaries_month_start")
+  @@index([userId], map: "idx_monthly_summaries_user_id")
+  @@map("monthly_summaries")
+}
+
+enum TradeDirection {
+  Buy
+  Sell
+  Long
+  Short
+  Close
+
+  @@map("trade_direction")
+}
+
+enum SubscriptionStatus {
+  active
+  inactive
+  cancelled
+  trialing
+
+  @@map("subscription_status")
+}
+
+enum PlanId {
+  monthly
+  quarterly
+  semi_annually
+  annually
+
+  @@map("plan_id")
+}
+
+enum PaymentProvider {
+  wechat_pay
+  alipay
+  stripe
+
+  @@map("payment_provider")
+}
+
+enum OrderStatus {
+  pending
+  paid
+  failed
+  cancelled
+  refunded
+
+  @@map("order_status")
+}
+
+enum TradeType {
+  NATIVE
+  H5
+  JSAPI
+
+  @@map("trade_type")
+}
