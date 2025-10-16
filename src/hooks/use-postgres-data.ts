@@ -83,7 +83,9 @@ export function useDailyAnalysesPostgres(userId: string | null) {
         throw new Error(`获取日分析失败: ${response.statusText}`);
       }
 
-      const analyses = await response.json();
+      const responseData = await response.json();
+      // 处理新的API响应格式：{ data: [...], _cached: boolean, _cacheTime: string }
+      const analyses = responseData.data || responseData;
       setData(analyses);
     } catch (err) {
       console.error('获取日分析失败:', err);
@@ -133,7 +135,9 @@ export function useWeeklyReviewsPostgres(userId: string | null) {
         throw new Error(`获取周分析失败: ${response.statusText}`);
       }
 
-      const reviews = await response.json();
+      const responseData = await response.json();
+      // 处理新的API响应格式：{ data: [...], _cached: boolean, _cacheTime: string }
+      const reviews = responseData.data || responseData;
       setData(reviews);
     } catch (err) {
       console.error('获取周分析失败:', err);
@@ -183,7 +187,9 @@ export function useMonthlySummariesPostgres(userId: string | null) {
         throw new Error(`获取月分析失败: ${response.statusText}`);
       }
 
-      const summaries = await response.json();
+      const responseData = await response.json();
+      // 处理新的API响应格式：{ data: [...], _cached: boolean, _cacheTime: string }
+      const summaries = responseData.data || responseData;
       setData(summaries);
     } catch (err) {
       console.error('获取月分析失败:', err);
