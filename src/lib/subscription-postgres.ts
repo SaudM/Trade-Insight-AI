@@ -118,6 +118,8 @@ export async function activateSubscriptionPostgres(params: {
     const previousTotalDays = existingSubscription?.totalDaysAdded || 0;
     const newTotalDaysAdded = previousTotalDays + daysToAdd;
     
+    let subscriptionId: string;
+    
     if (existingSubscription) {
       // 更新现有订阅
       await SubscriptionAdapter.updateSubscription(existingSubscription.id, {
@@ -130,9 +132,10 @@ export async function activateSubscriptionPostgres(params: {
         totalDaysAdded: newTotalDaysAdded,
         accumulatedFrom: previousEndDate || undefined,
       });
+      subscriptionId = existingSubscription.id;
     } else {
       // 创建新订阅
-      await SubscriptionAdapter.createSubscription({
+      const newSubscription = await SubscriptionAdapter.createSubscription({
         userId,
         planId: planId as 'monthly' | 'quarterly' | 'semi_annually' | 'annually',
         status: 'active',
@@ -143,11 +146,12 @@ export async function activateSubscriptionPostgres(params: {
         totalDaysAdded: newTotalDaysAdded,
         accumulatedFrom: previousEndDate || undefined,
       });
+      subscriptionId = newSubscription.id;
     }
     
     // 添加订阅记录
     await SubscriptionAdapter.createSubscriptionRecord({
-      subscriptionId: existingSubscription?.id || 'temp-id', // 实际使用时需要获取创建后的ID
+      subscriptionId,
       planId: planId as 'monthly' | 'quarterly' | 'semi_annually' | 'annually',
       planName,
       daysAdded: daysToAdd,

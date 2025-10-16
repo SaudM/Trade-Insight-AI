@@ -52,7 +52,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
             <div className="flex items-center justify-center size-9 bg-primary rounded-lg text-primary-foreground">
                 <UserIcon className="h-5 w-5" />
             </div>
-            <h1 className="font-headline text-xl font-semibold text-primary">交易笔记AI</h1>
+            <h1 className="font-headline text-xl font-semibold text-primary">复利复盘</h1>
         </div>
       </SidebarHeader>
       <SidebarMenu>

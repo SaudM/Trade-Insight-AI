@@ -29,7 +29,7 @@ export const getPayment = () =>
     // Support both common env names used across projects
     v3key: process.env.WX_API_V3_KEY || process.env.WX_V3_CODE,
     apiv3_private_key: process.env.WX_V3_CODE!,
-    notify_url: process.env.WX_NOTIFY_URL,
+    notify_url: process.env.WX_NOTIFY_URL || 'https://fupan.fulitimes.com/api/subscription/notify',
   });
 
 // Build a WeChat-compliant out_trade_no (<=32 chars, letters/numbers only)
@@ -49,7 +49,7 @@ function buildOutTradeNo(planId: string, userId: string): string {
 
 export async function createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
   const out_trade_no = buildOutTradeNo(input.planId, input.userId);
-  const description = `交易笔记AI - ${input.planId} 订阅`;
+  const description = `复利复盘 - ${input.planId} 订阅`;
   const amount = { total: Math.round(input.price * 100) };
 
   try {

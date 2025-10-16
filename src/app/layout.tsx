@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: '交易笔记AI',
+  title: '复利复盘 - Trade Insight AI',
   description: '由AI驱动的交易笔记，助您持续进步。',
 };
 

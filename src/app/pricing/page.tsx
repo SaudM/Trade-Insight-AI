@@ -18,9 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { QRCodeModal } from '@/components/app/qrcode-modal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
-import { activateSubscription } from '@/lib/subscription';
-import { useFirestore } from '@/firebase';
-import { doc, Timestamp } from 'firebase/firestore';
 import { useUserData } from '@/hooks/use-user-data';
 
 const pricingPlans: PricingPlan[] = [
@@ -87,7 +84,6 @@ const faqs = [
 
 export default function PricingPage() {
     const { user } = useUser();
-    const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
     const isMobile = useIsMobile();
@@ -95,6 +91,7 @@ export default function PricingPage() {
     const [isLoading, setIsLoading] = useState<PricingPlan['id'] | 'trial' | null>(null);
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+    const [processedPayments, setProcessedPayments] = useState<Set<string>>(new Set());
     
     // --- User Data from PostgreSQL (with Firebase fallback) ---
     const { userData, isLoading: isLoadingUserData } = useUserData();
@@ -189,52 +186,184 @@ export default function PricingPage() {
         }
     };
 
+    /**
+     * 智能支付状态检测
+     * 使用动态间隔和指数退避算法，结合微信推送消息提高实时性
+     */
     const pollStatus = (outTradeNo: string, planId: PricingPlan['id']) => {
         let attempts = 0;
-        const maxAttempts = 60; // ~3 minutes at 3s interval
-        const intervalId = setInterval(async () => {
+        let consecutiveErrors = 0;
+        const maxAttempts = 40; // 总共约5分钟
+        const baseInterval = 2000; // 基础间隔2秒
+        const maxInterval = 10000; // 最大间隔10秒
+        
+        const poll = async () => {
             attempts++;
             if (!user) {
-              clearInterval(intervalId);
-              return;
+                return;
             }
+            
             try {
+                console.log(`检查支付状态 (第${attempts}次):`, outTradeNo);
                 const res = await fetch(`/api/subscription/status?outTradeNo=${encodeURIComponent(outTradeNo)}`);
+                
                 if (!res.ok) {
-                    console.warn('Polling status failed with status:', res.status);
-                    return;
+                    consecutiveErrors++;
+                    console.warn(`支付状态查询失败 (第${consecutiveErrors}次错误):`, res.status);
+                    
+                    // 如果连续错误超过3次，增加间隔
+                    if (consecutiveErrors >= 3) {
+                        const nextInterval = Math.min(baseInterval * Math.pow(2, consecutiveErrors - 3), maxInterval);
+                        setTimeout(poll, nextInterval);
+                        return;
+                    }
+                } else {
+                    consecutiveErrors = 0; // 重置错误计数
                 }
+                
                 const data = await res.json();
+                console.log('支付状态查询结果:', data);
+                
                 if (data.trade_state === 'SUCCESS') {
-                    clearInterval(intervalId);
-                    setPollingIntervalId(null);
+                    // 检查是否已经处理过这个支付
+                    const paymentKey = `${outTradeNo}-${data.transaction_id}`;
+                    if (processedPayments.has(paymentKey)) {
+                        console.log('支付已处理过，跳过重复处理:', paymentKey);
+                        return;
+                    }
+                    
+                    // 标记为已处理
+                    setProcessedPayments(prev => new Set(prev).add(paymentKey));
+                    
+                    // 清理轮询
+                    if (pollingIntervalId) {
+                        clearTimeout(pollingIntervalId);
+                        setPollingIntervalId(null);
+                    }
                     setQrCodeUrl(null);
                     setIsLoading(null);
-                    await activateSubscription({ firestore, uid: user.uid, planId, paymentId: data.transaction_id, amount: pricingPlans.find(p => p.id === planId)?.price || 0 });
-                    toast({ title: '支付成功', description: '您的订阅已生效。即将跳转到个人中心...' });
-                    setTimeout(() => router.push('/'), 2000);
+                    
+                    try {
+                        console.log('开始激活订阅...');
+                        // 调用API端点激活订阅
+                        const activateResponse = await fetch('/api/subscription/activate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: user.uid,
+                                planId,
+                                paymentId: data.transaction_id,
+                                amount: pricingPlans.find(p => p.id === planId)?.price || 0
+                            })
+                        });
+
+                        if (!activateResponse.ok) {
+                            const errorData = await activateResponse.json();
+                            console.error('激活订阅API错误:', {
+                                status: activateResponse.status,
+                                statusText: activateResponse.statusText,
+                                errorData
+                            });
+                            throw new Error(errorData.error || '激活订阅失败');
+                        }
+
+                        const activateResult = await activateResponse.json();
+                        console.log('激活订阅成功:', activateResult);
+                        
+                        // 清理用户数据缓存，确保获取最新的订阅信息
+                        await fetch('/api/cache/clear', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                cacheKeys: [`user:info:${user.uid}`, `subscription:${user.uid}`] 
+                            })
+                        });
+                        
+                        toast({ title: '支付成功', description: '您的订阅已生效。即将跳转到个人中心...' });
+                        setTimeout(() => router.push('/'), 2000);
+                        return; // 成功处理，退出轮询
+                    } catch (error) {
+                        console.error('激活订阅失败:', error);
+                        toast({ 
+                            variant: 'destructive',
+                            title: '激活失败', 
+                            description: '支付成功但激活订阅时出错，请联系客服。' 
+                        });
+                        return; // 激活失败，退出轮询
+                    }
+                } else if (data.trade_state === 'CLOSED' || data.trade_state === 'REVOKED') {
+                    // 订单已关闭或撤销
+                    console.log('订单已关闭或撤销:', data.trade_state);
+                    if (pollingIntervalId) {
+                        clearTimeout(pollingIntervalId);
+                        setPollingIntervalId(null);
+                    }
+                    setIsLoading(null);
+                    setQrCodeUrl(null);
+                    toast({ 
+                        variant: 'destructive', 
+                        title: '订单已取消', 
+                        description: '订单已被取消，请重新尝试订阅。' 
+                    });
+                    return;
                 }
+                
             } catch (e) {
-                console.warn('Poll status error:', e);
+                consecutiveErrors++;
+                console.warn(`支付状态检查出错 (第${consecutiveErrors}次错误):`, e);
             }
+            
+            // 检查是否超过最大尝试次数
             if (attempts >= maxAttempts) {
-                clearInterval(intervalId);
-                setPollingIntervalId(null);
+                console.log('支付状态检查超时，停止轮询');
+                if (pollingIntervalId) {
+                    clearTimeout(pollingIntervalId);
+                    setPollingIntervalId(null);
+                }
                 setIsLoading(null);
                 setQrCodeUrl(null);
-                toast({ variant: 'destructive', title: '支付超时', description: '订单已超时，请重新尝试订阅。' });
+                toast({ 
+                    variant: 'destructive', 
+                    title: '支付超时', 
+                    description: '订单已超时，请重新尝试订阅。如已支付，请联系客服。' 
+                });
+                return;
             }
-        }, 3000);
-        setPollingIntervalId(intervalId);
+            
+            // 计算下次轮询间隔：前10次用短间隔，之后逐渐增加
+            let nextInterval = baseInterval;
+            if (attempts > 10) {
+                nextInterval = Math.min(baseInterval * Math.pow(1.5, attempts - 10), maxInterval);
+            }
+            
+            // 如果有连续错误，增加间隔
+            if (consecutiveErrors > 0) {
+                nextInterval = Math.min(nextInterval * Math.pow(2, consecutiveErrors), maxInterval);
+            }
+            
+            console.log(`下次检查间隔: ${nextInterval}ms`);
+            const timeoutId = setTimeout(poll, nextInterval);
+            setPollingIntervalId(timeoutId);
+        };
+        
+        // 开始第一次检查
+        poll();
     }
     
+    /**
+     * 取消订阅尝试
+     * 清理轮询定时器和相关状态
+     */
     const cancelSubscriptionAttempt = () => {
       if (pollingIntervalId) {
-        clearInterval(pollingIntervalId);
+        clearTimeout(pollingIntervalId); // 使用clearTimeout替代clearInterval
         setPollingIntervalId(null);
       }
       setIsLoading(null);
       setQrCodeUrl(null);
+      // 清理已处理的支付记录
+      setProcessedPayments(new Set());
+      console.log('订阅尝试已取消');
     }
     
     const renderPlan = (plan: PricingPlan) => {
@@ -339,7 +468,7 @@ export default function PricingPage() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
             <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary">
                 <Sparkles className="w-6 h-6"/>
-                <span className="font-headline">交易笔记AI</span>
+                <span className="font-headline">复利复盘</span>
             </Link>
             <Button asChild>
                 <Link href={user ? '/' : '/login'}>{user ? '返回应用' : '登录'}</Link>
@@ -384,7 +513,7 @@ export default function PricingPage() {
 
       <footer className="container mx-auto px-4 py-8 md:px-6">
         <div className="text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} 交易笔记AI. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} 复利复盘. All rights reserved.</p>
             <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
         </div>
       </footer>

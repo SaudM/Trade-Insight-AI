@@ -146,9 +146,6 @@ export class UserAdapter {
         where: {
           userId: userId,
           status: 'active',
-          endDate: {
-            gt: new Date(), // 结束日期大于当前时间
-          },
         },
         orderBy: {
           endDate: 'desc', // 按结束日期降序排列，获取最新的订阅

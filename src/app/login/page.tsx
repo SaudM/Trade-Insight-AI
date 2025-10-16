@@ -11,7 +11,7 @@ export default function LoginPage() {
                 <BarChart className="h-6 w-6" />
             </div>
             <h1 className="font-headline text-3xl font-bold text-primary">欢迎回来</h1>
-            <p className="text-muted-foreground mt-2">登录您的交易笔记AI账户</p>
+            <p className="text-muted-foreground mt-2">登录您的复利复盘账户</p>
         </div>
 
         <LoginForm />
