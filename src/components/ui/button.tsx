@@ -13,7 +13,7 @@ import Ripple, { RippleRef } from "./ripple";
  */
 const buttonVariants = cva(
   // Base styles for all buttons
-  "relative overflow-hidden inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 uppercase tracking-wider",
+  "relative overflow-hidden inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium ring-offset-background transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 uppercase tracking-wider transform hover:scale-[1.02] active:scale-[0.98]",
   {
     variants: {
       variant: {
@@ -22,55 +22,55 @@ const buttonVariants = cva(
          * Use for the most important actions.
          * It has a solid background color and provides a strong visual cue.
          */
-        default: "bg-primary text-on-primary shadow-level-1 hover:shadow-level-2",
+        default: "bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg active:shadow-sm focus:ring-blue-500",
         /**
          * **Tonal Button**
          * A medium-emphasis button that's a lighter alternative to Filled buttons.
          * Use for secondary actions that still need some emphasis.
          */
-        tonal: "bg-secondary-container text-on-secondary-container shadow-level-1 hover:shadow-level-2",
+        tonal: "bg-blue-100 text-blue-700 shadow-sm hover:bg-blue-200 hover:shadow-md active:shadow-sm focus:ring-blue-400",
         /**
          * **Destructive Button**
          * A Filled button styled with error colors for actions that delete data or are otherwise destructive.
          */
         destructive:
-          "bg-error text-on-error shadow-level-1 hover:shadow-level-2",
+          "bg-red-600 text-white shadow-md hover:bg-red-700 hover:shadow-lg active:shadow-sm focus:ring-red-500",
         /**
          * **Elevated Button**
          * A button with a shadow that appears to "float" above the surface.
          * Use for actions that need to stand out from a complex background.
          */
         elevated:
-          "bg-surface-container-low text-primary shadow-level-1 hover:shadow-level-2",
+          "bg-white text-blue-600 shadow-lg hover:shadow-xl active:shadow-md border border-gray-100 focus:ring-blue-500",
         /**
          * **Outlined Button**
          * A medium-emphasis button with a border and no fill.
          * Use for important actions that aren't the primary call to action.
          */
         outline:
-          "border border-outline text-primary hover:bg-primary/5",
+          "border border-blue-300 text-blue-600 hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-400",
         /**
          * **Secondary Filled Button**
          * A Filled button that uses the secondary color scheme.
          */
         secondary:
-          "bg-secondary text-on-secondary shadow-level-1 hover:shadow-level-2",
+          "bg-slate-600 text-white shadow-md hover:bg-slate-700 hover:shadow-lg active:shadow-sm focus:ring-slate-500",
         /**
          * **Ghost Button**
          * A low-emphasis button, similar to a Text button but can be used for less prominent actions.
          */
-        ghost: "text-secondary hover:bg-secondary/10",
+        ghost: "text-slate-600 hover:bg-slate-100 active:bg-slate-200 focus:ring-slate-400",
         /**
          * **Text Button**
          * The lowest-emphasis button, used for less important actions.
          * It's typically used in dialogs, cards, and other containers.
          */
-        text: "text-primary hover:bg-primary/5",
+        text: "text-blue-600 hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-400",
         /**
          * **Link Button**
          * A button styled to look like a hyperlink.
          */
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-blue-600 underline-offset-4 hover:underline focus:ring-blue-400",
       },
       size: {
         default: "h-10 px-6 py-2",

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Sparkles, ChevronRight, Gift } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import FinancialParticlesBackground from "@/components/ui/financial-particles-background";
 import type { PricingPlan, Subscription } from "@/lib/types";
 import {
   Accordion,
@@ -373,8 +374,8 @@ export default function PricingPage() {
               key={plan.id}
               className={cn(
                 "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
-                plan.isPopular ? "border-primary/50 shadow-xl ring-2 ring-primary/80" : "border-border/50",
-                isMonthlyTrial && "border-green-500/50 shadow-xl ring-2 ring-green-500/80"
+                plan.isPopular ? "border-blue-200 shadow-xl ring-2 ring-blue-100" : "border-gray-100",
+                isMonthlyTrial && "border-green-200 shadow-xl ring-2 ring-green-100"
               )}
             >
               {plan.isPopular && (
@@ -411,11 +412,11 @@ export default function PricingPage() {
                     </div>
                 )}
                 
-                <ul className="space-y-3 text-sm mb-8">
+                <ul className="space-y-4 text-sm mb-10">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                      <span className="text-gray-500">{feature}</span>
+                      <span className="text-gray-600">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -425,32 +426,64 @@ export default function PricingPage() {
                  <Button
                     onClick={handleActivateTrial}
                     size="lg"
+                    variant="default"
                     disabled={isLoading !== null}
-                    className="w-full text-base font-bold group bg-green-600 hover:bg-green-600/90"
+                    className={cn(
+                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
+                      "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700",
+                      "text-white shadow-md hover:shadow-lg active:shadow-sm",
+                      "transform hover:scale-[1.02] active:scale-[0.98]",
+                      "focus:ring-2 focus:ring-green-500 focus:ring-offset-2",
+                      "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                    )}
                  >
                      {isLoading === 'trial' ? (
-                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                       <div className="flex items-center justify-center gap-2">
+                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                         <span>激活中...</span>
+                       </div>
                      ) : (
-                       "立即激活试用"
+                       <div className="flex items-center justify-center gap-2">
+                         <Gift className="w-5 h-5" />
+                         <span>立即激活试用</span>
+                       </div>
                      )}
                  </Button>
              ) : (
                 <Button
                     onClick={() => handleSubscribe(plan)}
                     size="lg"
+                    variant={plan.isPopular ? "default" : "tonal"}
                     disabled={isLoading !== null}
                     className={cn(
-                      "w-full text-base font-bold group",
-                      plan.isPopular ? "bg-primary hover:bg-primary/90 shadow-lg" : "bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20"
+                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
+                      "transform hover:scale-[1.02] active:scale-[0.98]",
+                      "focus:ring-2 focus:ring-offset-2",
+                      "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none",
+                      plan.isPopular 
+                        ? cn(
+                            "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
+                            "text-white shadow-md hover:shadow-lg active:shadow-sm",
+                            "focus:ring-blue-500"
+                          )
+                        : cn(
+                            "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
+                            "text-slate-700 border border-slate-200 hover:border-slate-300",
+                            "shadow-sm hover:shadow-md active:shadow-sm",
+                            "focus:ring-slate-400"
+                          )
                     )}
                 >
                     {isLoading === plan.id ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                        <span>处理中...</span>
+                      </div>
                     ) : (
-                      <>
-                        立即订阅
-                        <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                      </>
+                      <div className="flex items-center justify-center gap-2">
+                        <span>立即订阅</span>
+                        <ChevronRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+                      </div>
                     )}
                 </Button>
              )}
@@ -460,9 +493,8 @@ export default function PricingPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-br from-primary/10 via-background to-background -z-0"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/50 to-transparent rounded-full -z-0"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-foreground overflow-hidden relative">
+      <FinancialParticlesBackground />
 
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -470,7 +502,12 @@ export default function PricingPage() {
                 <Sparkles className="w-6 h-6"/>
                 <span className="font-headline">复利复盘</span>
             </Link>
-            <Button asChild>
+            <Button 
+                asChild 
+                variant="tonal" 
+                size="default"
+                className="h-10 px-4 font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
                 <Link href={user ? '/' : '/login'}>{user ? '返回应用' : '登录'}</Link>
             </Button>
         </div>
@@ -478,10 +515,10 @@ export default function PricingPage() {
       
       <main className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
         <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-headline font-bold tracking-tight text-primary md:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-headline font-bold tracking-tight bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent md:text-5xl lg:text-6xl">
                 解锁您的全部投资交易潜能
             </h1>
-            <p className="mt-6 text-lg text-gray-500 md:text-xl">
+            <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto leading-relaxed">
                 选择一个方案，即可获得由AI驱动的深度交易洞察、模式识别和个性化改进建议，让每一笔交易都成为您持续进步的阶梯。
             </p>
         </div>
@@ -501,9 +538,9 @@ export default function PricingPage() {
 
         <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto mt-12">
             {faqs.map((faq, i) => (
-                <AccordionItem value={`item-${i}`} key={i}>
-                    <AccordionTrigger className="text-lg text-left hover:no-underline">{faq.question}</AccordionTrigger>
-                    <AccordionContent className="text-base text-gray-500 pt-2">
+                <AccordionItem value={`item-${i}`} key={i} className="border-gray-100">
+                    <AccordionTrigger className="text-lg text-left hover:no-underline hover:text-blue-600 transition-colors">{faq.question}</AccordionTrigger>
+                    <AccordionContent className="text-base text-gray-600 pt-2">
                     {faq.answer}
                     </AccordionContent>
                 </AccordionItem>

@@ -6,13 +6,8 @@ import { Button } from '@/components/ui/button';
 import { WandSparkles, Sparkles, ExternalLink } from 'lucide-react';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FloatingLabelSelect } from "@/components/ui/floating-label-select";
+import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import type { DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
@@ -109,10 +104,11 @@ export function ReportView({
             <div className="flex h-16 shrink-0 items-center justify-end px-4 md:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex items-center gap-2">
                     {sortedReports && sortedReports.length > 0 && (
-                        <Select onValueChange={setSelectedReportId} value={selectedReportId}>
-                            <SelectTrigger className="w-auto md:w-[280px]">
-                                <SelectValue placeholder="查看历史报告..." />
-                            </SelectTrigger>
+                        <FloatingLabelSelect
+                            label="查看历史报告..."
+                            onValueChange={setSelectedReportId} 
+                            value={selectedReportId}
+                        >
                             <SelectContent>
                                 {sortedReports.map(r => {
                                     const date = getReportDate(r);
@@ -124,7 +120,7 @@ export function ReportView({
                                     )
                                 })}
                             </SelectContent>
-                        </Select>
+                        </FloatingLabelSelect>
                     )}
                     <Button onClick={handleAnalysis} disabled={isLoading}>
                         <WandSparkles className="mr-2 h-4 w-4" />
