@@ -1,10 +1,9 @@
 
 "use client"
 
-import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
+import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { LayoutDashboard, Book, LogOut, FileText, Sparkles, User as UserIcon } from 'lucide-react';
 import type { View } from '@/lib/types';
-import { ThemeToggle } from '../theme-toggle';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -47,15 +46,15 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center size-9 bg-primary rounded-lg text-primary-foreground">
-                <UserIcon className="h-5 w-5" />
+      <SidebarHeader className="p-6">
+        <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center size-10 bg-primary rounded-xl text-primary-foreground shadow-md">
+                <UserIcon className="h-6 w-6" />
             </div>
-            <h1 className="font-headline text-xl font-semibold text-primary">复利复盘</h1>
+            <h1 className="font-headline text-2xl font-medium text-primary tracking-tight">复利复盘</h1>
         </div>
       </SidebarHeader>
-      <SidebarMenu>
+      <SidebarMenu className="px-4 py-2 space-y-2">
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setActiveView('dashboard')}
@@ -63,7 +62,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
             tooltip={{children: '仪表盘'}}
           >
             <LayoutDashboard />
-            <span>仪表盘</span>
+            <span className="text-base font-medium">仪表盘</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
@@ -73,9 +72,9 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
             tooltip={{children: '分析报告'}}
           >
             <FileText />
-            <span>分析报告</span>
+            <span className="text-base font-medium">分析报告</span>
              {!isProUser && (
-              <Badge variant="outline" className="ml-auto h-5 bg-accent/20 border-accent/50 text-accent group-data-[active=true]:bg-accent/30">
+              <Badge variant="outline" className="ml-auto h-6 px-2 bg-accent/20 border-accent/50 text-accent text-xs font-medium group-data-[active=true]:bg-accent/30">
                 <Sparkles className="mr-1 h-3 w-3" />
                 升级
               </Badge>
@@ -89,7 +88,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
             tooltip={{children: '交易笔记'}}
           >
             <Book />
-            <span>交易笔记</span>
+            <span className="text-base font-medium">交易笔记</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
@@ -99,13 +98,10 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
             tooltip={{children: '个人中心'}}
           >
             <UserIcon />
-            <span>个人中心</span>
+            <span className="text-base font-medium">个人中心</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
-       <SidebarFooter className="mt-auto">
-        <ThemeToggle />
-      </SidebarFooter>
     </Sidebar>
   );
 }

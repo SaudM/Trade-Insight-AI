@@ -11,12 +11,12 @@ export default function SignupPage() {
                 <BarChart className="h-6 w-6" />
             </div>
             <h1 className="font-headline text-3xl font-bold text-primary">创建您的账户</h1>
-            <p className="text-muted-foreground mt-2">开始使用AI驱动的交易笔记，提升您的交易水平。</p>
+            <p className="text-gray-500 mt-2">开始使用AI驱动的交易笔记，提升您的交易水平。</p>
         </div>
 
         <SignupForm />
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+        <p className="mt-8 text-center text-sm text-gray-500">
           已经有账户了？{" "}
           <Link href="/login" className="font-semibold text-primary hover:underline">
             立即登录

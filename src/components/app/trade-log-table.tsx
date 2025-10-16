@@ -104,7 +104,7 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
                         <Target className="h-5 w-5 text-primary" />
                         <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">仓位大小</p>
+                            <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">仓位大小</p>
                             <p className="font-semibold text-gray-900">{log.positionSize}</p>
                         </div>
                     </div>
@@ -203,9 +203,9 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
 export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { tradeLogs: TradeLog[], handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) {
     if (tradeLogs.length === 0) {
         return (
-            <div className="text-center text-muted-foreground py-16">
+            <div className="text-center text-gray-500 py-16">
                 <div className="flex flex-col items-center gap-4">
-                    <Target className="h-12 w-12 text-muted-foreground/50" />
+                    <Target className="h-12 w-12 text-gray-400" />
                     <div>
                         <p className="text-lg font-medium">还没有交易记录</p>
                         <p className="text-sm">点击"添加交易"开始记录您的交易历程</p>
@@ -217,7 +217,7 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
 
     return (
         <div className="space-y-4">
-            <div className="text-sm text-muted-foreground mb-6">
+            <div className="text-sm text-gray-500 mb-6">
                 共 {tradeLogs.length} 条交易记录
             </div>
             <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">

@@ -16,18 +16,18 @@ export default function LoginPage() {
             <BarChart className="h-6 w-6" />
           </div>
           <h1 className="font-headline text-3xl font-bold text-primary">欢迎回来</h1>
-          <p className="text-muted-foreground mt-2">登录您的复利复盘账户</p>
+          <p className="text-gray-500 mt-2">登录您的复利复盘账户</p>
         </div>
 
         {firebase ? (
           <LoginForm />
         ) : (
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-gray-500">
             Firebase is not configured. Please check your environment variables.
           </div>
         )}
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+        <p className="mt-8 text-center text-sm text-gray-500">
           还没有账户？{" "}
           <Link href="/signup" className="font-semibold text-primary hover:underline">
             免费注册

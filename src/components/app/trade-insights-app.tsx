@@ -354,13 +354,15 @@ export function TradeInsightsApp() {
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-xl md:max-w-2xl min-w-0 overflow-x-hidden p-3 sm:p-4 md:p-6">
-                  <ScrollArea className="max-h-[85vh] sm:max-h-[80vh] px-1 min-w-0 overflow-x-hidden">
-                      <TradeLogForm 
-                          tradeLog={editingLog} 
-                          onSubmit={handleFormSubmit}
-                          onCancel={handleFormCancel}
-                      />
+              <DialogContent className="w-[80vw] max-w-[600px] min-w-[320px] p-0 overflow-hidden rounded-3xl shadow-2xl border-0 bg-white">
+                  <ScrollArea className="max-h-[85vh] w-full">
+                      <div className="p-6">
+                          <TradeLogForm 
+                              tradeLog={editingLog} 
+                              onSubmit={handleFormSubmit}
+                              onCancel={handleFormCancel}
+                          />
+                      </div>
                   </ScrollArea>
               </DialogContent>
             </Dialog>

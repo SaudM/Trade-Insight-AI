@@ -403,9 +403,9 @@ export default function PricingPage() {
                 ) : (
                     <div className="my-6 text-center h-[90px]">
                       <span className="text-5xl font-bold">¥{plan.price}</span>
-                      <span className="text-muted-foreground">{plan.duration}</span>
+                      <span className="text-gray-500">{plan.duration}</span>
                       <div className="h-6 mt-1">
-                        <span className="text-sm text-muted-foreground line-through">原价 ¥{plan.originalPrice}</span>
+                        <span className="text-sm text-gray-500 line-through">原价 ¥{plan.originalPrice}</span>
                         {plan.pricePerMonth && <span className="ml-2 text-sm text-accent"> (折合 ¥{plan.pricePerMonth.toFixed(1)}/月)</span>}
                       </div>
                     </div>
@@ -415,7 +415,7 @@ export default function PricingPage() {
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                      <span className="text-muted-foreground">{feature}</span>
+                      <span className="text-gray-500">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -481,7 +481,7 @@ export default function PricingPage() {
             <h1 className="text-4xl font-headline font-bold tracking-tight text-primary md:text-5xl lg:text-6xl">
                 解锁您的全部投资交易潜能
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground md:text-xl">
+            <p className="mt-6 text-lg text-gray-500 md:text-xl">
                 选择一个方案，即可获得由AI驱动的深度交易洞察、模式识别和个性化改进建议，让每一笔交易都成为您持续进步的阶梯。
             </p>
         </div>
@@ -494,7 +494,7 @@ export default function PricingPage() {
        <section className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
         <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-headline font-bold text-foreground">常见问题解答</h2>
-            <p className="mt-4 text-lg text-muted-foreground">
+            <p className="mt-4 text-lg text-gray-500">
                 还有其他疑问？您可以随时 <a href="mailto:support@example.com" className="text-primary underline">联系我们</a>。
             </p>
         </div>
@@ -503,7 +503,7 @@ export default function PricingPage() {
             {faqs.map((faq, i) => (
                 <AccordionItem value={`item-${i}`} key={i}>
                     <AccordionTrigger className="text-lg text-left hover:no-underline">{faq.question}</AccordionTrigger>
-                    <AccordionContent className="text-base text-muted-foreground pt-2">
+                    <AccordionContent className="text-base text-gray-500 pt-2">
                     {faq.answer}
                     </AccordionContent>
                 </AccordionItem>
@@ -512,7 +512,7 @@ export default function PricingPage() {
       </section>
 
       <footer className="container mx-auto px-4 py-8 md:px-6">
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-sm text-gray-500">
             <p>&copy; {new Date().getFullYear()} 复利复盘. All rights reserved.</p>
             <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
         </div>

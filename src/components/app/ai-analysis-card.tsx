@@ -24,7 +24,7 @@ export function AiAnalysisCard({ title, icon: Icon, isLoading, content }: AiAnal
     }
 
     if (!content) {
-      return <p className="text-sm text-muted-foreground">暂无分析。请生成报告以查看洞察。</p>;
+      return <p className="text-sm text-gray-500">暂无分析。请生成报告以查看洞察。</p>;
     }
 
     if (typeof content === 'string') {
@@ -43,7 +43,7 @@ export function AiAnalysisCard({ title, icon: Icon, isLoading, content }: AiAnal
         {Object.entries(content).map(([key, value]) => (
           <div key={key}>
             <h4 className="font-semibold text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{value}</p>
+            <p className="text-sm text-gray-500 whitespace-pre-wrap">{value}</p>
           </div>
         ))}
       </div>
@@ -54,7 +54,7 @@ export function AiAnalysisCard({ title, icon: Icon, isLoading, content }: AiAnal
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg font-headline font-semibold">{title}</CardTitle>
-        <Icon className="h-5 w-5 text-muted-foreground" />
+        <Icon className="h-5 w-5 text-gray-500" />
       </CardHeader>
       <CardContent>{renderContent()}</CardContent>
     </Card>

@@ -11,14 +11,14 @@ export default function ForgotPasswordPage() {
             <BarChart className="h-6 w-6" />
           </div>
           <h1 className="font-headline text-3xl font-bold text-primary">重置您的密码</h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-gray-500 mt-2">
             请输入您的邮箱地址，我们将向您发送重置密码的链接。
           </p>
         </div>
 
         <ForgotPasswordForm />
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+        <p className="mt-8 text-center text-sm text-gray-500">
           记起来了？{" "}
           <Link href="/login" className="font-semibold text-primary hover:underline">
             返回登录

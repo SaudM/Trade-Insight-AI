@@ -153,7 +153,7 @@ export function ReportView({
                     ) : (
                         <div className="flex flex-col flex-1 items-center justify-center text-center bg-card shadow-soft-card rounded-lg p-8 min-h-[500px]">
                             <h2 className="text-2xl font-headline font-semibold">{`解锁您的专属AI${reportName}`}</h2>
-                            <p className="mt-2 max-w-md text-muted-foreground">
+                            <p className="mt-2 max-w-md text-gray-500">
                                 升级到Pro版，即可获得由AI驱动的深度交易分析、模式识别和个性化改进建议。
                             </p>
                             <div className="mt-6 flex gap-4">

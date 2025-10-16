@@ -83,7 +83,7 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
               />
             </AreaChart>
           ) : (
-             <div className="flex flex-1 items-center justify-center text-muted-foreground">
+             <div className="flex flex-1 items-center justify-center text-gray-500">
                 暂无交易数据以生成累计盈亏曲线。
              </div>
           )}

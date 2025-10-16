@@ -65,7 +65,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
                                     <tspan
                                         x={viewBox.cx}
                                         y={(viewBox.cy || 0) + 20}
-                                        className="text-sm fill-muted-foreground"
+                                        className="text-sm fill-gray-500"
                                     >
                                         胜率
                                     </tspan>
@@ -95,7 +95,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
             </PieChart>
           </ChartContainer>
         ) : (
-          <div className="flex h-40 items-center justify-center text-muted-foreground">
+          <div className="flex h-40 items-center justify-center text-gray-500">
             暂无交易数据。
           </div>
         )}

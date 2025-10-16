@@ -130,10 +130,10 @@ export function ProfileView() {
                          <CardContent>
                             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                                 <div className="flex items-center gap-3">
-                                     <Crown className={`w-6 h-6 ${isProUser ? 'text-yellow-500' : 'text-muted-foreground'}`}/>
+                                     <Crown className={`w-6 h-6 ${isProUser ? 'text-yellow-500' : 'text-gray-500'}`}/>
                                      <div>
                                         <p className="font-semibold">{isProUser ? '专业版会员' : '免费试用'}</p>
-                                        {endDate && <p className="text-sm text-muted-foreground">
+                                        {endDate && <p className="text-sm text-gray-500">
                                             到期时间: {format(endDate, 'yyyy年MM月dd日')}
                                         </p>}
                                      </div>
@@ -157,7 +157,7 @@ export function ProfileView() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="font-medium">密码</p>
-                                        <p className="text-sm text-muted-foreground">定期更改密码以保护您的账户安全。</p>
+                                        <p className="text-sm text-gray-500">定期更改密码以保护您的账户安全。</p>
                                     </div>
                                     <Button variant="outline" onClick={handleResetPassword} disabled={isResetting}>
                                         <Key className="mr-2 h-4 w-4" />
@@ -168,7 +168,7 @@ export function ProfileView() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="font-medium">订单中心</p>
-                                        <p className="text-sm text-muted-foreground">查看您的订单历史和支付记录。</p>
+                                        <p className="text-sm text-gray-500">查看您的订单历史和支付记录。</p>
                                     </div>
                                     <Button variant="outline" onClick={handleOrdersClick}>
                                         <ShoppingBag className="mr-2 h-4 w-4" />
