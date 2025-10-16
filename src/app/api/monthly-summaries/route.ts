@@ -7,6 +7,8 @@
 import { NextRequest } from 'next/server';
 import { checkDatabaseConnection } from '@/lib/db';
 import { AnalysisAdapter } from '@/lib/adapters/analysis-adapter';
+import { CacheKeys, CacheConfig } from '@/lib/redis';
+import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
  * 获取用户的月分析
@@ -23,34 +25,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 检查数据库连接
-    const isDbConnected = await checkDatabaseConnection();
-    
-    if (!isDbConnected) {
-      console.warn('数据库连接失败');
-      return new Response(JSON.stringify({ 
-        error: 'Database connection failed',
-        source: 'postgres_failed'
-      }), { 
-        status: 503 
-      });
-    }
+    // 定义数据获取函数
+    const fetchUserMonthlySummaries = async (userId: string) => {
+      return await AnalysisAdapter.getUserMonthlySummaries(userId);
+    };
 
-    try {
-      // 获取用户的月分析
-      const summaries = await AnalysisAdapter.getUserMonthlySummaries(userId);
+    // 配置缓存选项
+    const cacheOptions = CachedApiHandler.createCacheOptions(
+      CacheKeys.userMonthlySummaries,  // 缓存键生成函数
+      CacheConfig.USER_DATA_TTL,       // TTL
+      true                             // 启用缓存
+    );
 
-      return Response.json(summaries);
-
-    } catch (error) {
-      console.error('获取月分析失败:', error);
-      return new Response(JSON.stringify({ 
-        error: 'Failed to fetch monthly summaries',
-        source: 'postgres'
-      }), { 
-        status: 500 
-      });
-    }
+    // 使用缓存基类处理请求
+    return await CachedApiHandler.handleCachedGet(
+      req,
+      fetchUserMonthlySummaries,
+      cacheOptions,
+      userId
+    );
 
   } catch (err: any) {
     console.error('monthly-summaries API error:', err);
@@ -100,6 +93,10 @@ export async function POST(req: NextRequest) {
         keyLessons,
         iterationSuggestions,
       });
+
+      // 清除相关缓存（异步操作，不阻塞响应）
+      const cacheKey = CacheKeys.userMonthlySummaries(userId);
+      CachedApiHandler.clearCacheAsync(cacheKey);
 
       return Response.json(summary);
 

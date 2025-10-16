@@ -6,6 +6,8 @@
 import { NextRequest } from 'next/server';
 import { checkDatabaseConnection } from '@/lib/db';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
+import { CacheKeys, CacheConfig } from '@/lib/redis';
+import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
  * 获取用户信息和订阅状态
@@ -22,71 +24,29 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 检查数据库连接
-    const isDbConnected = await checkDatabaseConnection();
-    
-    if (!isDbConnected) {
-      console.warn('数据库连接失败，返回错误');
-      return new Response(JSON.stringify({ 
-        error: 'Database connection failed',
-        source: 'postgres_failed'
-      }), { 
-        status: 503 
-      });
-    }
+    // 定义数据获取函数
+    const fetchUserWithSubscription = async (firebaseUid: string) => {
+      return await UserAdapter.getUserWithSubscription(firebaseUid);
+    };
 
-    try {
-      // 使用PostgreSQL适配器获取用户信息
-      const userInfo = await UserAdapter.getUserWithSubscription(firebaseUid);
+    // 配置缓存选项
+    const cacheOptions = CachedApiHandler.createCacheOptions(
+      CacheKeys.userInfo,         // 缓存键生成函数
+      CacheConfig.USER_DATA_TTL,  // TTL
+      true                        // 启用缓存
+    );
 
-      if (!userInfo.user) {
-        return new Response(JSON.stringify({ 
-          error: 'User not found',
-          source: 'postgres'
-        }), { 
-          status: 404 
-        });
-      }
+    // 使用缓存基类处理请求
+    return await CachedApiHandler.handleCachedGet(
+      req,
+      fetchUserWithSubscription,
+      cacheOptions,
+      firebaseUid
+    );
 
-      return Response.json({
-        user: {
-          id: userInfo.user.id,
-          email: userInfo.user.email,
-          name: userInfo.user.name,
-          firebaseUid: userInfo.user.firebaseUid,
-          createdAt: userInfo.user.createdAt,
-          updatedAt: userInfo.user.updatedAt,
-        },
-        subscription: userInfo.subscription ? {
-          id: userInfo.subscription.id,
-          planId: userInfo.subscription.planId,
-          status: userInfo.subscription.status,
-          startDate: userInfo.subscription.startDate,
-          endDate: userInfo.subscription.endDate,
-          paymentProvider: userInfo.subscription.paymentProvider,
-        } : null,
-        isProUser: userInfo.isProUser,
-        isTrialUser: userInfo.isTrialUser,
-        source: 'postgres',
-      });
-
-    } catch (error) {
-      console.error('PostgreSQL查询用户信息失败:', error);
-      return new Response(JSON.stringify({ 
-        error: 'Failed to fetch user data from PostgreSQL',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        source: 'postgres_error'
-      }), { 
-        status: 500 
-      });
-    }
-
-  } catch (error) {
-    console.error('用户API错误:', error);
-    return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }), { 
+  } catch (err: any) {
+    console.error('user API error:', err);
+    return new Response(JSON.stringify({ error: err.message || 'Internal error' }), { 
       status: 500 
     });
   }

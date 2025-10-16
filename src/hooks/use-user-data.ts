@@ -56,7 +56,8 @@ export function useUserData(): UseUserDataReturn {
       const response = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
       
       if (response.ok) {
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data;
         setUserData(data);
         setIsLoading(false);
         return;
@@ -81,7 +82,8 @@ export function useUserData(): UseUserDataReturn {
           // 创建成功后重新获取用户数据
           const retryResponse = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
           if (retryResponse.ok) {
-            const data = await retryResponse.json();
+            const result = await retryResponse.json();
+            const data = result.data;
             setUserData(data);
             setIsLoading(false);
             return;

@@ -179,7 +179,7 @@ export abstract class CachedApiHandler {
       this.setCacheAsync(cacheKey, data, ttl);
 
       return NextResponse.json({
-        ...data,
+        data: data,
         _cached: false,
         _cacheTime: new Date().toISOString()
       });

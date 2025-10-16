@@ -33,7 +33,8 @@ export function useTradeLogsPostgres(userId: string | null) {
         throw new Error(`获取交易日志失败: ${response.statusText}`);
       }
 
-      const tradeLogs = await response.json();
+      const result = await response.json();
+        const tradeLogs = result.data;
       setData(tradeLogs);
     } catch (err) {
       console.error('获取交易日志失败:', err);
@@ -84,8 +85,7 @@ export function useDailyAnalysesPostgres(userId: string | null) {
       }
 
       const responseData = await response.json();
-      // 处理新的API响应格式：{ data: [...], _cached: boolean, _cacheTime: string }
-      const analyses = responseData.data || responseData;
+      const analyses = responseData.data;
       setData(analyses);
     } catch (err) {
       console.error('获取日分析失败:', err);
@@ -136,8 +136,7 @@ export function useWeeklyReviewsPostgres(userId: string | null) {
       }
 
       const responseData = await response.json();
-      // 处理新的API响应格式：{ data: [...], _cached: boolean, _cacheTime: string }
-      const reviews = responseData.data || responseData;
+      const reviews = responseData.data;
       setData(reviews);
     } catch (err) {
       console.error('获取周分析失败:', err);
@@ -188,8 +187,7 @@ export function useMonthlySummariesPostgres(userId: string | null) {
       }
 
       const responseData = await response.json();
-      // 处理新的API响应格式：{ data: [...], _cached: boolean, _cacheTime: string }
-      const summaries = responseData.data || responseData;
+      const summaries = responseData.data;
       setData(summaries);
     } catch (err) {
       console.error('获取月分析失败:', err);

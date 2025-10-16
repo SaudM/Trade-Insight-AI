@@ -7,6 +7,8 @@
 import { NextRequest } from 'next/server';
 import { checkDatabaseConnection } from '@/lib/db';
 import { AnalysisAdapter } from '@/lib/adapters/analysis-adapter';
+import { CacheKeys, CacheConfig } from '@/lib/redis';
+import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
  * 获取用户的周分析
@@ -23,34 +25,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 检查数据库连接
-    const isDbConnected = await checkDatabaseConnection();
-    
-    if (!isDbConnected) {
-      console.warn('数据库连接失败');
-      return new Response(JSON.stringify({ 
-        error: 'Database connection failed',
-        source: 'postgres_failed'
-      }), { 
-        status: 503 
-      });
-    }
+    // 定义数据获取函数
+    const fetchUserWeeklyReviews = async (userId: string) => {
+      return await AnalysisAdapter.getUserWeeklyReviews(userId);
+    };
 
-    try {
-      // 获取用户的周分析
-      const reviews = await AnalysisAdapter.getUserWeeklyReviews(userId);
+    // 配置缓存选项
+    const cacheOptions = CachedApiHandler.createCacheOptions(
+      CacheKeys.userWeeklyAnalyses,  // 缓存键生成函数
+      CacheConfig.USER_DATA_TTL,     // TTL
+      true                           // 启用缓存
+    );
 
-      return Response.json(reviews);
-
-    } catch (error) {
-      console.error('获取周分析失败:', error);
-      return new Response(JSON.stringify({ 
-        error: 'Failed to fetch weekly reviews',
-        source: 'postgres'
-      }), { 
-        status: 500 
-      });
-    }
+    // 使用缓存基类处理请求
+    return await CachedApiHandler.handleCachedGet(
+      req,
+      fetchUserWeeklyReviews,
+      cacheOptions,
+      userId
+    );
 
   } catch (err: any) {
     console.error('weekly-reviews API error:', err);
@@ -101,6 +94,10 @@ export async function POST(req: NextRequest) {
         emotionalCorrelation,
         improvementPlan,
       });
+
+      // 清除相关缓存（异步操作，不阻塞响应）
+      const cacheKey = CacheKeys.userWeeklyAnalyses(userId);
+      CachedApiHandler.clearCacheAsync(cacheKey);
 
       return Response.json(review);
 

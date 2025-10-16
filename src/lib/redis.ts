@@ -327,6 +327,11 @@ export const CacheKeys = {
   userWeeklyAnalyses: (userId: string) => `weekly-analyses:user:${userId}`,
   
   /**
+   * 用户月分析缓存键
+   */
+  userMonthlySummaries: (userId: string) => `monthly-summaries:user:${userId}`,
+  
+  /**
    * 用户交易日志缓存键
    */
   userTradeLogs: (userId: string) => `trade-logs:user:${userId}`,
