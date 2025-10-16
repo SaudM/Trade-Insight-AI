@@ -7,6 +7,7 @@
 import { NextRequest } from 'next/server';
 import { checkDatabaseConnection } from '@/lib/db';
 import { AnalysisAdapter } from '@/lib/adapters/analysis-adapter';
+import { cache, CacheKeys, CacheConfig } from '@/lib/redis';
 
 /**
  * 获取用户的日分析
@@ -23,6 +24,29 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // 生成缓存键
+    const cacheKey = CacheKeys.userDailyAnalyses(userId);
+
+    try {
+      // 1. 首先尝试从Redis缓存中获取数据
+      const cachedAnalyses = await cache.get(cacheKey);
+      
+      if (cachedAnalyses !== null) {
+        console.log(`从Redis缓存获取用户 ${userId} 的日分析数据`);
+        return Response.json({
+          ...cachedAnalyses,
+          _cached: true,
+          _cacheTime: new Date().toISOString()
+        });
+      }
+
+      console.log(`Redis缓存未命中，从数据库获取用户 ${userId} 的日分析数据`);
+
+    } catch (cacheError) {
+      console.warn('Redis缓存读取失败，继续从数据库获取:', cacheError);
+    }
+
+    // 2. 缓存未命中或Redis不可用，从数据库获取数据
     // 检查数据库连接
     const isDbConnected = await checkDatabaseConnection();
     
@@ -37,10 +61,27 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      // 获取用户的日分析
+      // 从数据库获取用户的日分析
       const analyses = await AnalysisAdapter.getUserDailyAnalyses(userId);
 
-      return Response.json(analyses);
+      // 3. 将数据存入Redis缓存（异步操作，不阻塞响应）
+      cache.set(cacheKey, analyses, CacheConfig.USER_DATA_TTL)
+        .then((success) => {
+          if (success) {
+            console.log(`成功缓存用户 ${userId} 的日分析数据到Redis`);
+          } else {
+            console.warn(`缓存用户 ${userId} 的日分析数据到Redis失败`);
+          }
+        })
+        .catch((error) => {
+          console.error('Redis缓存写入异常:', error);
+        });
+
+      return Response.json({
+        ...analyses,
+        _cached: false,
+        _cacheTime: new Date().toISOString()
+      });
 
     } catch (error) {
       console.error('获取日分析失败:', error);
@@ -99,6 +140,20 @@ export async function POST(req: NextRequest) {
         emotionalImpact,
         improvementSuggestions,
       });
+
+      // 清除相关缓存（异步操作，不阻塞响应）
+      const cacheKey = CacheKeys.userDailyAnalyses(userId);
+      cache.del(cacheKey)
+        .then((success) => {
+          if (success) {
+            console.log(`成功清除用户 ${userId} 的日分析缓存`);
+          } else {
+            console.warn(`清除用户 ${userId} 的日分析缓存失败`);
+          }
+        })
+        .catch((error) => {
+          console.error('Redis缓存清除异常:', error);
+        });
 
       return Response.json(analysis);
 
