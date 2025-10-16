@@ -14,7 +14,6 @@ import { getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from 'next/navigation';
 
 /**
@@ -73,6 +72,20 @@ export function ProfileView() {
             setIsResetting(false);
         }
     };
+
+    /**
+     * 处理升级到专业版/管理订阅按钮点击事件
+     */
+    const handlePricingClick = () => {
+        router.push('/pricing');
+    };
+
+    /**
+     * 处理查看订单按钮点击事件
+     */
+    const handleOrdersClick = () => {
+        router.push('/profile/orders');
+    };
     
     const isProUser = subscription?.status === 'active' || false;
     
@@ -100,16 +113,16 @@ export function ProfileView() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-8">
                     <Card>
-                        <CardHeader className="flex flex-row items-center gap-4">
-                            <Avatar className="h-16 w-16">
+                        <CardHeader className="flex flex-row items-center gap-6">
+                            <Avatar className="h-20 w-20 md:h-24 md:w-24">
                                 <AvatarImage src={firebaseUser?.photoURL || undefined} alt={user?.name || 'User'} />
-                                <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+                                <AvatarFallback className="text-lg md:text-xl">{getInitials(user?.name)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                                 <CardTitle className="text-2xl">{user?.name}</CardTitle>
                                 <CardDescription>{user?.email}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                            <Button variant="text" size="icon" onClick={handleSignOut}>
                                 <LogOut className="h-5 w-5" />
                                 <span className="sr-only">退出登录</span>
                             </Button>
@@ -125,19 +138,15 @@ export function ProfileView() {
                                         </p>}
                                      </div>
                                 </div>
-                                {isProUser && subscription ? (
-                                    <Badge variant="secondary">有效</Badge>
-                                ) : (
+                                {!isProUser && (
                                     <Badge variant="outline">试用中</Badge>
                                 )}
                             </div>
                         </CardContent>
                         <CardFooter className="justify-end">
-                            <Button asChild>
-                                <Link href="/pricing">
-                                    <Crown className="mr-2 h-4 w-4" />
-                                    {subscription ? '管理订阅' : '升级到专业版'}
-                                </Link>
+                            <Button variant="outline" onClick={handlePricingClick}>
+                                <Crown className="mr-2 h-4 w-4" />
+                                {subscription ? '管理订阅' : '升级到专业版'}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -161,11 +170,9 @@ export function ProfileView() {
                                         <p className="font-medium">订单中心</p>
                                         <p className="text-sm text-muted-foreground">查看您的订单历史和支付记录。</p>
                                     </div>
-                                    <Button variant="outline" asChild>
-                                        <Link href="/profile/orders">
-                                            <ShoppingBag className="mr-2 h-4 w-4" />
-                                            查看订单
-                                        </Link>
+                                    <Button variant="outline" onClick={handleOrdersClick}>
+                                        <ShoppingBag className="mr-2 h-4 w-4" />
+                                        查看订单
                                     </Button>
                                 </div>
                             </div>

@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import type { DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 import type { LucideIcon } from 'lucide-react';
-import Link from 'next/link';
+
 
 type Report = DailyAnalysis | WeeklyReview | MonthlySummary;
 
@@ -106,7 +106,7 @@ export function ReportView({
     return (
         <div className="flex flex-col h-full w-full">
             {/* 固定高度的按钮容器，确保一致的顶部距离 */}
-            <div className="flex h-16 shrink-0 items-center justify-end border-b px-4 md:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-16 shrink-0 items-center justify-end px-4 md:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="flex items-center gap-2">
                     {sortedReports && sortedReports.length > 0 && (
                         <Select onValueChange={setSelectedReportId} value={selectedReportId}>
@@ -151,22 +151,19 @@ export function ReportView({
                           ))}
                       </div>
                     ) : (
-                        <div className="flex flex-col flex-1 items-center justify-center text-center bg-card border rounded-lg p-8 min-h-[500px]">
-                            <div className="relative mb-4">
-                                <WandSparkles className="w-16 h-16 text-primary" />
-                                <Sparkles className="w-8 h-8 absolute -top-2 -right-3 text-accent animate-pulse" />
-                            </div>
+                        <div className="flex flex-col flex-1 items-center justify-center text-center bg-card shadow-soft-card rounded-lg p-8 min-h-[500px]">
                             <h2 className="text-2xl font-headline font-semibold">{`解锁您的专属AI${reportName}`}</h2>
                             <p className="mt-2 max-w-md text-muted-foreground">
                                 升级到Pro版，即可获得由AI驱动的深度交易分析、模式识别和个性化改进建议。
                             </p>
                             <div className="mt-6 flex gap-4">
-                                <Button asChild>
-                                    <Link href="/pricing" target="_blank">
-                                        <Sparkles className="mr-2 h-4 w-4"/>
-                                        查看订阅方案
-                                        <ExternalLink className="ml-2 h-4 w-4" />
-                                    </Link>
+                                <Button 
+                                    variant="outline"
+                                    onClick={() => window.open('/pricing', '_blank')}
+                                >
+                                    <Sparkles className="mr-2 h-4 w-4"/>
+                                    查看订阅方案
+                                    <ExternalLink className="ml-2 h-4 w-4" />
                                 </Button>
                             </div>
                         </div>

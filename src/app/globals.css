@@ -4,85 +4,100 @@
 
 @layer base {
   :root {
-    --background: 210 29% 96%; /* Light gray - #F0F4F8 */
-    --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary: 231 48% 35%; /* Navy blue - #2E3A87 */
-    --primary-foreground: 210 20% 98%;
-    --secondary: 210 29% 90%;
-    --secondary-foreground: 224 71.4% 4.1%;
-    --muted: 210 29% 90%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 174 51% 41%; /* Teal - #339E93 */
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 140 70% 40%;
-    --success-foreground: 210 20% 98%;
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 231 48% 35%;
-    --chart-1: 231 48% 35%;
-    --chart-2: 174 51% 41%;
-    --chart-3: 140 70% 40%;
-    --chart-4: 231 48% 55%;
-    --chart-5: 174 51% 61%;
-    --radius: 0.5rem;
+    --primary: 243.83 89.47% 62.94%;
+    --on-primary: 0 0% 100%;
+    --primary-container: 244 100% 93.92%;
+    --on-primary-container: 243.6 100% 17.84%;
+    --secondary: 240 4.17% 39.02%;
+    --on-secondary: 0 0% 100%;
+    --secondary-container: 240 4.55% 93.53%;
+    --on-secondary-container: 240 5.13% 28.43%;
+    --tertiary: 280.95 25.42% 40.2%;
+    --on-tertiary: 0 0% 100%;
+    --tertiary-container: 282 42.86% 91.76%;
+    --on-tertiary-container: 282.86 34.29% 24.51%;
+    --error: 0 78.95% 42.55%;
+    --on-error: 0 0% 100%;
+    --error-container: 0 100% 91.37%;
+    --on-error-container: 0 100% 12.75%;
+    --background: 0 0% 96.1%; /* #F5F5F5 */
+    --foreground: 240 10% 3.9%;
+    --on-background: 270 5.88% 10.78%;
+    --surface: 300 100% 99.02%;
+    --on-surface: 270 5.88% 10.78%;
+    --surface-variant: 270 11.11% 90.2%;
+    --on-surface-variant: 270 8.7% 28.43%;
+    --outline: 212 9% 71%;
+    --inverse-on-surface: 270 4.76% 95.88%;
+    --inverse-surface: 270 4.55% 18.63%;
+    --inverse-primary: 243.33 100% 87.06%;
+    --shadow: 0 0% 0%;
+    --surface-tint: 243.83 89.47% 62.94%;
+    --outline-variant: 270 10% 80%;
+    --scrim: 0 0% 0%;
+    --surface-container-highest: 270 10.53% 90%;
+    --surface-container-high: 270 10% 92.55%;
+    --surface-container: 270 9.52% 95.1%;
+    --surface-container-low: 270 9.09% 97.45%;
+    --surface-container-lowest: 0 0% 100%;
+    --surface-bright: 300 100% 99.02%;
+    --surface-dim: 270 8.33% 86.86%;
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 224 71.4% 4.1%;
-    --sidebar-primary: 231 48% 35%;
-    --sidebar-primary-foreground: 210 20% 98%;
-    --sidebar-accent: 210 29% 94%;
-    --sidebar-accent-foreground: 224 71.4% 4.1%;
-    --sidebar-border: 210 20% 88%;
-    --sidebar-ring: 231 48% 35%;
+    --sidebar-foreground: 240 5.88% 10.78%;
+    --sidebar-border: 270 5.26% 47.25%;
+    --sidebar-ring: 243.83 89.47% 62.94%;
+    --sidebar-primary: 243.83 89.47% 62.94%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 244 100% 93.92%;
+    --sidebar-accent-foreground: 243.6 100% 17.84%;
+    --card: 0 0% 100%; /* 白色背景 */
+    --card-foreground: 240 10% 3.9%;
   }
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 231 48% 65%;
-    --primary-foreground: 231 48% 15%;
-    --secondary: 217 32% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 32% 17%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 174 51% 51%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 140 50% 50%;
-    --success-foreground: 140 50% 10%;
-    --border: 217 32% 17%;
-    --input: 217 32% 17%;
-    --ring: 231 48% 65%;
-    --chart-1: 231 48% 65%;
-    --chart-2: 174 51% 51%;
-    --chart-3: 140 50% 50%;
-    --chart-4: 231 48% 45%;
-    --chart-5: 174 51% 31%;
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 231 48% 65%;
-    --sidebar-primary-foreground: 231 48% 15%;
-    --sidebar-accent: 217 32% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 17%;
-    --sidebar-ring: 231 48% 65%;
-  }
-}
 
-@layer base {
-  * {
-    @apply border-border;
+  .dark {
+    --primary: 243.33 100% 87.06%;
+    --on-primary: 244.29 61.54% 25.49%;
+    --primary-container: 243.6 100% 17.84%;
+    --on-primary-container: 244 100% 93.92%;
+    --secondary: 240 6.67% 80.2%;
+    --on-secondary: 240 7.14% 23.73%;
+    --secondary-container: 240 5.13% 28.43%;
+    --on-secondary-container: 240 4.55% 93.53%;
+    --tertiary: 282.22 35.29% 83.53%;
+    --on-tertiary: 282 20% 25.29%;
+    --tertiary-container: 282.86 34.29% 24.51%;
+    --on-tertiary-container: 282 42.86% 91.76%;
+    --error: 0 100% 84.12%;
+    --on-error: 0 100% 37.84%;
+    --error-container: 0 100% 12.75%;
+    --on-error-container: 0 100% 91.37%;
+    --background: 270 5.56% 6.86%;
+    --on-background: 270 4.76% 90%;
+    --surface: 270 5.56% 6.86%;
+    --on-surface: 270 4.76% 90%;
+    --surface-variant: 270 8.7% 28.43%;
+    --on-surface-variant: 270 10% 80%;
+    --outline: 270 5.88% 56.27%;
+    --inverse-on-surface: 270 5.88% 10.78%;
+    --inverse-surface: 270 4.76% 90%;
+    --inverse-primary: 243.83 89.47% 62.94%;
+    --shadow: 0 0% 0%;
+    --surface-tint: 243.33 100% 87.06%;
+    --outline-variant: 270 8.7% 28.43%;
+    --scrim: 0 0% 0%;
+    --surface-container-highest: 270 7.69% 34.31%;
+    --surface-container-high: 270 6.9% 24.9%;
+    --surface-container: 270 6.25% 19.8%;
+    --surface-container-low: 270 5.88% 10.78%;
+    --surface-container-lowest: 270 5.26% 4.12%;
+    --surface-bright: 270 7.69% 34.31%;
+    --surface-dim: 270 5.56% 6.86%;
+    --card: 0 0% 100%; /* 暗色主题下也使用白色背景 */
+    --card-foreground: 240 10% 3.9%;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-on-background;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

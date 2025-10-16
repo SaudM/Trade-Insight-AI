@@ -237,9 +237,9 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
             </ScrollArea>
              <Button 
                 onClick={onAddTradeLog}
-                className="fixed bottom-4 right-4 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-50"
+                className="fixed bottom-4 right-4 h-16 w-16 sm:h-18 sm:w-18 rounded-full shadow-lg sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-50"
             >
-                <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Plus className="h-10 w-10 sm:h-10 sm:w-10 text-white" />
             </Button>
         </div>
     );
