@@ -152,7 +152,6 @@ export function LoginForm() {
                   <FloatingLabelInput
                     type="email"
                     label="邮箱"
-                    placeholder="you@example.com"
                     startIcon={<Mail className="h-5 w-5" />}
                     error={form.formState.errors.email?.message}
                     {...field}
@@ -169,7 +168,6 @@ export function LoginForm() {
                 <FormControl>
                   <PasswordInput
                     label="密码"
-                    placeholder=""
                     error={form.formState.errors.password?.message}
                     {...field}
                   />
