@@ -33,15 +33,15 @@ export async function GET(req: NextRequest) {
             order = await findOrderByOutTradeNoPostgres(outTradeNo);
             if (order) {
               // 标记订单为已支付
-               await markOrderAsPaidPostgres(outTradeNo, res.transaction_id || '');
-              
-              // 激活订阅（支持多套餐累加）
-              await activateSubscriptionPostgres({
-                userId: order.userId,
-                planId: order.planId,
-                paymentId: res.transaction_id || order.id,
-                amount: order.amount,
-              });
+               await prisma.$transaction(async (tx) => {
+                 await markOrderAsPaidPostgres(outTradeNo, res.transaction_id || '', tx);
+                 await activateSubscriptionPostgres({
+                   userId: order.userId,
+                   planId: order.planId,
+                   paymentId: res.transaction_id || order.id,
+                   amount: order.amount,
+                 }, tx);
+               });
               
               orderProcessed = true;
               console.log(`Subscription activated via PostgreSQL for user ${order.userId}, plan: ${order.planId}`);

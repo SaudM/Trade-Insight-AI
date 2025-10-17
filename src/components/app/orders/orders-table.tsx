@@ -7,50 +7,73 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 /**
- * 格式化金额显示
- * @param amount 金额（分）
+ * 格式化金额
+ * @param amount 金额
  * @returns 格式化后的金额字符串
  */
 function formatAmount(amount: number) {
-  return `￥${(amount / 100).toFixed(2)}`;
+  return `¥${amount.toFixed(2)}`;
 }
 
 /**
- * 格式化日期显示
- * @param value 日期值
- * @returns 格式化后的日期字符串
+ * 格式化日期
+ * @param dateString 日期字符串
+ * @returns 格式化后的日期
  */
-function formatDate(value: any) {
-  try {
-    if (!value) return '-';
-    if (typeof value === 'string') return new Date(value).toLocaleString();
-    if (value?.toDate) return value.toDate().toLocaleString();
-    return String(value);
-  } catch {
-    return String(value);
-  }
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleString();
 }
 
 /**
- * 状态徽章组件
+ * 状态徽章
  * @param status 订单状态
- * @returns 状态徽章
+ * @returns 徽章组件
  */
 function StatusBadge({ status }: { status: OrderData['status'] }) {
-  const variant =
-    status === 'paid' ? 'default' :
-    status === 'pending' ? 'secondary' :
-    status === 'failed' ? 'destructive' : 'outline';
-  
-  const statusText = {
-    paid: '已支付',
-    pending: '待支付',
-    failed: '支付失败',
-    cancelled: '已取消',
-    refunded: '已退款',
-  }[status] || status;
+  const statusConfig = {
+    pending: { text: '待支付', className: 'bg-orange-500 hover:bg-orange-600' },
+    paid: { text: '已支付', className: 'bg-green-500 hover:bg-green-600' },
+    failed: { text: '支付失败', className: 'bg-red-500 hover:bg-red-600' },
+    cancelled: { text: '已取消', className: 'bg-gray-500 hover:bg-gray-600' },
+    refunded: { text: '已退款', className: 'bg-yellow-500 hover:bg-yellow-600' },
+    completed: { text: '已完成', className: 'bg-blue-500 hover:bg-blue-600' },
+  };
 
-  return <Badge variant={variant}>{statusText}</Badge>;
+  const config = statusConfig[status] || { text: '未知状态', className: 'bg-gray-400' };
+
+  return <Badge className={`${config.className} text-white`}>{config.text}</Badge>;
+}
+
+/**
+ * 订单项卡片
+ * @param order 订单数据
+ */
+function OrderCard({ order }: { order: OrderData }) {
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-sm font-medium truncate">订单号: {order.outTradeNo}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-500">商品</span>
+          <span>{order.planName}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">金额</span>
+          <span className="font-semibold">{formatAmount(order.amount)}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500">状态</span>
+          <StatusBadge status={order.status} />
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">创建时间</span>
+          <span>{formatDate(order.createdAt)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 /**
@@ -80,28 +103,11 @@ export default function OrdersTable() {
             <p className="text-gray-600">暂无订单记录</p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>订单号</TableHead>
-                <TableHead>商品</TableHead>
-                <TableHead>金额</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>创建时间</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order: OrderData) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-mono text-sm">{order.outTradeNo}</TableCell>
-                  <TableCell>{order.planName}</TableCell>
-                  <TableCell>{formatAmount(order.amount)}</TableCell>
-                  <TableCell><StatusBadge status={order.status} /></TableCell>
-                  <TableCell>{formatDate(order.createdAt)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {orders.map((order: OrderData) => (
+              <OrderCard key={order.id} order={order} />
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

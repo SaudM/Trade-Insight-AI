@@ -4,21 +4,29 @@
  */
 
 import { OrderAdapter, OrderData } from './adapters/order-adapter';
+import { UserAdapter } from './adapters/user-adapter';
 import { Order } from './types';
 
 /**
  * 创建新订单记录（PostgreSQL版本）
- * @param userId 用户ID
+ * @param firebaseUid Firebase用户UID
  * @param orderData 订单数据
  * @returns 创建的订单ID
  */
 export async function createOrderPostgres(
-  userId: string,
+  firebaseUid: string,
   orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
   try {
+    // 首先通过Firebase UID查找PostgreSQL用户UUID
+    const user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
+    
+    if (!user) {
+      throw new Error(`用户未找到: ${firebaseUid}`);
+    }
+
     const order = await OrderAdapter.createOrder({
-      userId,
+      userId: user.id, // 使用PostgreSQL的UUID
       outTradeNo: orderData.outTradeNo,
       planId: orderData.planId,
       planName: orderData.planName,
@@ -31,7 +39,7 @@ export async function createOrderPostgres(
       paidAt: orderData.paidAt ? (orderData.paidAt instanceof Date ? orderData.paidAt : new Date()) : undefined,
     });
     
-    console.log(`PostgreSQL订单创建成功: ${order.id} for user: ${userId}`);
+    console.log(`PostgreSQL订单创建成功: ${order.id} for user: ${user.id} (Firebase UID: ${firebaseUid})`);
     return order.id;
   } catch (error) {
     console.error('PostgreSQL创建订单失败:', error);

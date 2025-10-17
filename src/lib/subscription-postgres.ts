@@ -4,7 +4,6 @@
  * 支持多套餐累加功能
  */
 
-import { OrderAdapter } from './adapters/order-adapter';
 import { SubscriptionAdapter } from './adapters/subscription-adapter';
 import { checkDatabaseConnection } from './db';
 
@@ -73,18 +72,6 @@ export async function activateSubscriptionPostgres(params: {
     const now = new Date();
     const daysToAdd = calcPlanDaysPostgres(planId);
     const planName = getPlanNamePostgres(planId);
-
-    // 创建一个状态为 pending 的订单
-    const order = await OrderAdapter.createOrder({
-      userId,
-      outTradeNo: `sub_${userId}_${planId}_${Date.now()}`,
-      planId: planId as any,
-      planName,
-      amount,
-      status: 'pending',
-      paymentProvider: 'wechat_pay',
-      tradeType: 'NATIVE',
-    });
     
     let newStartDate: Date;
     let newEndDate: Date;
@@ -177,9 +164,6 @@ export async function activateSubscriptionPostgres(params: {
     });
     
     console.log(`Subscription activated successfully for user: ${userId}, plan: ${planId}, days added: ${daysToAdd}, total days: ${newTotalDaysAdded}`);
-
-    // 更新订单状态为 paid
-    await OrderAdapter.updateOrderStatus(order.outTradeNo, 'paid', paymentId, new Date());
     
   } catch (error) {
     console.error('Failed to activate subscription:', error);
