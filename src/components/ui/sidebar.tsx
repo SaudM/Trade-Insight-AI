@@ -555,17 +555,35 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       className,
       children,
+      onClick,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { isMobile, state } = useSidebar()
+    const { isMobile, state, setOpenMobile } = useSidebar()
     const rippleRef = React.useRef<RippleRef>(null)
 
     const handleMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
       rippleRef.current?.addRipple(event)
       props.onMouseDown?.(event)
+    }
+
+    /**
+     * 处理移动端点击事件，在移动设备上点击菜单项后自动关闭侧边栏
+     * @param event - 点击事件
+     */
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      // 先执行原有的点击处理逻辑
+      onClick?.(event)
+      
+      // 在移动设备上，点击菜单项后自动关闭侧边栏
+      if (isMobile) {
+        // 使用 setTimeout 确保原有的点击逻辑先执行完成
+        setTimeout(() => {
+          setOpenMobile(false)
+        }, 100)
+      }
     }
 
     const button = (
@@ -576,6 +594,7 @@ const SidebarMenuButton = React.forwardRef<
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         onMouseDown={handleMouseDown}
+        onClick={handleClick}
         {...props}
       >
         {children}

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AppHeader } from "./header";
 import { useUserData } from "@/hooks/use-user-data";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink, LogOut, ShoppingBag, Key } from "lucide-react";
+import { Crown, ExternalLink, LogOut, ShoppingBag, Key, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
@@ -110,70 +110,126 @@ export function ProfileView() {
     return (
         <div className="flex flex-col h-full">
             <AppHeader title="个人中心" />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto space-y-8">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center gap-6">
-                            <Avatar className="h-20 w-20 md:h-24 md:w-24">
-                                <AvatarImage src={firebaseUser?.photoURL || undefined} alt={user?.name || 'User'} />
-                                <AvatarFallback className="text-lg md:text-xl">{getInitials(user?.name)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <CardTitle className="text-2xl">{user?.name}</CardTitle>
-                                <CardDescription>{user?.email}</CardDescription>
-                            </div>
-                            <Button variant="text" size="icon" onClick={handleSignOut}>
-                                <LogOut className="h-5 w-5" />
+            <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
+                <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
+                    <Card className="overflow-hidden border-0 shadow-sm">
+                        <CardHeader className="relative pb-4 sm:pb-6">
+                            {/* 移动端退出按钮 - 右上角 */}
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={handleSignOut}
+                                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 h-9 w-9 p-0 rounded-full hover:bg-red-50 hover:text-red-600 active:bg-red-100 transition-all duration-200 touch-manipulation"
+                            >
+                                <LogOut className="h-4 w-4" />
                                 <span className="sr-only">退出登录</span>
                             </Button>
+                            
+                            {/* 用户信息主体 */}
+                            <div className="flex flex-col items-center space-y-3 sm:space-y-4 pt-2">
+                                <div className="relative group">
+                                    <Avatar className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 ring-4 ring-primary/10 shadow-lg transition-all duration-300 group-hover:ring-primary/20 group-hover:shadow-xl">
+                                        <AvatarImage src={firebaseUser?.photoURL || undefined} alt={user?.name || 'User'} />
+                                        <AvatarFallback className="text-lg sm:text-xl md:text-2xl font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
+                                            {getInitials(user?.name)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    {/* 可选：添加编辑头像的提示 */}
+                                    <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                        <Settings className="h-5 w-5 text-white drop-shadow-lg" />
+                                    </div>
+                                </div>
+                                
+                                <div className="text-center space-y-1">
+                                    <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
+                                        {user?.name}
+                                    </CardTitle>
+                                    <CardDescription className="text-sm sm:text-base text-muted-foreground">
+                                        {user?.email}
+                                    </CardDescription>
+                                </div>
+                            </div>
                         </CardHeader>
-                         <CardContent>
-                            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                                <div className="flex items-center gap-3">
-                                     <Crown className={`w-6 h-6 ${isProUser ? 'text-yellow-500' : 'text-gray-500'}`}/>
+                        
+                         <CardContent className="px-4 sm:px-6">
+                            <div className="flex items-center justify-between p-4 sm:p-5 rounded-xl bg-gradient-to-r from-muted/30 to-muted/50 border-0">
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                     <div className="p-2 rounded-lg bg-background/80 shadow-sm">
+                                         <Crown className={`w-5 h-5 sm:w-6 sm:h-6 ${isProUser ? 'text-yellow-500' : 'text-muted-foreground'}`}/>
+                                     </div>
                                      <div>
-                                        <p className="font-semibold">{isProUser ? '专业版会员' : '免费试用'}</p>
-                                        {endDate && <p className="text-sm text-gray-500">
+                                        <p className="font-semibold text-sm sm:text-base leading-tight">
+                                            {isProUser ? '专业版会员' : '免费试用'}
+                                        </p>
+                                        {endDate && <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                                             到期时间: {format(endDate, 'yyyy年MM月dd日')}
                                         </p>}
                                      </div>
                                 </div>
                                 {!isProUser && (
-                                    <Badge variant="outline">试用中</Badge>
+                                    <Badge variant="secondary" className="text-xs sm:text-sm px-2 py-1 font-medium">
+                                        试用中
+                                    </Badge>
                                 )}
                             </div>
                         </CardContent>
-                        <CardFooter className="justify-end">
-                            <Button variant="outline" onClick={handlePricingClick}>
-                                <Crown className="mr-2 h-4 w-4" />
+                        
+                        <CardFooter className="px-4 sm:px-6 pb-4 sm:pb-6">
+                            <Button 
+                                variant="default" 
+                                onClick={handlePricingClick} 
+                                className="w-full h-11 sm:h-12 text-sm sm:text-base font-medium rounded-xl shadow-md hover:shadow-lg active:shadow-sm active:scale-[0.98] transition-all duration-200 touch-manipulation"
+                            >
+                                <Crown className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                                 {subscription ? '管理订阅' : '升级到专业版'}
                             </Button>
                         </CardFooter>
                     </Card>
                     
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-medium">密码</p>
-                                        <p className="text-sm text-gray-500">定期更改密码以保护您的账户安全。</p>
+                    <Card className="overflow-hidden border-0 shadow-sm">
+                        <CardContent className="p-4 sm:p-6">
+                            <div className="space-y-4 sm:space-y-6">
+                                <div className="group">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border-0 bg-muted/20 transition-all duration-200">
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-sm sm:text-base flex items-center gap-2">
+                                                <Key className="h-4 w-4 text-muted-foreground" />
+                                                密码管理
+                                            </p>
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                定期更改密码以保护您的账户安全
+                                            </p>
+                                        </div>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleResetPassword} 
+                                            disabled={isResetting} 
+                                            className="w-full sm:w-auto h-10 sm:h-11 text-sm font-medium rounded-lg hover:bg-primary/5 active:bg-primary/10 active:scale-[0.98] transition-all duration-200 touch-manipulation disabled:active:scale-100 border-0 bg-background/80 hover:bg-background shadow-sm"
+                                        >
+                                            {isResetting ? "发送中..." : "重置密码"}
+                                        </Button>
                                     </div>
-                                    <Button variant="outline" onClick={handleResetPassword} disabled={isResetting}>
-                                        <Key className="mr-2 h-4 w-4" />
-                                        {isResetting ? "发送中..." : "重置密码"}
-                                    </Button>
                                 </div>
                                 
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-medium">订单中心</p>
-                                        <p className="text-sm text-gray-500">查看您的订单历史和支付记录。</p>
+                                <div className="group">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border-0 bg-muted/20 transition-all duration-200">
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-sm sm:text-base flex items-center gap-2">
+                                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                                                订单中心
+                                            </p>
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                查看您的订单历史和支付记录
+                                            </p>
+                                        </div>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleOrdersClick} 
+                                            className="w-full sm:w-auto h-10 sm:h-11 text-sm font-medium rounded-lg hover:bg-primary/5 active:bg-primary/10 active:scale-[0.98] transition-all duration-200 touch-manipulation border-0 bg-background/80 hover:bg-background shadow-sm"
+                                        >
+                                            查看订单
+                                        </Button>
                                     </div>
-                                    <Button variant="outline" onClick={handleOrdersClick}>
-                                        <ShoppingBag className="mr-2 h-4 w-4" />
-                                        查看订单
-                                    </Button>
                                 </div>
                             </div>
                         </CardContent>
