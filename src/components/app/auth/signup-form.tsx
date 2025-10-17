@@ -14,7 +14,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { User, Mail } from "lucide-react";
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -126,11 +128,15 @@ export function SignupForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>姓名</FormLabel>
                 <FormControl>
-                  <Input placeholder="您的姓名" {...field} />
+                  <FloatingLabelInput
+                    label="姓名"
+                    placeholder="您的姓名"
+                    startIcon={<User className="h-5 w-5" />}
+                    error={form.formState.errors.name?.message}
+                    {...field}
+                  />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -139,11 +145,16 @@ export function SignupForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>邮箱</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="you@example.com" {...field} />
+                  <FloatingLabelInput
+                    type="email"
+                    label="邮箱"
+                    placeholder="you@example.com"
+                    startIcon={<Mail className="h-5 w-5" />}
+                    error={form.formState.errors.email?.message}
+                    {...field}
+                  />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -152,11 +163,14 @@ export function SignupForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>密码</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="********" {...field} />
+                  <PasswordInput
+                    label="密码"
+                    placeholder="********"
+                    error={form.formState.errors.password?.message}
+                    {...field}
+                  />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />

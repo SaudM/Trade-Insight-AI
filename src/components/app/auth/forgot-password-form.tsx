@@ -13,7 +13,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { Mail } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
@@ -71,11 +72,16 @@ export function ForgotPasswordForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>邮箱</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="you@example.com" {...field} />
+                <FloatingLabelInput
+                  type="email"
+                  label="邮箱"
+                  placeholder="you@example.com"
+                  startIcon={<Mail className="h-5 w-5" />}
+                  error={form.formState.errors.email?.message}
+                  {...field}
+                />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />

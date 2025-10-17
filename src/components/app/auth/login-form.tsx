@@ -15,7 +15,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Mail } from "lucide-react";
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -146,11 +148,16 @@ export function LoginForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>邮箱</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="you@example.com" {...field} />
+                  <FloatingLabelInput
+                    type="email"
+                    label="邮箱"
+                    placeholder="you@example.com"
+                    startIcon={<Mail className="h-5 w-5" />}
+                    error={form.formState.errors.email?.message}
+                    {...field}
+                  />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -159,19 +166,22 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <div className="flex items-center justify-between">
-                  <FormLabel>密码</FormLabel>
-                   <Link
-                      href="/forgot-password"
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      忘记密码？
-                    </Link>
-                </div>
                 <FormControl>
-                  <Input type="password" placeholder="********" {...field} />
+                  <PasswordInput
+                    label="密码"
+                    placeholder=""
+                    error={form.formState.errors.password?.message}
+                    {...field}
+                  />
                 </FormControl>
-                <FormMessage />
+                <div className="flex justify-end mt-2">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    忘记密码？
+                  </Link>
+                </div>
               </FormItem>
             )}
           />

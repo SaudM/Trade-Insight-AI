@@ -9,6 +9,8 @@ export interface FloatingLabelInputProps
   error?: string
   helperText?: string
   required?: boolean
+  startIcon?: React.ReactNode
+  endIcon?: React.ReactNode
 }
 
 /**
@@ -21,7 +23,7 @@ export interface FloatingLabelInputProps
  * - 符合MD设计规范的样式
  */
 const FloatingLabelInput = React.forwardRef<HTMLInputElement, FloatingLabelInputProps>(
-  ({ className, label, error, helperText, required, type, ...props }, ref) => {
+  ({ className, label, error, helperText, required, type, startIcon, endIcon, ...props }, ref) => {
     const [isFocused, setIsFocused] = React.useState(false)
     const [hasValue, setHasValue] = React.useState(false)
     
@@ -53,19 +55,30 @@ const FloatingLabelInput = React.forwardRef<HTMLInputElement, FloatingLabelInput
     return (
       <div className="relative">
         <div className="relative">
+          {/* 开始图标 */}
+          {startIcon && (
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 z-10">
+              {startIcon}
+            </div>
+          )}
+          
           <input
             type={type}
             className={cn(
-              // 基础样式
-              "peer w-full h-14 px-4 pt-6 pb-2 text-base bg-transparent border-b border-t-0 border-l-0 border-r-0 transition-all duration-200 ease-out",
+              // 基础样式 - 完全透明背景，遵循MD默认风格
+              "peer w-full h-14 pt-6 pb-2 text-base bg-transparent border-b border-t-0 border-l-0 border-r-0 transition-all duration-200 ease-out",
+              // 动态左右内边距
+              startIcon ? "pl-12 pr-4" : "px-4",
+              endIcon && !startIcon && "pr-12",
+              endIcon && startIcon && "pr-12",
               // 边框样式
               "border-gray-300 hover:border-gray-400",
               // 聚焦状态
               "focus:outline-none focus:border-transparent focus:ring-0",
               // 错误状态
               hasError && "border-red-500",
-              // 禁用状态
-              "disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed",
+              // 禁用状态 - 移除背景色
+              "disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed",
               className
             )}
             ref={ref}
@@ -83,11 +96,20 @@ const FloatingLabelInput = React.forwardRef<HTMLInputElement, FloatingLabelInput
             hasError ? "bg-red-500" : "bg-blue-600"
           )} />
           
+          {/* 结束图标 */}
+          {endIcon && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 z-10">
+              {endIcon}
+            </div>
+          )}
+          
           {/* 浮动标签 */}
           <label
             className={cn(
               // 基础样式
-              "absolute left-4 text-gray-500 pointer-events-none transition-all duration-200 ease-out",
+              "absolute text-gray-500 pointer-events-none transition-all duration-200 ease-out",
+              // 动态左边距
+              startIcon ? "left-12" : "left-4",
               // 默认位置（未聚焦且无值）
               !isLabelFloating && "top-1/2 -translate-y-1/2 text-base",
               // 浮动位置（聚焦或有值）
