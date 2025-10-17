@@ -47,7 +47,6 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@types/pg": "^8.15.5",
     "@types/redis": "^4.0.10",
-    "@vercel/postgres": "^0.10.0",
     "axios": "^1.7.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
