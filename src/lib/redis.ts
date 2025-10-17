@@ -23,6 +23,8 @@ class RedisClient {
   private client: RedisClientType | null = null;
   private isConnected: boolean = false;
   private connectionPromise: Promise<void> | null = null;
+  private lastErrorTime: number = 0;
+  private errorCount: number = 0;
 
   /**
    * 默认缓存配置
@@ -81,7 +83,15 @@ class RedisClient {
       });
 
       this.client.on('error', (err) => {
-        console.error('Redis连接错误:', err);
+        const now = Date.now();
+        // 错误限流：每30秒最多输出一次错误日志
+        if (now - this.lastErrorTime > 30000) {
+          console.error(`Redis连接错误 (${this.errorCount + 1}次):`, err.message);
+          this.lastErrorTime = now;
+          this.errorCount = 0;
+        } else {
+          this.errorCount++;
+        }
         this.isConnected = false;
       });
 

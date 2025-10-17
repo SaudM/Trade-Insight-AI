@@ -34,17 +34,9 @@ export const getPayment = () =>
 
 // Build a WeChat-compliant out_trade_no (<=32 chars, letters/numbers only)
 function buildOutTradeNo(planId: string, userId: string): string {
-  const planMap: Record<string, string> = {
-    monthly: 'M',
-    quarterly: 'Q',
-    semi_annually: 'S',
-    annually: 'A',
-  };
-  const pid = planMap[planId] || 'P';
-  const uid = (userId || '').replace(/[^a-zA-Z0-9]/g, '').slice(-8); // last 8 safe chars
-  const ts = Date.now().toString(36); // compact timestamp base36 (~8 chars)
-  const rnd = Math.random().toString(36).slice(2, 6); // 4 chars
-  return `${pid}${uid}${ts}${rnd}`.slice(0, 32); // ensure <=32
+  const ts = Date.now().toString(36);
+  const rnd = Math.random().toString(36).slice(2, 4);
+  return `sub_${userId}_${planId}_${ts}${rnd}`.slice(0, 32);
 }
 
 export async function createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {

@@ -43,20 +43,32 @@ services:
 
   # Next.js 应用服务
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: production
+    image: submit2mxh/trade-gpt-image:latest
     container_name: trade-insight-app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:9002"
     environment:
+      # development
       - NODE_ENV=production
       - DATABASE_URL=postgresql://trade_user:trade_password_2024@postgres:5432/trade_insight_ai
-      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=your-nextauth-secret-key-here
+      - GEMINI_API_KEY=AIzaSyB-7RC3RBomvCuBiRCN3Np2BV0ohxGglJ8
+      # 微信支付相关环境变量
+      - WX_NOTIFY_URL=https://fupan.fulitimes.com/api/subscription/notify
+      - WX_V3_CODE=SDipv6oJQRraYMaghvAphpFYIR6WvGtZ
+      - WX_SERIAL_NO=17A036A33A55AF983DAE6AF75956FCBB1A3BEF7C
+      - WX_APPID=wx9e7c01df2746e5f0
+      - WX_MCHID=1606234933
+      - WX_PRIVATE_KEY='-----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDeMwoYTK8wIPabL2b8tpR+YHyJXUVFr67RCCPsJDg8ifYjXZRXnHRiSYgUT8cSVKZeYCKAQaBW2LCnrvBLc54bFxVPT28natSjuVXSG0kT+cpIddF6Bne+IEeKnZNNr1ui222GhQecl5BWp2s/kXa2bS8bGe2fBTnfx8OXEvQ1AgV8tVv5uBzC6lpzHaiQZ+3U/TtnEGeMN2XQTDL18zuFJ53b2xcEwxqn4WFMscfYeWwKefl05DyybR3bSMaw0bH4thYouANGZR2Xtby9jAd0Jb/2bQKF9dYg/IEyfwjqa3av+OirjW4E7+qIdsW9m6BYANj0HojxlLQNigCAHEMzAgMBAAECggEBAIJ86MXCavNRuGEEIm/wbR4WXaxxqNe2x2wcYrQvxRLQVksIjrAwwixiUFbVTuwV6CnuPPSjFZ1K3dtrodQ9jrEMCkisNnOoij2n/p1Hxs/DVqbdAequV63A2SKvTS1G+QKX6CcigojUfUBWS2Zmb5fMYOiCfohvkkA32UYkLGPftrwtrSbDaq6ypNzYJtaN1ToCIGgmcqNEI4FVYGo8Nv8EfwPXeqLYBP4VMWZ8lKGeLu5/LNe56L6eyG/zm1DugXetMRsR1M/MaGAFDeghBvQE3HAqCr5QJUgjGSK1yVugCiZLj9FY7FlXuV1IzpNKZLMCsu1AWE4zM3ekdz+L6EkCgYEA9tl0TSKnMPrY2Q5nkPKz/FuCdusmMgblce24Zax73QWSQQS6G7b2KHaKS8vTJdsODa3W3Bu8V6boJyMyF5X+ig1yKPJex3qRBmyLxWGTYbKPnW4KEHHzlYwW42JAot6DlBCwpq/1aFS21GwrAU8N/4TTIN8XCBxCYLnLqrgVaRUCgYEA5m+pX22MTGv7Q/MJEP402kgOTBMzI3oWShR4xYAjYnD0DERuZXsvy+mAbwrsde2tIsyHlNhIZd6eGzz16pzwGdzrjF0CELCOM3YvNwAiFGlvIHvg2P/QtsCD/TmopOULZk03frZkcOxz5SQ0HXuXL8dBm5ZIBSFCbi4/t0zifScCgYAmq9xvdR1SLAoqvvn0mEEgKMngjWg3cCMj3QUFUKc68fN+ohnx25Dmt+NkinLyvEWQWQqPAv1XkftOnlHrpgDxabfXuFim0YnEwt6GtombRZkAJcwH1YI+jGrNhofvvAJLAO5bvrcoeBUIZEW8d8EOpaVZwfleuOahNpo0jZA1HQKBgDiop+qQ0vhPbJ6OeWI2PuSU5v8JkX9dm3FnizJ0iT7BKyCBCuvk2CG5Lh0fgHiWkgWGaKfObi6uCA4GdSjUoayaR0hh7goQf0Zj/sP1QmvmaK6CBw0UCUuGFm4C6VZyAtWKkuSTECs72Fs1BaNiKhBTW+xXjSnFvcG9mWkGfIHtAoGATPwhgauj0ntU1T9G9IvNKTiZSwfmzyGlrrhbVk04tjrGl4kxAftTDZd/y/dJTDtk2nubzagt5p66t0lC0wxkD/0OcQp3lTrUMbVCSgZZzkFoyLbM3/BBBiv0NYRvAK6xcSBCflycZpjvDcNBZqviHvc78K5EPOHoJZzSSFnhbx0=-----END PRIVATE KEY-----'
+
     depends_on:
       postgres:
         condition: service_healthy

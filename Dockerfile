@@ -76,6 +76,6 @@ COPY . .
 # 生成 Prisma 客户端
 RUN npx prisma generate
 
-EXPOSE 3000
+EXPOSE 9002
 
 CMD ["npm", "run", "dev"]

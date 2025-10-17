@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         const outTradeNo = paymentData.out_trade_no;
         const parts = outTradeNo.split('_');
         
-        if (parts.length < 3) {
+        if (parts.length < 4) {
             console.error('商户订单号格式错误:', outTradeNo);
             return NextResponse.json({ code: 'FAIL', message: '订单号格式错误' }, { status: 400 });
         }
