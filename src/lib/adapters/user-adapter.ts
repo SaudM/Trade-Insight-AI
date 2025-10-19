@@ -119,6 +119,7 @@ export class UserAdapter {
       email?: string;
       name?: string;
       googleId?: string;
+      firebaseUid?: string;
     }
   ): Promise<User> {
     try {

@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // 检查用户是否已存在
+      // 首先检查用户是否已通过firebaseUid存在
       let user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
       
       if (user) {
@@ -94,13 +94,25 @@ export async function POST(req: NextRequest) {
           googleId,
         });
       } else {
-        // 创建新用户
-        user = await UserAdapter.createUser({
-          firebaseUid,
-          email,
-          name,
-          googleId,
-        });
+        // 检查是否有相同邮箱的用户存在
+        const existingUserByEmail = await UserAdapter.getUserByEmail(email);
+        
+        if (existingUserByEmail) {
+          // 邮箱已存在但firebaseUid不同，更新现有用户的firebaseUid
+          user = await UserAdapter.updateUser(existingUserByEmail.id, {
+            firebaseUid,
+            name,
+            googleId,
+          });
+        } else {
+          // 创建新用户
+          user = await UserAdapter.createUser({
+            firebaseUid,
+            email,
+            name,
+            googleId,
+          });
+        }
       }
 
       return Response.json({
