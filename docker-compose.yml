@@ -60,6 +60,8 @@ services:
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=your-nextauth-secret-key-here
       - GEMINI_API_KEY=AIzaSyB-7RC3RBomvCuBiRCN3Np2BV0ohxGglJ8
+      # 为生产环境初始化示例数据
+      - ENABLE_PRESET_DATA=true
       # 微信支付相关环境变量
       - WX_NOTIFY_URL=https://fupan.fulitimes.com/api/subscription/notify
       - WX_V3_CODE=SDipv6oJQRraYMaghvAphpFYIR6WvGtZ

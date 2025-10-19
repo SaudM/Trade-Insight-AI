@@ -90,6 +90,47 @@ npm run dev
 3.  在环境变量设置中，添加 `GEMINI_API_KEY`。
 4.  点击部署！
 
+## 🏭 生产环境部署
+
+### 重要配置
+
+在生产环境部署时，请特别注意以下配置：
+
+#### 禁用测试数据
+```bash
+# 必须设置此环境变量以禁用新用户的示例数据创建
+ENABLE_PRESET_DATA=false
+```
+
+#### 完整的生产环境变量
+```bash
+NODE_ENV=production
+ENABLE_PRESET_DATA=false
+DATABASE_URL=your_production_database_url
+GEMINI_API_KEY=your_google_ai_api_key
+# ... 其他必需的环境变量
+```
+
+### 部署文档
+
+详细的生产环境部署指南请参考：
+- 📋 [部署检查清单](./docs/deployment-checklist.md)
+- 🔧 [生产环境配置指南](./docs/production-deployment.md)
+- 📝 [环境变量示例](./.env.production.example)
+
+### 数据库迁移
+
+生产环境首次部署时：
+```bash
+# 运行数据库迁移
+npx prisma migrate deploy
+
+# 生成Prisma客户端
+npx prisma generate
+```
+
+⚠️ **重要提醒**：绝不要在生产环境运行 `npm run db:seed` 命令，这会创建测试数据。
+
 ## 📄 许可协议
 
 本项目采用 **商业源代码许可 (Business Source License 1.1)**。

@@ -34,6 +34,7 @@ WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV ENABLE_PRESET_DATA true
 
 # 创建非 root 用户
 RUN addgroup --system --gid 1001 nodejs

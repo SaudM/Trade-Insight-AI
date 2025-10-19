@@ -71,10 +71,12 @@ export class UserAdapter {
         },
       });
 
-      // 为新用户创建预设数据（异步执行，不阻塞用户创建流程）
-      this.createPresetDataForNewUser(user.id).catch(error => {
-        console.error(`为新用户 ${user.id} 创建预设数据失败:`, error);
-      });
+      // 为新用户创建预设数据（仅在开发/测试环境，异步执行，不阻塞用户创建流程）
+      if (process.env.ENABLE_PRESET_DATA !== 'false') {
+        this.createPresetDataForNewUser(user.id).catch(error => {
+          console.error(`为新用户 ${user.id} 创建预设数据失败:`, error);
+        });
+      }
 
       return user;
     } catch (error) {
