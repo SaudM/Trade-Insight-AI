@@ -51,15 +51,17 @@ export function ReportView({
     const { toast } = useToast();
 
     useEffect(() => {
-        setAllReports(reports);
-        if (reports.length > 0 && !selectedReportId) {
-            const latestReport = reports.sort((a, b) => {
+        // 确保reports是数组
+        const reportsArray = Array.isArray(reports) ? reports : [];
+        setAllReports(reportsArray);
+        if (reportsArray.length > 0 && !selectedReportId) {
+            const latestReport = reportsArray.sort((a, b) => {
                 const dateA = getReportDate(a);
                 const dateB = getReportDate(b);
                 return new Date(dateB instanceof Timestamp ? dateB.toDate() : dateB).getTime() - new Date(dateA instanceof Timestamp ? dateA.toDate() : dateA).getTime();
             })[0];
             setSelectedReportId(latestReport.id);
-        } else if (reports.length === 0) {
+        } else if (reportsArray.length === 0) {
             setSelectedReportId(undefined);
         }
     }, [reports, getReportDate, selectedReportId]);
@@ -77,7 +79,7 @@ export function ReportView({
 
             if (result) {
                  const newReport = result as Report;
-                setAllReports(prev => [newReport, ...prev]);
+                setAllReports(prev => [newReport, ...(Array.isArray(prev) ? prev : [])]);
                 setSelectedReportId(newReport.id);
                 toast({ title: `${reportType}${reportName}已生成并保存` });
             }
@@ -90,9 +92,9 @@ export function ReportView({
         }
     };
 
-    const displayedReport = allReports?.find(a => a.id === selectedReportId);
+    const displayedReport = Array.isArray(allReports) ? allReports.find(a => a.id === selectedReportId) : undefined;
     
-    const sortedReports = allReports ? [...allReports].sort((a, b) => {
+    const sortedReports = Array.isArray(allReports) ? [...allReports].sort((a, b) => {
         const dateA = getReportDate(a);
         const dateB = getReportDate(b);
         return new Date(dateB instanceof Timestamp ? dateB.toDate() : dateB).getTime() - new Date(dateA instanceof Timestamp ? dateA.toDate() : dateA).getTime()
