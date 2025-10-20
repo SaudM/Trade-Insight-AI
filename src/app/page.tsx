@@ -1,28 +1,20 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
 import { TradeInsightsApp } from '@/components/app/trade-insights-app';
-import { Loader2 } from 'lucide-react';
+import { AuthStateManager } from '@/components/app/auth/auth-state-manager';
 
+/**
+ * 主页面组件
+ * 使用AuthStateManager统一处理认证和用户数据状态
+ * 确保Firebase UID仅用于认证验证，系统UID用于业务逻辑
+ */
 export default function Home() {
-  const { user, isUserLoading } = useUser();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="animate-spin text-primary" size={48} />
-      </div>
-    );
-  }
-
-  return <TradeInsightsApp />;
+  return (
+    <AuthStateManager 
+      requireAuth={true} 
+      requireUserData={true}
+    >
+      <TradeInsightsApp />
+    </AuthStateManager>
+  );
 }

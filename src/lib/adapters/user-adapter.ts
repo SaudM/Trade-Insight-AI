@@ -1,6 +1,10 @@
 /**
  * 用户数据适配器
  * 管理PostgreSQL中的用户数据操作
+ * 系统设计原则：
+ * - 系统UID（User.id）作为唯一业务标识
+ * - Firebase UID仅用于认证和用户映射
+ * - 所有业务逻辑优先使用系统UID
  */
 
 import { prisma } from '@/lib/db';
@@ -13,7 +17,26 @@ import { PresetDataService } from '@/lib/services/preset-data-service';
  */
 export class UserAdapter {
   /**
-   * 根据Firebase UID获取用户信息
+   * 根据系统UID获取用户信息（推荐用于业务逻辑）
+   * @param uid 系统用户ID（UUID）
+   * @returns 用户信息或null
+   */
+  static async getUserByUid(uid: string): Promise<User | null> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          id: uid,
+        },
+      });
+      return user;
+    } catch (error) {
+      console.error('根据系统UID获取用户信息失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 根据Firebase UID获取用户信息（仅用于认证）
    * @param firebaseUid Firebase用户ID
    * @returns 用户信息或null
    */
@@ -26,7 +49,7 @@ export class UserAdapter {
       });
       return user;
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      console.error('根据Firebase UID获取用户信息失败:', error);
       throw error;
     }
   }
@@ -85,36 +108,36 @@ export class UserAdapter {
 
   /**
    * 为新用户创建预设数据
-   * @param userId 用户ID
+   * @param uid 系统用户ID（UUID）
    */
-  private static async createPresetDataForNewUser(userId: string): Promise<void> {
+  private static async createPresetDataForNewUser(uid: string): Promise<void> {
     try {
-      console.log(`开始为新用户 ${userId} 创建预设数据...`);
+      console.log(`开始为新用户 ${uid} 创建预设数据...`);
       
       // 检查用户是否已有数据，避免重复创建
-      const hasData = await PresetDataService.hasPresetData(userId);
+      const hasData = await PresetDataService.hasPresetData(uid);
       if (hasData) {
-        console.log(`用户 ${userId} 已有数据，跳过预设数据创建`);
+        console.log(`用户 ${uid} 已有数据，跳过预设数据创建`);
         return;
       }
 
       // 创建预设数据
-      await PresetDataService.createPresetDataForNewUser(userId);
-      console.log(`为用户 ${userId} 创建预设数据成功`);
+      await PresetDataService.createPresetDataForNewUser(uid);
+      console.log(`为用户 ${uid} 创建预设数据成功`);
     } catch (error) {
-      console.error(`为用户 ${userId} 创建预设数据失败:`, error);
+      console.error(`为用户 ${uid} 创建预设数据失败:`, error);
       // 不抛出错误，避免影响用户注册流程
     }
   }
 
   /**
    * 更新用户信息
-   * @param userId 用户ID
+   * @param uid 系统用户ID（UUID）
    * @param updateData 更新数据
    * @returns 更新后的用户信息
    */
   static async updateUser(
-    userId: string,
+    uid: string,
     updateData: {
       email?: string;
       name?: string;
@@ -124,7 +147,7 @@ export class UserAdapter {
     try {
       const user = await prisma.user.update({
         where: {
-          id: userId,
+          id: uid,
         },
         data: updateData,
       });
@@ -137,14 +160,14 @@ export class UserAdapter {
 
   /**
    * 获取用户的当前订阅状态
-   * @param userId 用户ID
+   * @param uid 系统用户ID（UUID）
    * @returns 当前有效的订阅信息或null
    */
-  static async getUserCurrentSubscription(userId: string): Promise<Subscription | null> {
+  static async getUserCurrentSubscription(uid: string): Promise<Subscription | null> {
     try {
       const subscription = await prisma.subscription.findFirst({
         where: {
-          userId: userId,
+          userId: uid,
           status: 'active',
         },
         orderBy: {
@@ -160,12 +183,12 @@ export class UserAdapter {
 
   /**
    * 检查用户是否为专业版用户
-   * @param userId 用户ID
+   * @param uid 系统用户ID（UUID）
    * @returns 是否为专业版用户
    */
-  static async isProUser(userId: string): Promise<boolean> {
+  static async isProUser(uid: string): Promise<boolean> {
     try {
-      const subscription = await this.getUserCurrentSubscription(userId);
+      const subscription = await this.getUserCurrentSubscription(uid);
       return subscription !== null;
     } catch (error) {
       console.error('检查用户专业版状态失败:', error);
@@ -175,12 +198,12 @@ export class UserAdapter {
 
   /**
    * 检查用户是否在试用期内
-   * @param firebaseUid Firebase用户ID
+   * @param uid 系统用户ID（UUID）
    * @returns 是否在试用期内
    */
-  static async isTrialUser(firebaseUid: string): Promise<boolean> {
+  static async isTrialUser(uid: string): Promise<boolean> {
     try {
-      const user = await this.getUserByFirebaseUid(firebaseUid);
+      const user = await this.getUserByUid(uid);
       if (!user || !user.createdAt) {
         return false;
       }
@@ -203,7 +226,49 @@ export class UserAdapter {
   }
 
   /**
-   * 获取用户完整信息（包含订阅状态）
+   * 通过系统UID获取用户完整信息（推荐用于业务逻辑）
+   * @param uid 系统用户ID（UUID）
+   * @returns 用户完整信息
+   */
+  static async getUserWithSubscriptionByUid(uid: string): Promise<{
+    user: User | null;
+    subscription: Subscription | null;
+    isProUser: boolean;
+    isTrialUser: boolean;
+  }> {
+    try {
+      const user = await this.getUserByUid(uid);
+      if (!user) {
+        return {
+          user: null,
+          subscription: null,
+          isProUser: false,
+          isTrialUser: false,
+        };
+      }
+
+      const subscription = await this.getUserCurrentSubscription(user.id);
+      const isProUser = subscription !== null;
+      
+      // 计算试用状态（基于用户创建时间）
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const isTrialUser = user.createdAt ? user.createdAt > thirtyDaysAgo && !isProUser : false;
+
+      return {
+        user,
+        subscription,
+        isProUser,
+        isTrialUser,
+      };
+    } catch (error) {
+      console.error('通过系统UID获取用户完整信息失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 通过Firebase UID获取用户完整信息（仅用于认证）
    * @param firebaseUid Firebase用户ID
    * @returns 用户完整信息
    */
@@ -226,7 +291,7 @@ export class UserAdapter {
 
       const subscription = await this.getUserCurrentSubscription(user.id);
       const isProUser = subscription !== null;
-      const isTrialUser = await this.isTrialUser(firebaseUid);
+      const isTrialUser = await this.isTrialUser(user.id);
 
       return {
         user,
@@ -235,7 +300,7 @@ export class UserAdapter {
         isTrialUser,
       };
     } catch (error) {
-      console.error('获取用户完整信息失败:', error);
+      console.error('通过Firebase UID获取用户完整信息失败:', error);
       throw error;
     }
   }

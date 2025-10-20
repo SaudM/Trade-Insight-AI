@@ -80,7 +80,7 @@ export function useOrders(params: OrderQueryParams = {}): UseOrdersReturn {
 
       // 构建查询参数
       const searchParams = new URLSearchParams({
-        userId: user.uid,
+        firebaseUid: user.uid,
         limit: String(params.limit || 10),
         offset: String(params.offset || 0),
       });

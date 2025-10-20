@@ -8,16 +8,16 @@ import type { TradeLog, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/li
 
 /**
  * 交易日志数据获取hook
- * @param userId 用户ID
+ * @param uid 系统用户ID
  * @returns 交易日志数据和加载状态
  */
-export function useTradeLogsPostgres(userId: string | null) {
+export function useTradeLogsPostgres(uid: string | null) {
   const [data, setData] = useState<TradeLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTradeLogs = useCallback(async () => {
-    if (!userId) {
+    if (!uid) {
       setData([]);
       setIsLoading(false);
       return;
@@ -27,7 +27,7 @@ export function useTradeLogsPostgres(userId: string | null) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/trade-logs?userId=${userId}`);
+      const response = await fetch(`/api/trade-logs?uid=${uid}`);
       
       if (!response.ok) {
         throw new Error(`获取交易日志失败: ${response.statusText}`);
@@ -43,7 +43,7 @@ export function useTradeLogsPostgres(userId: string | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [uid]);
 
   useEffect(() => {
     fetchTradeLogs();
@@ -58,17 +58,17 @@ export function useTradeLogsPostgres(userId: string | null) {
 }
 
 /**
- * 日分析数据获取hook
- * @param userId 用户ID
- * @returns 日分析数据和加载状态
+ * 每日分析数据获取hook
+ * @param uid 系统用户ID
+ * @returns 每日分析数据和加载状态
  */
-export function useDailyAnalysesPostgres(userId: string | null) {
+export function useDailyAnalysesPostgres(uid: string | null) {
   const [data, setData] = useState<DailyAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchDailyAnalyses = useCallback(async () => {
-    if (!userId) {
+    if (!uid) {
       setData([]);
       setIsLoading(false);
       return;
@@ -78,7 +78,7 @@ export function useDailyAnalysesPostgres(userId: string | null) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/daily-analyses?userId=${userId}`);
+      const response = await fetch(`/api/daily-analyses?uid=${uid}`);
       
       if (!response.ok) {
         throw new Error(`获取日分析失败: ${response.statusText}`);
@@ -94,7 +94,7 @@ export function useDailyAnalysesPostgres(userId: string | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [uid]);
 
   useEffect(() => {
     fetchDailyAnalyses();
@@ -109,17 +109,17 @@ export function useDailyAnalysesPostgres(userId: string | null) {
 }
 
 /**
- * 周分析数据获取hook
- * @param userId 用户ID
- * @returns 周分析数据和加载状态
+ * 周度回顾数据获取hook
+ * @param uid 系统用户ID
+ * @returns 周度回顾数据和加载状态
  */
-export function useWeeklyReviewsPostgres(userId: string | null) {
+export function useWeeklyReviewsPostgres(uid: string | null) {
   const [data, setData] = useState<WeeklyReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchWeeklyReviews = useCallback(async () => {
-    if (!userId) {
+    if (!uid) {
       setData([]);
       setIsLoading(false);
       return;
@@ -129,7 +129,7 @@ export function useWeeklyReviewsPostgres(userId: string | null) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/weekly-reviews?userId=${userId}`);
+      const response = await fetch(`/api/weekly-reviews?uid=${uid}`);
       
       if (!response.ok) {
         throw new Error(`获取周分析失败: ${response.statusText}`);
@@ -145,7 +145,7 @@ export function useWeeklyReviewsPostgres(userId: string | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [uid]);
 
   useEffect(() => {
     fetchWeeklyReviews();
@@ -160,17 +160,17 @@ export function useWeeklyReviewsPostgres(userId: string | null) {
 }
 
 /**
- * 月分析数据获取hook
- * @param userId 用户ID
- * @returns 月分析数据和加载状态
+ * 月度总结数据获取hook
+ * @param uid 系统用户ID
+ * @returns 月度总结数据和加载状态
  */
-export function useMonthlySummariesPostgres(userId: string | null) {
+export function useMonthlySummariesPostgres(uid: string | null) {
   const [data, setData] = useState<MonthlySummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMonthlySummaries = useCallback(async () => {
-    if (!userId) {
+    if (!uid) {
       setData([]);
       setIsLoading(false);
       return;
@@ -180,7 +180,7 @@ export function useMonthlySummariesPostgres(userId: string | null) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/monthly-summaries?userId=${userId}`);
+      const response = await fetch(`/api/monthly-summaries?uid=${uid}`);
       
       if (!response.ok) {
         throw new Error(`获取月分析失败: ${response.statusText}`);
@@ -196,7 +196,7 @@ export function useMonthlySummariesPostgres(userId: string | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [uid]);
 
   useEffect(() => {
     fetchMonthlySummaries();

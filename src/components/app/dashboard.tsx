@@ -37,15 +37,30 @@ type DashboardProps = {
  */
 export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod, onAddTradeLog }: DashboardProps) {
     
+    /**
+     * 安全解析交易结果为数字
+     * 处理空值、非数字字符串等情况，避免NaN
+     */
+    const parseTradeResult = (tradeResult: string | number): number => {
+        if (typeof tradeResult === 'number') {
+            return isNaN(tradeResult) ? 0 : tradeResult;
+        }
+        if (typeof tradeResult === 'string') {
+            const parsed = parseFloat(tradeResult.trim());
+            return isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+    };
+    
     const totalTrades = tradeLogs.length;
-    const profitableTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) > 0);
-    const losingTrades = tradeLogs.filter(log => parseFloat(log.tradeResult) < 0);
+    const profitableTrades = tradeLogs.filter(log => parseTradeResult(log.tradeResult) > 0);
+    const losingTrades = tradeLogs.filter(log => parseTradeResult(log.tradeResult) < 0);
     
     const winRate = totalTrades > 0 ? (profitableTrades.length / totalTrades) * 100 : 0;
-    const totalPL = tradeLogs.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
+    const totalPL = tradeLogs.reduce((acc, log) => acc + parseTradeResult(log.tradeResult), 0);
 
-    const totalProfit = profitableTrades.reduce((acc, log) => acc + parseFloat(log.tradeResult), 0);
-    const totalLoss = losingTrades.reduce((acc, log) => acc + Math.abs(parseFloat(log.tradeResult)), 0);
+    const totalProfit = profitableTrades.reduce((acc, log) => acc + parseTradeResult(log.tradeResult), 0);
+    const totalLoss = losingTrades.reduce((acc, log) => acc + Math.abs(parseTradeResult(log.tradeResult)), 0);
     
     const averageProfit = profitableTrades.length > 0 ? totalProfit / profitableTrades.length : 0;
     const averageLoss = losingTrades.length > 0 ? totalLoss / losingTrades.length : 0;

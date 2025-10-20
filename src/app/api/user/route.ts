@@ -1,6 +1,11 @@
 /**
  * 用户信息API接口
- * GET /api/user?firebaseUid=xxx - 获取用户信息和订阅状态
+ * GET /api/user?firebaseUid=xxx - 通过Firebase UID获取用户信息（仅用于认证后的初始查询）
+ * GET /api/user?uid=xxx - 通过系统UID获取用户信息（推荐用于业务逻辑）
+ * 
+ * 使用规范：
+ * - firebaseUid: 仅用于Firebase认证后的初始用户信息获取
+ * - uid: 用于所有业务逻辑中的用户查询
  */
 
 import { NextRequest } from 'next/server';
@@ -11,38 +16,61 @@ import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
  * 获取用户信息和订阅状态
- * GET /api/user?firebaseUid=xxx
+ * GET /api/user?firebaseUid=xxx - 通过Firebase UID查询（认证用）
+ * GET /api/user?uid=xxx - 通过系统UID查询（业务用）
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const firebaseUid = searchParams.get('firebaseUid');
+    const uid = searchParams.get('uid');
 
-    if (!firebaseUid) {
-      return new Response(JSON.stringify({ error: 'Missing firebaseUid parameter' }), { 
+    if (!uid && !firebaseUid) {
+      return new Response(JSON.stringify({ 
+        error: 'Missing required parameter: firebaseUid or uid' 
+      }), { 
         status: 400 
       });
     }
 
-    // 定义数据获取函数
-    const fetchUserWithSubscription = async (firebaseUid: string) => {
-      return await UserAdapter.getUserWithSubscription(firebaseUid);
-    };
+    // 根据查询参数类型选择不同的数据获取函数
+    if (uid) {
+      // 通过系统UID查询（推荐用于业务逻辑）
+      const fetchUserByUid = async (uid: string) => {
+        return await UserAdapter.getUserWithSubscriptionByUid(uid);
+      };
 
-    // 配置缓存选项
-    const cacheOptions = CachedApiHandler.createCacheOptions(
-      CacheKeys.userInfo,         // 缓存键生成函数
-      CacheConfig.USER_DATA_TTL,  // TTL
-      true                        // 启用缓存
-    );
+      const cacheOptions = CachedApiHandler.createCacheOptions(
+        CacheKeys.userInfo,         // 缓存键生成函数
+        CacheConfig.USER_DATA_TTL,  // TTL
+        true                        // 重新启用缓存
+      );
 
-    // 使用缓存基类处理请求
-    return await CachedApiHandler.handleCachedGet(
-      req,
-      fetchUserWithSubscription,
-      cacheOptions,
-      firebaseUid
-    );
+      return await CachedApiHandler.handleCachedGet(
+        req,
+        fetchUserByUid,
+        cacheOptions,
+        uid
+      );
+    } else {
+      // 通过Firebase UID查询（仅用于认证）
+      const fetchUserByFirebaseUid = async (firebaseUid: string) => {
+        return await UserAdapter.getUserWithSubscription(firebaseUid);
+      };
+
+      const cacheOptions = CachedApiHandler.createCacheOptions(
+        CacheKeys.userInfo,         // 缓存键生成函数
+        CacheConfig.USER_DATA_TTL,  // TTL
+        true                        // 重新启用缓存
+      );
+
+      return await CachedApiHandler.handleCachedGet(
+        req,
+        fetchUserByFirebaseUid,
+        cacheOptions,
+        firebaseUid!
+      );
+    }
 
   } catch (err: any) {
     console.error('user API error:', err);

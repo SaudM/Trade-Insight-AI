@@ -316,7 +316,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                     helperText="您为什么结束这笔交易？"
                     required
                     error={fieldState.error?.message}
-                    className="min-h-[140px]"
+                    className="min-h-[56px] h-14"
                     {...field}
                   />
                   </FormControl>

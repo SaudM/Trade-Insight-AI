@@ -62,25 +62,15 @@ export interface MonthlySummaryData {
 export class AnalysisAdapter {
   /**
    * 获取用户的日分析列表
-   * @param userId 用户ID
+   * @param userId 系统用户ID（UUID）
    * @param limit 限制数量
    * @returns Promise<DailyAnalysisData[]> 日分析列表
    */
   static async getUserDailyAnalyses(userId: string, limit: number = 100): Promise<DailyAnalysisData[]> {
     try {
-      // 首先通过 firebase_uid 查找用户的数据库 UUID
-      const user = await prisma.user.findUnique({
-        where: { firebaseUid: userId },
-        select: { id: true }
-      });
-
-      if (!user) {
-        console.log(`用户未找到: ${userId}`);
-        return [];
-      }
-
+      // userId现在是系统UUID，直接使用
       const analyses = await prisma.dailyAnalysis.findMany({
-        where: { userId: user.id },
+        where: { userId: userId },
         orderBy: { date: 'desc' },
         take: limit,
       });
@@ -122,25 +112,15 @@ export class AnalysisAdapter {
 
   /**
    * 获取用户的周分析列表
-   * @param userId 用户ID
+   * @param userId 系统用户ID（UUID）
    * @param limit 限制数量
    * @returns Promise<WeeklyReviewData[]> 周分析列表
    */
   static async getUserWeeklyReviews(userId: string, limit: number = 100): Promise<WeeklyReviewData[]> {
     try {
-      // 首先通过 firebase_uid 查找用户的数据库 UUID
-      const user = await prisma.user.findUnique({
-        where: { firebaseUid: userId },
-        select: { id: true }
-      });
-
-      if (!user) {
-        console.log(`用户未找到: ${userId}`);
-        return [];
-      }
-
+      // userId现在是系统UUID，直接使用
       const reviews = await prisma.weeklyReview.findMany({
-        where: { userId: user.id },
+        where: { userId: userId },
         orderBy: { startDate: 'desc' },
         take: limit,
       });
@@ -184,25 +164,15 @@ export class AnalysisAdapter {
 
   /**
    * 获取用户的月分析列表
-   * @param userId 用户ID
+   * @param userId 系统用户ID（UUID）
    * @param limit 限制数量
    * @returns Promise<MonthlySummaryData[]> 月分析列表
    */
   static async getUserMonthlySummaries(userId: string, limit: number = 100): Promise<MonthlySummaryData[]> {
     try {
-      // 首先通过 firebase_uid 查找用户的数据库 UUID
-      const user = await prisma.user.findUnique({
-        where: { firebaseUid: userId },
-        select: { id: true }
-      });
-
-      if (!user) {
-        console.log(`用户未找到: ${userId}`);
-        return [];
-      }
-
+      // userId现在是系统UUID，直接使用
       const summaries = await prisma.monthlySummary.findMany({
-        where: { userId: user.id },
+        where: { userId: userId },
         orderBy: { monthStartDate: 'desc' },
         take: limit,
       });

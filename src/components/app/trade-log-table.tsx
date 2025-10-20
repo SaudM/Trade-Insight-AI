@@ -62,13 +62,29 @@ const getDirectionBadge = (direction: TradeLog['direction']) => {
 }
 
 /**
+ * 安全解析交易结果为数字
+ * 处理空值、非数字字符串等情况，避免NaN
+ */
+const parseTradeResult = (tradeResult: string | number): number => {
+    if (typeof tradeResult === 'number') {
+        return isNaN(tradeResult) ? 0 : tradeResult;
+    }
+    if (typeof tradeResult === 'string') {
+        const parsed = parseFloat(tradeResult.trim());
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+};
+
+/**
  * 交易笔记卡片组件
  * 统一的卡片设计，适用于所有屏幕尺寸
  * 遵循Material Design原则，提供清晰的信息层次和美观的视觉效果
  */
 const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const isProfit = parseFloat(log.tradeResult) >= 0;
+    const tradeResultValue = parseTradeResult(log.tradeResult);
+    const isProfit = tradeResultValue >= 0;
     
     return (
         <Card className="hover:shadow-lg transition-all duration-300 border-0 shadow-md bg-white dark:bg-white">
@@ -92,7 +108,7 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                     </div>
                     <div className="text-right space-y-2">
                         <div className={`text-xl font-bold ${isProfit ? 'text-success' : 'text-destructive'}`}>
-                            {parseFloat(log.tradeResult).toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                            {tradeResultValue.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
                         </div>
                         {getDirectionBadge(log.direction)}
                     </div>

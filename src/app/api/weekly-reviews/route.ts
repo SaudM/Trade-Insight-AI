@@ -1,33 +1,54 @@
 /**
- * 周分析API接口
- * GET /api/weekly-reviews?userId=xxx - 获取用户的周分析
- * POST /api/weekly-reviews - 创建新的周分析
+ * 周报API接口
+ * GET /api/weekly-reviews?uid=xxx&limit=10&offset=0 - 通过系统UID获取（推荐）
+ * GET /api/weekly-reviews?firebaseUid=xxx&limit=10&offset=0 - 通过Firebase UID获取（认证用）
  */
 
 import { NextRequest } from 'next/server';
 import { checkDatabaseConnection } from '@/lib/db';
+import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { AnalysisAdapter } from '@/lib/adapters/analysis-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
- * 获取用户的周分析
- * GET /api/weekly-reviews?userId=xxx
+ * 获取用户周报数据
+ * GET /api/weekly-reviews?uid=xxx&limit=10&offset=0 - 通过系统UID获取（推荐）
+ * GET /api/weekly-reviews?firebaseUid=xxx&limit=10&offset=0 - 通过Firebase UID获取（认证用）
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const uid = searchParams.get('uid');
+    const firebaseUid = searchParams.get('firebaseUid');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing userId parameter' }), { 
+    if (!uid && !firebaseUid) {
+      return new Response(JSON.stringify({ 
+        error: 'Missing required parameter: uid or firebaseUid' 
+      }), { 
         status: 400 
       });
     }
 
+    // 确定使用的用户标识符（优先级：uid > firebaseUid）
+    const userIdentifier = uid || firebaseUid!;
+    const isSystemUid = !!uid;
+
     // 定义数据获取函数
-    const fetchUserWeeklyReviews = async (userId: string) => {
-      return await AnalysisAdapter.getUserWeeklyReviews(userId);
+    const fetchUserWeeklyReviews = async (identifier: string) => {
+      if (isSystemUid) {
+        // 直接使用系统UID获取周报数据
+        return await AnalysisAdapter.getUserWeeklyReviews(identifier);
+      } else {
+        // 通过Firebase UID先获取用户信息，再获取周报数据
+        const user = await UserAdapter.getUserByFirebaseUid(identifier);
+        if (!user) {
+          return [];
+        }
+        return await AnalysisAdapter.getUserWeeklyReviews(user.id);
+      }
     };
 
     // 配置缓存选项
@@ -42,7 +63,7 @@ export async function GET(req: NextRequest) {
       req,
       fetchUserWeeklyReviews,
       cacheOptions,
-      userId
+      userIdentifier
     );
 
   } catch (err: any) {

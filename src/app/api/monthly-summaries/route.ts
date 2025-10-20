@@ -1,33 +1,54 @@
 /**
- * 月分析API接口
- * GET /api/monthly-summaries?userId=xxx - 获取用户的月分析
- * POST /api/monthly-summaries - 创建新的月分析
+ * 月报API接口
+ * GET /api/monthly-summaries?uid=xxx&limit=10&offset=0 - 通过系统UID获取（推荐）
+ * GET /api/monthly-summaries?firebaseUid=xxx&limit=10&offset=0 - 通过Firebase UID获取（认证用）
  */
 
 import { NextRequest } from 'next/server';
 import { checkDatabaseConnection } from '@/lib/db';
+import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { AnalysisAdapter } from '@/lib/adapters/analysis-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
- * 获取用户的月分析
- * GET /api/monthly-summaries?userId=xxx
+ * 获取用户月报数据
+ * GET /api/monthly-summaries?uid=xxx&limit=10&offset=0 - 通过系统UID获取（推荐）
+ * GET /api/monthly-summaries?firebaseUid=xxx&limit=10&offset=0 - 通过Firebase UID获取（认证用）
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const uid = searchParams.get('uid');
+    const firebaseUid = searchParams.get('firebaseUid');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing userId parameter' }), { 
+    if (!uid && !firebaseUid) {
+      return new Response(JSON.stringify({ 
+        error: 'Missing required parameter: uid or firebaseUid' 
+      }), { 
         status: 400 
       });
     }
 
+    // 确定使用的用户标识符（优先级：uid > firebaseUid）
+    const userIdentifier = uid || firebaseUid!;
+    const isSystemUid = !!uid;
+
     // 定义数据获取函数
-    const fetchUserMonthlySummaries = async (userId: string) => {
-      return await AnalysisAdapter.getUserMonthlySummaries(userId);
+    const fetchUserMonthlySummaries = async (identifier: string) => {
+      if (isSystemUid) {
+        // 直接使用系统UID获取月报数据
+        return await AnalysisAdapter.getUserMonthlySummaries(identifier);
+      } else {
+        // 通过Firebase UID先获取用户信息，再获取月报数据
+        const user = await UserAdapter.getUserByFirebaseUid(identifier);
+        if (!user) {
+          return [];
+        }
+        return await AnalysisAdapter.getUserMonthlySummaries(user.id);
+      }
     };
 
     // 配置缓存选项
@@ -42,7 +63,7 @@ export async function GET(req: NextRequest) {
       req,
       fetchUserMonthlySummaries,
       cacheOptions,
-      userId
+      userIdentifier
     );
 
   } catch (err: any) {

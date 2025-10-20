@@ -53,10 +53,10 @@ export function TradeInsightsApp() {
   const isLoadingSubscription = isLoadingUserData;
 
   // --- PostgreSQL Data Hooks ---
-  const { data: tradeLogs, isLoading: isLoadingLogs, error: tradeLogsError } = useTradeLogsPostgres(user?.uid || null);
-  const { data: dailyAnalyses, isLoading: isLoadingDaily, error: dailyAnalysesError } = useDailyAnalysesPostgres(user?.uid || null);
-  const { data: weeklyReviews, isLoading: isLoadingWeekly, error: weeklyReviewsError } = useWeeklyReviewsPostgres(user?.uid || null);
-  const { data: monthlySummaries, isLoading: isLoadingMonthly, error: monthlySummariesError } = useMonthlySummariesPostgres(user?.uid || null);
+  const { data: tradeLogs, isLoading: isLoadingLogs, error: tradeLogsError, refetch: refetchTradeLogs } = useTradeLogsPostgres(userData?.user?.id || null);
+  const { data: dailyAnalyses, isLoading: isLoadingDaily, error: dailyAnalysesError, refetch: refetchDailyAnalyses } = useDailyAnalysesPostgres(userData?.user?.id || null);
+  const { data: weeklyReviews, isLoading: isLoadingWeekly, error: weeklyReviewsError, refetch: refetchWeeklyReviews } = useWeeklyReviewsPostgres(userData?.user?.id || null);
+  const { data: monthlySummaries, isLoading: isLoadingMonthly, error: monthlySummariesError, refetch: refetchMonthlySummaries } = useMonthlySummariesPostgres(userData?.user?.id || null);
 
   const [timePeriod, setTimePeriod] = useState<'today' | '7d' | '30d' | 'all'>('all');
 
@@ -81,6 +81,10 @@ export function TradeInsightsApp() {
   };
 
   // --- CRUD Operations ---
+  /**
+   * 添加交易笔记
+   * 提交成功后刷新数据而不是刷新整个页面
+   */
   const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => {
     if (!validateUser()) return;
     
@@ -88,7 +92,7 @@ export function TradeInsightsApp() {
       const response = await fetch('/api/trade-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...log, userId: user!.uid }),
+        body: JSON.stringify({ ...log, userId: userData!.user!.id }),
       });
       
       if (!response.ok) {
@@ -96,8 +100,8 @@ export function TradeInsightsApp() {
       }
       
       toast({ title: '交易笔记已添加' });
-      // 刷新数据 - 这里可以考虑使用 SWR 的 mutate 功能
-      window.location.reload();
+      // 刷新交易日志数据，而不是刷新整个页面
+      await refetchTradeLogs();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的交易笔记。" });
@@ -110,7 +114,7 @@ export function TradeInsightsApp() {
       const response = await fetch('/api/daily-analyses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...analysis, userId: user!.uid }),
+        body: JSON.stringify({ ...analysis, userId: userData!.user!.id }),
       });
       
       if (!response.ok) {
@@ -119,7 +123,8 @@ export function TradeInsightsApp() {
       
       toast({ title: '每日分析已添加' });
       setActiveView('analysis');
-      window.location.reload();
+      // 刷新每日分析数据，而不是刷新整个页面
+      await refetchDailyAnalyses();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的每日分析。" });
@@ -132,7 +137,7 @@ export function TradeInsightsApp() {
       const response = await fetch('/api/weekly-reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...review, userId: user!.uid }),
+        body: JSON.stringify({ ...review, userId: userData!.user!.id }),
       });
       
       if (!response.ok) {
@@ -141,7 +146,8 @@ export function TradeInsightsApp() {
       
       toast({ title: '每周回顾已添加' });
       setActiveView('analysis');
-      window.location.reload();
+      // 刷新每周回顾数据，而不是刷新整个页面
+      await refetchWeeklyReviews();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的每周回顾。" });
@@ -154,7 +160,7 @@ export function TradeInsightsApp() {
       const response = await fetch('/api/monthly-summaries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...summary, userId: user!.uid }),
+        body: JSON.stringify({ ...summary, userId: userData!.user!.id }),
       });
       
       if (!response.ok) {
@@ -163,7 +169,8 @@ export function TradeInsightsApp() {
       
       toast({ title: '月度总结已添加' });
       setActiveView('analysis');
-      window.location.reload();
+      // 刷新月度总结数据，而不是刷新整个页面
+      await refetchMonthlySummaries();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "添加失败", description: "无法保存您的月度总结。" });
@@ -176,7 +183,7 @@ export function TradeInsightsApp() {
       const response = await fetch(`/api/trade-logs/${updatedLog.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...updatedLog, userId: user!.uid }),
+        body: JSON.stringify({ ...updatedLog, userId: userData!.user!.id }),
       });
       
       if (!response.ok) {
@@ -184,7 +191,8 @@ export function TradeInsightsApp() {
       }
       
       toast({ title: "交易笔记已更新" });
-      window.location.reload();
+      // 刷新交易日志数据，而不是刷新整个页面
+      await refetchTradeLogs();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "更新失败", description: "无法更新您的交易笔记。" });
@@ -192,9 +200,9 @@ export function TradeInsightsApp() {
   };
 
   const deleteTradeLog = async (id: string) => {
-    if (!user) return;
+    if (!user || !userData?.user?.id) return;
     try {
-      const response = await fetch(`/api/trade-logs/${id}`, {
+      const response = await fetch(`/api/trade-logs/${id}?userId=${userData.user.id}`, {
         method: 'DELETE',
       });
       
@@ -203,7 +211,8 @@ export function TradeInsightsApp() {
       }
       
       toast({ title: "交易笔记已删除" });
-      window.location.reload();
+      // 刷新交易笔记数据而不是重新加载整个页面
+      await refetchTradeLogs();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: "删除失败", description: "无法删除您的交易笔记。" });

@@ -83,7 +83,7 @@ export function useSubscription(): UseSubscriptionReturn {
       setIsLoading(true);
       setError(null);
 
-      // 调用用户API获取订阅信息
+      // 调用用户API获取订阅信息（使用firebaseUid进行认证查询）
       const response = await fetch(`/api/user?firebaseUid=${user.uid}`);
       
       if (!response.ok) {
@@ -139,7 +139,7 @@ export function useSubscriptionRecords(limit: number = 10): UseSubscriptionRecor
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/subscription/records?userId=${user.uid}&limit=${limit}`);
+      const response = await fetch(`/api/subscription/records?firebaseUid=${user.uid}&limit=${limit}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

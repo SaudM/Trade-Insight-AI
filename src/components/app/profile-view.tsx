@@ -1,12 +1,11 @@
 
 "use client";
 
-import { useFirebase } from "@/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppHeader } from "./header";
-import { useUserData } from "@/hooks/use-user-data";
+import { useAuthState } from "@/components/app/auth/auth-state-manager";
 import { Badge } from "@/components/ui/badge";
 import { Crown, ExternalLink, LogOut, ShoppingBag, Key, Settings } from "lucide-react";
 import { format } from "date-fns";
@@ -18,11 +17,11 @@ import { useRouter } from 'next/navigation';
 
 /**
  * ProfileView 组件
- * 显示用户个人信息和订阅状态，使用PostgreSQL数据源
+ * 显示用户个人信息和订阅状态
+ * 使用新的认证状态管理，确保Firebase UID仅用于认证，系统UID用于业务逻辑
  */
 export function ProfileView() {
-    const { user: firebaseUser } = useFirebase();
-    const { userData, isLoading, error } = useUserData();
+    const { firebaseUser, userData, isDatabaseConnected } = useAuthState();
     const { toast } = useToast();
     const [isResetting, setIsResetting] = useState(false);
     const router = useRouter();
@@ -31,6 +30,11 @@ export function ProfileView() {
     const user = userData?.user;
     const subscription = userData?.subscription;
 
+    /**
+     * 获取用户名首字母
+     * @param name 用户名
+     * @returns 首字母缩写
+     */
     const getInitials = (name?: string | null) => {
         if (!name) return '...';
         const names = name.split(' ');
@@ -40,6 +44,9 @@ export function ProfileView() {
         return name.substring(0, 2).toUpperCase();
     }
     
+    /**
+     * 处理用户登出
+     */
     const handleSignOut = async () => {
         try {
           const auth = getAuth();

@@ -5,6 +5,7 @@
 
 import { PrismaClient, TradeLog, TradeDirection } from '@prisma/client';
 import { prisma } from '../db';
+import { UserAdapter } from '@/lib/adapters/user-adapter';
 
 /**
  * 交易日志数据接口
@@ -63,19 +64,25 @@ export class TradeLogAdapter {
     tradeLogData: Omit<TradeLogData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<TradeLogData> {
     try {
-      // 首先通过 firebase_uid 查找用户的数据库 UUID
-      const user = await prisma.user.findUnique({
-        where: { firebaseUid: tradeLogData.userId },
-        select: { id: true }
-      });
+      // 智能识别userId类型：UUID格式为系统UID，否则为Firebase UID
+      const isSystemUid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tradeLogData.userId);
+      let systemUuid: string;
 
-      if (!user) {
-        throw new Error(`用户未找到: ${tradeLogData.userId}`);
+      if (isSystemUid) {
+        // 直接使用系统UID
+        systemUuid = tradeLogData.userId;
+      } else {
+        // 通过Firebase UID获取系统UID
+        const user = await UserAdapter.getUserByFirebaseUid(tradeLogData.userId);
+        if (!user) {
+          throw new Error(`用户未找到: ${tradeLogData.userId}`);
+        }
+        systemUuid = user.id;
       }
 
       const tradeLog = await prisma.tradeLog.create({
         data: {
-          userId: user.id,
+          userId: systemUuid,
           tradeTime: tradeLogData.tradeTime,
           symbol: tradeLogData.symbol,
           direction: tradeLogData.direction,
@@ -104,20 +111,9 @@ export class TradeLogAdapter {
     try {
       const { userId, limit = 10, offset = 0, symbol, direction, startDate, endDate } = params;
 
-      // 首先通过 firebase_uid 查找用户的数据库 UUID
-      const user = await prisma.user.findUnique({
-        where: { firebaseUid: userId },
-        select: { id: true }
-      });
-
-      if (!user) {
-        console.log(`用户未找到: ${userId}`);
-        return [];
-      }
-
-      // 构建查询条件，使用数据库中的用户 UUID
+      // 构建查询条件，直接使用传入的userId（应该是系统UUID）
       const where: any = {
-        userId: user.id,
+        userId: userId,
       };
 
       if (symbol) {
@@ -214,13 +210,28 @@ export class TradeLogAdapter {
 
   /**
    * 获取交易统计数据
-   * @param userId 用户ID
-   * @param days 统计天数（可选）
+   * @param userId 用户ID（系统UID或Firebase UID）
    * @returns Promise<TradeStatsData> 交易统计数据
    */
   static async getTradeStats(userId: string): Promise<TradeStatsData> {
     try {
-      const where = { userId };
+      // 智能识别userId类型：UUID格式为系统UID，否则为Firebase UID
+      const isSystemUid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+      let systemUuid: string;
+
+      if (isSystemUid) {
+        // 直接使用系统UID
+        systemUuid = userId;
+      } else {
+        // 通过Firebase UID获取系统UID
+        const user = await UserAdapter.getUserByFirebaseUid(userId);
+        if (!user) {
+          throw new Error(`用户未找到: ${userId}`);
+        }
+        systemUuid = user.id;
+      }
+
+      const where = { userId: systemUuid };
 
       // 获取总交易数
       const totalTrades = await prisma.tradeLog.count({ where });
@@ -329,9 +340,9 @@ export class TradeLogAdapter {
 
   /**
    * 搜索交易日志
-   * @param userId 用户ID
+   * @param userId 用户ID（系统UID或Firebase UID）
    * @param searchTerm 搜索关键词
-   * @param limit 限制数量
+   * @param limit 返回数量限制
    * @returns Promise<TradeLogData[]> 搜索结果
    */
   static async searchTradeLogs(
@@ -340,9 +351,25 @@ export class TradeLogAdapter {
     limit: number = 20
   ): Promise<TradeLogData[]> {
     try {
+      // 智能识别userId类型：UUID格式为系统UID，否则为Firebase UID
+      const isSystemUid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+      let systemUuid: string;
+
+      if (isSystemUid) {
+        // 直接使用系统UID
+        systemUuid = userId;
+      } else {
+        // 通过Firebase UID获取系统UID
+        const user = await UserAdapter.getUserByFirebaseUid(userId);
+        if (!user) {
+          throw new Error(`用户未找到: ${userId}`);
+        }
+        systemUuid = user.id;
+      }
+
       const tradeLogs = await prisma?.tradeLog.findMany({
         where: {
-          userId,
+          userId: systemUuid,
           OR: [
             { symbol: { contains: searchTerm, mode: 'insensitive' } },
             { entryReason: { contains: searchTerm, mode: 'insensitive' } },
@@ -388,15 +415,31 @@ export class TradeLogAdapter {
   }
 
   /**
-   * 获取最近交易日志
-   * @param userId 用户ID
-   * @param limit 限制数量
-   * @returns Promise<TradeLogData[]> 最近交易日志
+   * 获取最近的交易日志
+   * @param userId 用户ID（系统UID或Firebase UID）
+   * @param limit 返回数量限制
+   * @returns Promise<TradeLogData[]> 最近的交易日志
    */
   static async getRecentTradeLogs(userId: string, limit: number = 5): Promise<TradeLogData[]> {
     try {
+      // 智能识别userId类型：UUID格式为系统UID，否则为Firebase UID
+      const isSystemUid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+      let systemUuid: string;
+
+      if (isSystemUid) {
+        // 直接使用系统UID
+        systemUuid = userId;
+      } else {
+        // 通过Firebase UID获取系统UID
+        const user = await UserAdapter.getUserByFirebaseUid(userId);
+        if (!user) {
+          throw new Error(`用户未找到: ${userId}`);
+        }
+        systemUuid = user.id;
+      }
+
       const tradeLogs = await prisma.tradeLog.findMany({
-        where: { userId },
+        where: { userId: systemUuid },
         orderBy: {
           tradeTime: 'desc',
         },

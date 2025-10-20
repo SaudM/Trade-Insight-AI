@@ -1,34 +1,54 @@
 /**
  * 交易日志API接口
- * GET /api/trade-logs?userId=xxx - 获取用户的交易日志
+ * GET /api/trade-logs?uid=xxx - 通过系统UID获取交易日志（推荐）
+ * GET /api/trade-logs?firebaseUid=xxx - 通过Firebase UID获取交易日志（认证用）
  * POST /api/trade-logs - 创建新的交易日志
  */
 
 import { NextRequest } from 'next/server';
 import { checkDatabaseConnection } from '@/lib/db';
 import { TradeLogAdapter } from '@/lib/adapters/tradelog-adapter';
+import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
  * 获取用户的交易日志
- * GET /api/trade-logs?userId=xxx
+ * GET /api/trade-logs?uid=xxx - 通过系统UID获取（推荐）
+ * GET /api/trade-logs?firebaseUid=xxx - 通过Firebase UID获取（认证用）
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const uid = searchParams.get('uid');
+    const firebaseUid = searchParams.get('firebaseUid');
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing userId parameter' }), { 
+    if (!uid && !firebaseUid) {
+      return new Response(JSON.stringify({ 
+        error: 'Missing required parameter: uid or firebaseUid' 
+      }), { 
         status: 400 
       });
     }
 
+    // 确定使用的用户标识符（优先级：uid > firebaseUid）
+    const userIdentifier = uid || firebaseUid!;
+    const isSystemUid = !!uid;
+
     // 定义数据获取函数
-    const fetchUserTradeLogs = async (userId: string) => {
+    const fetchUserTradeLogs = async (userIdentifier: string) => {
+      // 如果使用的是Firebase UID，需要先获取系统UID
+      let systemUid = userIdentifier;
+      if (!isSystemUid) {
+        const user = await UserAdapter.getUserByFirebaseUid(userIdentifier);
+        if (!user) {
+          throw new Error('User not found');
+        }
+        systemUid = user.id;
+      }
+
       return await TradeLogAdapter.getUserTradeLogs({
-        userId,
+        userId: systemUid,
         limit: 1000, // 限制返回数量
       });
     };
@@ -45,7 +65,7 @@ export async function GET(req: NextRequest) {
       req,
       fetchUserTradeLogs,
       cacheOptions,
-      userId
+      userIdentifier
     );
 
   } catch (err: any) {

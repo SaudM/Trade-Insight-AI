@@ -1,34 +1,44 @@
 /**
- * 订单查询API接口
- * 提供用户订单列表查询功能
- * 已迁移至PostgreSQL数据库
+ * 订单API接口
+ * GET /api/orders?uid=xxx&limit=10&offset=0 - 通过系统UID获取订单（推荐）
+ * GET /api/orders?firebaseUid=xxx&limit=10&offset=0 - 通过Firebase UID获取订单（认证用）
  */
 
 import { NextRequest } from 'next/server';
-import { OrderAdapter, generateMockOrders } from '@/lib/adapters/order-adapter';
 import { checkDatabaseConnection } from '@/lib/db';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
+import { OrderAdapter, generateMockOrders } from '@/lib/adapters/order-adapter';
+import { CacheKeys, CacheConfig } from '@/lib/redis';
+import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
  * 获取用户订单列表
- * GET /api/orders?userId=xxx&limit=10&offset=0
+ * GET /api/orders?uid=xxx&limit=10&offset=0 - 通过系统UID获取（推荐）
+ * GET /api/orders?firebaseUid=xxx&limit=10&offset=0 - 通过Firebase UID获取（认证用）
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const firebaseUid = searchParams.get('userId'); // 这里实际是Firebase UID
+    const uid = searchParams.get('uid');
+    const firebaseUid = searchParams.get('firebaseUid');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
     const status = searchParams.get('status') as any;
 
-    if (!firebaseUid) {
-      return new Response(JSON.stringify({ error: 'Missing userId parameter' }), { 
+    if (!uid && !firebaseUid) {
+      return new Response(JSON.stringify({ 
+        error: 'Missing required parameter: uid or firebaseUid' 
+      }), { 
         status: 400 
       });
     }
+
+    // 确定使用的用户标识符（优先级：uid > firebaseUid）
+    const userIdentifier = uid || firebaseUid!;
+    const isSystemUid = !!uid;
 
     // 检查数据库连接
     const isDbConnected = await checkDatabaseConnection();
@@ -36,7 +46,7 @@ export async function GET(req: NextRequest) {
     if (!isDbConnected) {
       console.warn('数据库连接失败，使用模拟数据');
       // 数据库连接失败时返回模拟数据
-      const mockOrders = generateMockOrders(firebaseUid, limit);
+      const mockOrders = generateMockOrders(userIdentifier, limit);
       return Response.json({
         orders: mockOrders,
         pagination: {
@@ -50,8 +60,15 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-      // 先通过Firebase UID查找PostgreSQL用户ID
-      const user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
+      let user;
+      
+      if (isSystemUid) {
+        // 通过系统UID查找用户（推荐方式）
+        user = await UserAdapter.getUserByUid(userIdentifier);
+      } else {
+        // 通过Firebase UID查找用户（兼容方式）
+        user = await UserAdapter.getUserByFirebaseUid(userIdentifier);
+      }
       
       if (!user) {
         // 用户不存在，返回空订单列表
@@ -98,7 +115,7 @@ export async function GET(req: NextRequest) {
     } catch (dbError) {
       console.error('PostgreSQL查询失败，回退到模拟数据:', dbError);
       // PostgreSQL查询失败时返回模拟数据
-      const mockOrders = generateMockOrders(firebaseUid, limit);
+      const mockOrders = generateMockOrders(userIdentifier, limit);
       return Response.json({
         orders: mockOrders,
         pagination: {

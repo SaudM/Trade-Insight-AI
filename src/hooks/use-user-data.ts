@@ -1,12 +1,27 @@
 /**
  * 用户数据获取Hook
- * 优先从PostgreSQL获取用户数据，Firebase作为备用
+ * 严格分离认证与业务逻辑：Firebase UID仅用于认证验证，系统UID用于所有业务逻辑
+ * 
+ * 重要说明：
+ * - id: 系统内部唯一标识符（UUID），用于所有业务逻辑
+ * - firebaseUid: 仅用于Firebase认证，不应用于业务逻辑
+ * - 当PostgreSQL连接失败时，不提供用户数据，确保业务逻辑的一致性
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@/firebase/provider';
 import type { Subscription } from '@/lib/types';
 
+/**
+ * 用户数据接口
+ * @interface UserData
+ * @property {string} id - 系统内部唯一标识符（UUID），用于所有业务逻辑
+ * @property {string} email - 用户邮箱
+ * @property {string} name - 用户姓名
+ * @property {string} firebaseUid - Firebase认证标识符，仅用于认证
+ * @property {string} createdAt - 创建时间
+ * @property {string} updatedAt - 更新时间
+ */
 interface UserData {
   id: string;
   email: string;
@@ -21,7 +36,7 @@ interface UserDataResponse {
   subscription: Subscription | null;
   isProUser: boolean;
   isTrialUser: boolean;
-  source: 'postgres' | 'firebase' | 'postgres_failed';
+  source: 'postgres' | 'connection_failed';
 }
 
 interface UseUserDataReturn {
@@ -33,7 +48,8 @@ interface UseUserDataReturn {
 
 /**
  * 获取用户数据的自定义Hook
- * 优先从PostgreSQL获取，失败时使用Firebase数据
+ * 严格要求从PostgreSQL获取用户数据，确保业务逻辑的一致性
+ * 当数据库连接失败时，不提供备用数据，避免业务逻辑混乱
  */
 export function useUserData(): UseUserDataReturn {
   const { user: firebaseUser, isUserLoading } = useUser();
@@ -52,7 +68,7 @@ export function useUserData(): UseUserDataReturn {
     setError(null);
 
     try {
-      // 首先尝试从PostgreSQL获取用户数据
+      // 从PostgreSQL获取用户数据
       const response = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
       
       if (response.ok) {
@@ -91,60 +107,29 @@ export function useUserData(): UseUserDataReturn {
         }
       }
 
-      // PostgreSQL失败，使用Firebase数据作为备用
-      console.warn('PostgreSQL用户数据获取失败，使用Firebase数据');
-      
-      // 计算试用状态
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const userCreationDate = firebaseUser.metadata.creationTime 
-        ? new Date(firebaseUser.metadata.creationTime) 
-        : new Date();
-      const isTrialUser = userCreationDate > thirtyDaysAgo;
-
+      // PostgreSQL连接失败或其他错误
+      console.error('PostgreSQL用户数据获取失败，无法提供用户数据');
+      setError('数据库连接失败，请稍后重试');
       setUserData({
-        user: {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
-          firebaseUid: firebaseUser.uid,
-          createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        subscription: null, // Firebase中的订阅数据需要单独获取
-        isProUser: false, // 暂时设为false，需要从Firebase获取
-        isTrialUser,
-        source: 'firebase',
+        user: null,
+        subscription: null,
+        isProUser: false,
+        isTrialUser: false,
+        source: 'connection_failed',
       });
 
     } catch (error) {
       console.error('获取用户数据失败:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error');
+      setError(error instanceof Error ? error.message : '数据库连接失败');
       
-      // 发生错误时也使用Firebase数据作为备用
-      if (firebaseUser) {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const userCreationDate = firebaseUser.metadata.creationTime 
-          ? new Date(firebaseUser.metadata.creationTime) 
-          : new Date();
-        const isTrialUser = userCreationDate > thirtyDaysAgo;
-
-        setUserData({
-          user: {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
-            firebaseUid: firebaseUser.uid,
-            createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          subscription: null,
-          isProUser: false,
-          isTrialUser,
-          source: 'firebase',
-        });
-      }
+      // 发生错误时不提供备用数据，确保业务逻辑一致性
+      setUserData({
+        user: null,
+        subscription: null,
+        isProUser: false,
+        isTrialUser: false,
+        source: 'connection_failed',
+      });
     }
 
     setIsLoading(false);
