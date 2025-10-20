@@ -1,52 +1,39 @@
 'use client';
 
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  query, 
-  orderBy, 
-  Timestamp, 
-  serverTimestamp,
-  getDocs
-} from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
-import type { Order } from '@/lib/types';
+import { PrismaClient } from '@prisma/client';
+import type { PlanId, PaymentProvider, TradeType, OrderStatus } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 /**
  * 创建新订单记录
  * @param params 订单创建参数
  */
 export async function createOrder(params: {
-  firestore: Firestore;
   userId: string;
   outTradeNo: string;
-  planId: 'monthly' | 'quarterly' | 'semi_annually' | 'annually';
+  planId: PlanId;
   planName: string;
   amount: number;
-  paymentProvider: 'wechat_pay' | 'alipay' | 'stripe';
+  paymentProvider: PaymentProvider;
   paymentUrl?: string;
-  tradeType: 'NATIVE' | 'H5' | 'JSAPI';
+  tradeType: TradeType;
 }): Promise<void> {
-  const { firestore, userId, outTradeNo, planId, planName, amount, paymentProvider, paymentUrl, tradeType } = params;
+  const { userId, outTradeNo, planId, planName, amount, paymentProvider, paymentUrl, tradeType } = params;
   
-  const orderRef = doc(firestore, 'users', userId, 'orders', outTradeNo);
-  
-  await setDoc(orderRef, {
-    id: outTradeNo,
-    userId,
-    outTradeNo,
-    planId,
-    planName,
-    amount,
-    status: 'pending',
-    paymentProvider,
-    paymentUrl,
-    tradeType,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  } as Partial<Order>);
+  await prisma.order.create({
+    data: {
+      userId,
+      outTradeNo,
+      planId,
+      planName,
+      amount,
+      status: 'pending',
+      paymentProvider,
+      paymentUrl,
+      tradeType,
+    }
+  });
 }
 
 /**
@@ -54,20 +41,22 @@ export async function createOrder(params: {
  * @param params 订单更新参数
  */
 export async function markOrderAsPaid(params: {
-  firestore: Firestore;
   userId: string;
   outTradeNo: string;
   paymentId: string;
 }): Promise<void> {
-  const { firestore, userId, outTradeNo, paymentId } = params;
+  const { userId, outTradeNo, paymentId } = params;
   
-  const orderRef = doc(firestore, 'users', userId, 'orders', outTradeNo);
-  
-  await updateDoc(orderRef, {
-    status: 'paid',
-    paymentId,
-    paidAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  await prisma.order.update({
+    where: { 
+      outTradeNo,
+      userId 
+    },
+    data: {
+      status: 'paid',
+      paymentId,
+      paidAt: new Date(),
+    }
   });
 }
 
@@ -76,30 +65,56 @@ export async function markOrderAsPaid(params: {
  * @param params 订单更新参数
  */
 export async function markOrderAsFailed(params: {
-  firestore: Firestore;
   userId: string;
   outTradeNo: string;
   reason?: string;
 }): Promise<void> {
-  const { firestore, userId, outTradeNo } = params;
+  const { userId, outTradeNo } = params;
   
-  const orderRef = doc(firestore, 'users', userId, 'orders', outTradeNo);
-  
-  await updateDoc(orderRef, {
-    status: 'failed',
-    updatedAt: serverTimestamp(),
+  await prisma.order.update({
+    where: { 
+      outTradeNo,
+      userId 
+    },
+    data: {
+      status: 'failed',
+    }
   });
 }
 
 /**
  * 获取用户的订单列表
- * @param firestore Firestore实例
  * @param userId 用户ID
- * @returns 订单查询对象
+ * @returns 订单列表
  */
-export function getUserOrdersQuery(firestore: Firestore, userId: string) {
-  const ordersRef = collection(firestore, 'users', userId, 'orders');
-  return query(ordersRef, orderBy('createdAt', 'desc'));
+export async function getUserOrders(userId: string) {
+  return await prisma.order.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' }
+  });
+}
+
+/**
+ * 根据订单号获取订单
+ * @param outTradeNo 订单号
+ * @returns 订单信息
+ */
+export async function getOrderByTradeNo(outTradeNo: string) {
+  return await prisma.order.findUnique({
+    where: { outTradeNo }
+  });
+}
+
+/**
+ * 更新订单状态
+ * @param outTradeNo 订单号
+ * @param status 新状态
+ */
+export async function updateOrderStatus(outTradeNo: string, status: OrderStatus) {
+  return await prisma.order.update({
+    where: { outTradeNo },
+    data: { status }
+  });
 }
 
 /**

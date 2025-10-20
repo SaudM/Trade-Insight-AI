@@ -27,7 +27,7 @@
 ## 🚀 技术栈
 
 - **框架**: [Next.js](https://nextjs.org/) (App Router)
-- **后端 & 数据库**: [Firebase](https://firebase.google.com/) (Authentication, Firestore)
+- **后端 & 数据库**: [Firebase](https://firebase.google.com/) (Authentication), PostgreSQL
 - **AI**: [Google AI (Gemini)](https://ai.google.dev/) via [Genkit](https://firebase.google.com/docs/genkit)
 - **UI**: [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [shadcn/ui](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
 - **图表**: [Recharts](https://recharts.org/)
@@ -61,7 +61,7 @@ npm install
 2.  在项目设置中，添加一个新的“Web 应用”。
 3.  复制生成的 Firebase 配置对象，并用它替换 `src/firebase/config.ts` 文件中的内容。
 4.  在 Firebase 控制台中，进入 **Authentication** > **Sign-in method**，并启用“邮箱/密码”和“Google”登录提供商。
-5.  进入 **Firestore Database** 并创建一个数据库。保留默认的安全规则即可，应用会在后续的步骤中进行配置。
+5.  配置PostgreSQL数据库连接（参见环境变量配置）。
 
 ### 步骤 4: 配置环境变量
 

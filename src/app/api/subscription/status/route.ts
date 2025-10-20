@@ -5,6 +5,7 @@ import { findOrderByOutTradeNoPostgres, markOrderAsPaidPostgres } from '@/lib/or
 import { activateSubscriptionAdmin } from '@/lib/subscription-admin';
 import { activateSubscriptionPostgres } from '@/lib/subscription-postgres';
 import { checkDatabaseConnection } from '@/lib/db';
+import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,15 +34,15 @@ export async function GET(req: NextRequest) {
             order = await findOrderByOutTradeNoPostgres(outTradeNo);
             if (order) {
               // 标记订单为已支付
-               await prisma.$transaction(async (tx) => {
-                 await markOrderAsPaidPostgres(outTradeNo, res.transaction_id || '', tx);
-                 await activateSubscriptionPostgres({
-                   userId: order.userId,
-                   planId: order.planId,
-                   paymentId: res.transaction_id || order.id,
-                   amount: order.amount,
-                 }, tx);
-               });
+              await markOrderAsPaidPostgres(outTradeNo, res.transaction_id || '');
+              
+              // 激活订阅
+              await activateSubscriptionPostgres({
+                userId: order.userId,
+                planId: order.planId,
+                paymentId: res.transaction_id || order.id,
+                amount: order.amount,
+              });
               
               orderProcessed = true;
               console.log(`Subscription activated via PostgreSQL for user ${order.userId}, plan: ${order.planId}`);

@@ -40,7 +40,7 @@ export class UserAdapter {
     try {
       const user = await prisma.user.findUnique({
         where: {
-          email: email,
+          email,
         },
       });
       return user;

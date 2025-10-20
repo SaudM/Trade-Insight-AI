@@ -1,15 +1,16 @@
 'use client';
 
-import { Timestamp, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
-import type { Subscription, SubscriptionRecord } from '@/lib/types';
+import { PrismaClient } from '@prisma/client';
+import type { PlanId, PaymentProvider } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 /**
  * 计算套餐对应的天数
  * @param planId 套餐ID
  * @returns 套餐天数
  */
-export function calcPlanDays(planId: Subscription['planId']): number {
+export function calcPlanDays(planId: PlanId): number {
   switch (planId) {
     case 'monthly':
       return 30;
@@ -30,7 +31,7 @@ export function calcPlanDays(planId: Subscription['planId']): number {
  * @param start 开始时间
  * @returns 到期时间
  */
-export function calcExpireDate(planId: Subscription['planId'], start: Date): Date {
+export function calcExpireDate(planId: PlanId, start: Date): Date {
   const d = new Date(start);
   const days = calcPlanDays(planId);
   d.setDate(d.getDate() + days);
@@ -42,7 +43,7 @@ export function calcExpireDate(planId: Subscription['planId'], start: Date): Dat
  * @param planId 套餐ID
  * @returns 套餐名称
  */
-export function getPlanName(planId: Subscription['planId']): string {
+export function getPlanName(planId: PlanId): string {
   switch (planId) {
     case 'monthly':
       return '月度会员';
@@ -62,19 +63,19 @@ export function getPlanName(planId: Subscription['planId']): string {
  * @param params 激活参数
  */
 export async function activateSubscription(params: {
-  firestore: Firestore;
-  uid: string;
-  planId: Subscription['planId'];
+  userId: string;
+  planId: PlanId;
   paymentId: string;
   amount: number;
+  paymentProvider?: PaymentProvider;
 }): Promise<void> {
-  const { firestore, uid, planId, paymentId, amount } = params;
-  
-  const ref = doc(firestore, 'users', uid, 'subscription', 'current');
+  const { userId, planId, paymentId, amount, paymentProvider = 'wechat_pay' } = params;
   
   // 获取现有订阅信息
-  const existingDoc = await getDoc(ref);
-  const existingSubscription = existingDoc.exists() ? existingDoc.data() as Subscription : null;
+  const existingSubscription = await prisma.subscription.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' }
+  });
   
   const now = new Date();
   const daysToAdd = calcPlanDays(planId);
@@ -86,16 +87,12 @@ export async function activateSubscription(params: {
   
   if (existingSubscription && existingSubscription.status === 'active') {
     // 如果有活跃订阅，从现有到期时间开始累加
-    const currentEndDate = existingSubscription.endDate instanceof Timestamp 
-      ? existingSubscription.endDate.toDate() 
-      : new Date(existingSubscription.endDate);
+    const currentEndDate = existingSubscription.endDate;
     
     // 如果当前订阅还未过期，从到期时间开始累加
     if (currentEndDate > now) {
       previousEndDate = currentEndDate;
-      newStartDate = existingSubscription.startDate instanceof Timestamp 
-        ? existingSubscription.startDate.toDate() 
-        : new Date(existingSubscription.startDate);
+      newStartDate = existingSubscription.startDate;
       newEndDate = new Date(currentEndDate);
       newEndDate.setDate(newEndDate.getDate() + daysToAdd);
     } else {
@@ -111,39 +108,81 @@ export async function activateSubscription(params: {
     newEndDate = calcExpireDate(planId, now);
   }
   
-  // 创建新的订阅记录
-  const newSubscriptionRecord: SubscriptionRecord = {
-    planId,
-    planName,
-    daysAdded: daysToAdd,
-    amount,
-    paymentId,
-    paymentProvider: 'wechat_pay',
-    purchaseDate: Timestamp.fromDate(now),
-    previousEndDate: previousEndDate ? Timestamp.fromDate(previousEndDate) : undefined,
-    newEndDate: Timestamp.fromDate(newEndDate),
-  };
-  
-  // 更新订阅历史
-  const subscriptionHistory = existingSubscription?.subscriptionHistory || [];
-  subscriptionHistory.push(newSubscriptionRecord);
-  
   // 计算累计总天数
   const previousTotalDays = existingSubscription?.totalDaysAdded || 0;
   const newTotalDaysAdded = previousTotalDays + daysToAdd;
   
-  // 保存更新后的订阅信息
-  await setDoc(ref, {
-    userId: uid,
-    planId,
-    status: 'active',
-    startDate: Timestamp.fromDate(newStartDate),
-    endDate: Timestamp.fromDate(newEndDate),
-    paymentProvider: 'wechat_pay',
-    paymentId,
-    createdAt: existingSubscription?.createdAt || serverTimestamp(),
-    totalDaysAdded: newTotalDaysAdded,
-    accumulatedFrom: previousEndDate ? Timestamp.fromDate(previousEndDate) : undefined,
-    subscriptionHistory,
-  } as Partial<Subscription>, { merge: true });
+  // 使用事务来确保数据一致性
+  await prisma.$transaction(async (tx) => {
+    // 如果存在旧订阅，将其状态设为非活跃
+    if (existingSubscription) {
+      await tx.subscription.update({
+        where: { id: existingSubscription.id },
+        data: { status: 'inactive' }
+      });
+    }
+    
+    // 创建新的订阅记录
+    const newSubscription = await tx.subscription.create({
+      data: {
+        userId,
+        planId,
+        status: 'active',
+        startDate: newStartDate,
+        endDate: newEndDate,
+        paymentProvider,
+        paymentId,
+        totalDaysAdded: newTotalDaysAdded,
+        accumulatedFrom: previousEndDate,
+      }
+    });
+    
+    // 创建订阅记录历史
+    await tx.subscriptionRecord.create({
+      data: {
+        subscriptionId: newSubscription.id,
+        planId,
+        planName,
+        daysAdded: daysToAdd,
+        amount,
+        paymentId,
+        paymentProvider,
+        purchaseDate: now,
+        previousEndDate,
+        newEndDate,
+      }
+    });
+  });
+}
+
+/**
+ * 获取用户当前订阅状态
+ * @param userId 用户ID
+ * @returns 订阅信息
+ */
+export async function getCurrentSubscription(userId: string) {
+  return await prisma.subscription.findFirst({
+    where: { 
+      userId,
+      status: 'active'
+    },
+    include: {
+      subscriptionRecords: {
+        orderBy: { createdAt: 'desc' }
+      }
+    }
+  });
+}
+
+/**
+ * 检查用户是否有有效订阅
+ * @param userId 用户ID
+ * @returns 是否有有效订阅
+ */
+export async function hasValidSubscription(userId: string): Promise<boolean> {
+  const subscription = await getCurrentSubscription(userId);
+  if (!subscription) return false;
+  
+  const now = new Date();
+  return subscription.endDate > now && subscription.status === 'active';
 }

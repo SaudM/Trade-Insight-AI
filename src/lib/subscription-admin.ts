@@ -1,18 +1,20 @@
 /**
  * 服务端订阅管理函数
- * 使用Firebase Admin SDK进行服务端操作
+ * 使用PostgreSQL和Prisma进行服务端操作
  * 支持多套餐累加功能
  */
 
-import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminFirestore } from './firebase-admin';
+import { PrismaClient } from '@prisma/client';
+import type { PlanId, PaymentProvider } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 /**
  * 计算套餐对应的天数
  * @param planId 套餐ID
  * @returns 套餐天数
  */
-export function calcPlanDaysAdmin(planId: string): number {
+export function calcPlanDaysAdmin(planId: PlanId): number {
   switch (planId) {
     case 'monthly':
       return 30;
@@ -32,7 +34,7 @@ export function calcPlanDaysAdmin(planId: string): number {
  * @param planId 套餐ID
  * @returns 套餐名称
  */
-export function getPlanNameAdmin(planId: string): string {
+export function getPlanNameAdmin(planId: PlanId): string {
   switch (planId) {
     case 'monthly':
       return '月度会员';
@@ -53,19 +55,19 @@ export function getPlanNameAdmin(planId: string): string {
  */
 export async function activateSubscriptionAdmin(params: {
   userId: string;
-  planId: string;
+  planId: PlanId;
   paymentId: string;
   amount: number;
+  paymentProvider?: PaymentProvider;
 }): Promise<void> {
-  const { userId, planId, paymentId, amount } = params;
-  
-  const firestore = getAdminFirestore();
-  const ref = firestore.collection('users').doc(userId).collection('subscription').doc('current');
+  const { userId, planId, paymentId, amount, paymentProvider = 'wechat_pay' } = params;
   
   try {
     // 获取现有订阅信息
-    const existingDoc = await ref.get();
-    const existingSubscription = existingDoc.exists ? existingDoc.data() : null;
+    const existingSubscription = await prisma.subscription.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
     
     const now = new Date();
     const daysToAdd = calcPlanDaysAdmin(planId);
@@ -77,16 +79,12 @@ export async function activateSubscriptionAdmin(params: {
     
     if (existingSubscription && existingSubscription.status === 'active') {
       // 如果有活跃订阅，从现有到期时间开始累加
-      const currentEndDate = existingSubscription.endDate instanceof Timestamp 
-        ? existingSubscription.endDate.toDate() 
-        : new Date(existingSubscription.endDate);
+      const currentEndDate = existingSubscription.endDate;
       
       // 如果当前订阅还未过期，从到期时间开始累加
       if (currentEndDate > now) {
         previousEndDate = currentEndDate;
-        newStartDate = existingSubscription.startDate instanceof Timestamp 
-          ? existingSubscription.startDate.toDate() 
-          : new Date(existingSubscription.startDate);
+        newStartDate = existingSubscription.startDate;
         newEndDate = new Date(currentEndDate);
         newEndDate.setDate(newEndDate.getDate() + daysToAdd);
       } else {
@@ -103,41 +101,51 @@ export async function activateSubscriptionAdmin(params: {
       newEndDate.setDate(newEndDate.getDate() + daysToAdd);
     }
     
-    // 创建新的订阅记录
-    const newSubscriptionRecord = {
-      planId,
-      planName,
-      daysAdded: daysToAdd,
-      amount,
-      paymentId,
-      paymentProvider: 'wechat_pay',
-      purchaseDate: Timestamp.fromDate(now),
-      previousEndDate: previousEndDate ? Timestamp.fromDate(previousEndDate) : null,
-      newEndDate: Timestamp.fromDate(newEndDate),
-    };
-    
-    // 更新订阅历史
-    const subscriptionHistory = existingSubscription?.subscriptionHistory || [];
-    subscriptionHistory.push(newSubscriptionRecord);
-    
     // 计算累计总天数
     const previousTotalDays = existingSubscription?.totalDaysAdded || 0;
     const newTotalDaysAdded = previousTotalDays + daysToAdd;
     
-    // 保存更新后的订阅信息
-    await ref.set({
-      userId,
-      planId,
-      status: 'active',
-      startDate: Timestamp.fromDate(newStartDate),
-      endDate: Timestamp.fromDate(newEndDate),
-      paymentProvider: 'wechat_pay',
-      paymentId,
-      createdAt: existingSubscription?.createdAt || Timestamp.now(),
-      totalDaysAdded: newTotalDaysAdded,
-      accumulatedFrom: previousEndDate ? Timestamp.fromDate(previousEndDate) : null,
-      subscriptionHistory,
-    }, { merge: true });
+    // 使用事务来确保数据一致性
+    await prisma.$transaction(async (tx) => {
+      // 如果存在旧订阅，将其状态设为非活跃
+      if (existingSubscription) {
+        await tx.subscription.update({
+          where: { id: existingSubscription.id },
+          data: { status: 'inactive' }
+        });
+      }
+      
+      // 创建新的订阅记录
+      const newSubscription = await tx.subscription.create({
+        data: {
+          userId,
+          planId,
+          status: 'active',
+          startDate: newStartDate,
+          endDate: newEndDate,
+          paymentProvider,
+          paymentId,
+          totalDaysAdded: newTotalDaysAdded,
+          accumulatedFrom: previousEndDate,
+        }
+      });
+      
+      // 创建订阅记录历史
+      await tx.subscriptionRecord.create({
+        data: {
+          subscriptionId: newSubscription.id,
+          planId,
+          planName,
+          daysAdded: daysToAdd,
+          amount,
+          paymentId,
+          paymentProvider,
+          purchaseDate: now,
+          previousEndDate,
+          newEndDate,
+        }
+      });
+    });
     
     console.log(`Subscription activated successfully for user: ${userId}, plan: ${planId}, days added: ${daysToAdd}, total days: ${newTotalDaysAdded}`);
     
@@ -152,20 +160,64 @@ export async function activateSubscriptionAdmin(params: {
  * @param userId 用户ID
  * @returns 订阅信息或null
  */
-export async function getUserSubscriptionAdmin(userId: string): Promise<any | null> {
-  const firestore = getAdminFirestore();
-  
+export async function getUserSubscriptionAdmin(userId: string) {
   try {
-    const ref = firestore.collection('users').doc(userId).collection('subscription').doc('current');
-    const doc = await ref.get();
+    const subscription = await prisma.subscription.findFirst({
+      where: { 
+        userId,
+        status: 'active'
+      },
+      include: {
+        subscriptionRecords: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
     
-    if (!doc.exists) {
-      return null;
-    }
-    
-    return doc.data();
+    return subscription;
   } catch (error) {
     console.error('Failed to get user subscription:', error);
     throw new Error('Failed to get user subscription');
+  }
+}
+
+/**
+ * 检查用户是否有有效订阅（服务端版本）
+ * @param userId 用户ID
+ * @returns 是否有有效订阅
+ */
+export async function hasValidSubscriptionAdmin(userId: string): Promise<boolean> {
+  try {
+    const subscription = await getUserSubscriptionAdmin(userId);
+    if (!subscription) return false;
+    
+    const now = new Date();
+    return subscription.endDate > now && subscription.status === 'active';
+  } catch (error) {
+    console.error('Failed to check subscription validity:', error);
+    return false;
+  }
+}
+
+/**
+ * 取消用户订阅
+ * @param userId 用户ID
+ */
+export async function cancelSubscriptionAdmin(userId: string): Promise<void> {
+  try {
+    await prisma.subscription.updateMany({
+      where: { 
+        userId,
+        status: 'active'
+      },
+      data: { 
+        status: 'cancelled'
+      }
+    });
+    
+    console.log(`Subscription cancelled for user: ${userId}`);
+  } catch (error) {
+    console.error('Failed to cancel subscription:', error);
+    throw new Error('Failed to cancel subscription');
   }
 }

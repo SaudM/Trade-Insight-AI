@@ -1,11 +1,22 @@
 /**
  * 服务端订单管理函数
- * 使用Firebase Admin SDK进行服务端操作
+ * 使用PostgreSQL数据库进行服务端操作
  */
 
-import { Firestore, Timestamp } from 'firebase-admin/firestore';
-import { getAdminFirestore } from './firebase-admin';
+import { PrismaClient, OrderStatus, PaymentProvider, PlanId, TradeType } from '@prisma/client';
+import { Timestamp } from 'firebase/firestore';
 import { Order } from './types';
+
+const prisma = new PrismaClient();
+
+/**
+ * 将Date转换为Timestamp
+ * @param date Date对象
+ * @returns Timestamp对象
+ */
+function dateToTimestamp(date: Date): Timestamp {
+  return Timestamp.fromDate(date);
+}
 
 /**
  * 创建新订单记录（服务端版本）
@@ -17,21 +28,24 @@ export async function createOrderAdmin(
   userId: string,
   orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
-  const firestore = getAdminFirestore();
-  
-  const now = Timestamp.now();
-  const order: any = {
-    ...orderData,
-    createdAt: now,
-    updatedAt: now,
-  };
-
   try {
-    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc();
-    await orderRef.set(order);
+    const order = await prisma.order.create({
+      data: {
+        userId,
+        outTradeNo: orderData.outTradeNo,
+        planId: orderData.planId as PlanId,
+        planName: orderData.planName,
+        amount: orderData.amount,
+        status: 'pending' as OrderStatus,
+        paymentProvider: orderData.paymentProvider as PaymentProvider,
+        paymentId: orderData.paymentId,
+        paymentUrl: orderData.paymentUrl,
+        tradeType: orderData.tradeType as TradeType,
+      },
+    });
     
-    console.log(`Order created successfully: ${orderRef.id} for user: ${userId}`);
-    return orderRef.id;
+    console.log(`Order created successfully: ${order.id} for user: ${userId}`);
+    return order.id;
   } catch (error) {
     console.error('Failed to create order:', error);
     throw new Error('Failed to create order');
@@ -49,16 +63,18 @@ export async function markOrderAsPaidAdmin(
   orderId: string,
   paymentId: string
 ): Promise<void> {
-  const firestore = getAdminFirestore();
-  
   try {
-    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc(orderId);
-    
-    await orderRef.update({
-      status: 'paid',
-      paymentId,
-      paidAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+    await prisma.order.update({
+      where: {
+        id: orderId,
+        userId: userId,
+      },
+      data: {
+        status: 'paid' as OrderStatus,
+        paymentId,
+        paidAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
     
     console.log(`Order marked as paid: ${orderId} for user: ${userId}`);
@@ -77,14 +93,16 @@ export async function markOrderAsFailedAdmin(
   userId: string,
   orderId: string
 ): Promise<void> {
-  const firestore = getAdminFirestore();
-  
   try {
-    const orderRef = firestore.collection('users').doc(userId).collection('orders').doc(orderId);
-    
-    await orderRef.update({
-      status: 'failed',
-      updatedAt: Timestamp.now(),
+    await prisma.order.update({
+      where: {
+        id: orderId,
+        userId: userId,
+      },
+      data: {
+        status: 'failed' as OrderStatus,
+        updatedAt: new Date(),
+      },
     });
     
     console.log(`Order marked as failed: ${orderId} for user: ${userId}`);
@@ -96,35 +114,118 @@ export async function markOrderAsFailedAdmin(
 
 /**
  * 根据商户订单号查找订单（服务端版本）
- * @param userId 用户ID
  * @param outTradeNo 商户订单号
  * @returns 订单数据或null
  */
 export async function findOrderByOutTradeNoAdmin(
   outTradeNo: string
-): Promise<(Order & { id: string; userId: string }) | null> {
-  const firestore = getAdminFirestore();
-  
+): Promise<(Order & { userId: string }) | null> {
   try {
-    // 使用集合组查询跨所有用户的 orders 子集合
-    const snapshot = await firestore.collectionGroup('orders')
-      .where('outTradeNo', '==', outTradeNo)
-      .limit(1)
-      .get();
+    const order = await prisma.order.findUnique({
+      where: {
+        outTradeNo: outTradeNo,
+      },
+    });
     
-    if (snapshot.empty) {
+    if (!order) {
       return null;
     }
     
-    const doc = snapshot.docs[0];
-    const parentUserId = doc.ref.parent.parent?.id || '';
     return {
-      ...doc.data() as Order,
-      id: doc.id,
-      userId: parentUserId,
+      id: order.id,
+      userId: order.userId,
+      outTradeNo: order.outTradeNo,
+      planId: order.planId,
+      planName: order.planName,
+      amount: Number(order.amount),
+      status: order.status,
+      paymentProvider: order.paymentProvider,
+      paymentId: order.paymentId || undefined,
+      paymentUrl: order.paymentUrl || undefined,
+      tradeType: order.tradeType,
+      createdAt: dateToTimestamp(order.createdAt || new Date()),
+      paidAt: order.paidAt ? dateToTimestamp(order.paidAt) : undefined,
+      updatedAt: dateToTimestamp(order.updatedAt || new Date()),
     };
   } catch (error) {
     console.error('Failed to find order by outTradeNo:', error);
     throw new Error('Failed to find order');
+  }
+}
+
+/**
+ * 获取用户的所有订单（服务端版本）
+ * @param userId 用户ID
+ * @returns 订单列表
+ */
+export async function getUserOrdersAdmin(userId: string): Promise<Order[]> {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    return orders.map(order => ({
+      id: order.id,
+      userId: order.userId,
+      outTradeNo: order.outTradeNo,
+      planId: order.planId,
+      planName: order.planName,
+      amount: Number(order.amount),
+      status: order.status,
+      paymentProvider: order.paymentProvider,
+      paymentId: order.paymentId || undefined,
+      paymentUrl: order.paymentUrl || undefined,
+      tradeType: order.tradeType,
+      createdAt: dateToTimestamp(order.createdAt || new Date()),
+       paidAt: order.paidAt ? dateToTimestamp(order.paidAt) : undefined,
+       updatedAt: dateToTimestamp(order.updatedAt || new Date()),
+    }));
+  } catch (error) {
+    console.error('Failed to get user orders:', error);
+    throw new Error('Failed to get user orders');
+  }
+}
+
+/**
+ * 根据订单ID获取订单详情（服务端版本）
+ * @param orderId 订单ID
+ * @returns 订单数据或null
+ */
+export async function getOrderByIdAdmin(orderId: string): Promise<(Order & { userId: string }) | null> {
+  try {
+    const order = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+    });
+    
+    if (!order) {
+      return null;
+    }
+    
+    return {
+      id: order.id,
+      userId: order.userId,
+      outTradeNo: order.outTradeNo,
+      planId: order.planId,
+      planName: order.planName,
+      amount: Number(order.amount),
+      status: order.status,
+      paymentProvider: order.paymentProvider,
+      paymentId: order.paymentId || undefined,
+      paymentUrl: order.paymentUrl || undefined,
+      tradeType: order.tradeType,
+      createdAt: dateToTimestamp(order.createdAt || new Date()),
+       paidAt: order.paidAt ? dateToTimestamp(order.paidAt) : undefined,
+       updatedAt: dateToTimestamp(order.updatedAt || new Date()),
+    };
+  } catch (error) {
+    console.error('Failed to get order by ID:', error);
+    throw new Error('Failed to get order');
   }
 }

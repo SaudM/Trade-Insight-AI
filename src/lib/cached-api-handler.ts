@@ -218,7 +218,7 @@ export abstract class CachedApiHandler {
    * @param cacheKey 缓存键
    * @returns Promise<boolean> 是否成功清除
    */
-  protected static async clearCache(cacheKey: string): Promise<boolean> {
+  public static async clearCache(cacheKey: string): Promise<boolean> {
     try {
       const success = await cache.del(cacheKey);
       if (success) {

@@ -13,7 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useUser, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeModal } from '@/components/app/qrcode-modal';
