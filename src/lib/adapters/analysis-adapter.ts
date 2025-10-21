@@ -83,16 +83,30 @@ export class AnalysisAdapter {
   }
 
   /**
-   * 创建日分析
+   * 创建或更新日分析
    * @param analysisData 日分析数据
-   * @returns Promise<DailyAnalysisData> 创建的日分析
+   * @returns Promise<DailyAnalysisData> 创建或更新的日分析
    */
   static async createDailyAnalysis(
     analysisData: Omit<DailyAnalysisData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<DailyAnalysisData> {
     try {
-      const analysis = await prisma.dailyAnalysis.create({
-        data: {
+      const analysis = await prisma.dailyAnalysis.upsert({
+        where: {
+          userId_date: {
+            userId: analysisData.userId,
+            date: analysisData.date,
+          },
+        },
+        update: {
+          summary: analysisData.summary,
+          strengths: analysisData.strengths,
+          weaknesses: analysisData.weaknesses,
+          emotionalImpact: analysisData.emotionalImpact,
+          improvementSuggestions: analysisData.improvementSuggestions,
+          updatedAt: new Date(),
+        },
+        create: {
           userId: analysisData.userId,
           date: analysisData.date,
           summary: analysisData.summary,
@@ -105,8 +119,8 @@ export class AnalysisAdapter {
 
       return this.formatDailyAnalysisData(analysis);
     } catch (error) {
-      console.error('创建日分析失败:', error);
-      throw new Error('创建日分析失败');
+      console.error('创建或更新日分析失败:', error);
+      throw new Error('创建或更新日分析失败');
     }
   }
 
@@ -133,16 +147,32 @@ export class AnalysisAdapter {
   }
 
   /**
-   * 创建周分析
+   * 创建或更新周分析
    * @param reviewData 周分析数据
-   * @returns Promise<WeeklyReviewData> 创建的周分析
+   * @returns Promise<WeeklyReviewData> 创建或更新的周分析
    */
   static async createWeeklyReview(
     reviewData: Omit<WeeklyReviewData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<WeeklyReviewData> {
     try {
-      const review = await prisma.weeklyReview.create({
-        data: {
+      const review = await prisma.weeklyReview.upsert({
+        where: {
+          userId_startDate_endDate: {
+            userId: reviewData.userId,
+            startDate: reviewData.startDate,
+            endDate: reviewData.endDate,
+          },
+        },
+        update: {
+          patternSummary: reviewData.patternSummary,
+          errorPatterns: reviewData.errorPatterns,
+          successPatterns: reviewData.successPatterns,
+          positionSizingAnalysis: reviewData.positionSizingAnalysis,
+          emotionalCorrelation: reviewData.emotionalCorrelation,
+          improvementPlan: reviewData.improvementPlan,
+          updatedAt: new Date(),
+        },
+        create: {
           userId: reviewData.userId,
           startDate: reviewData.startDate,
           endDate: reviewData.endDate,
@@ -157,8 +187,8 @@ export class AnalysisAdapter {
 
       return this.formatWeeklyReviewData(review);
     } catch (error) {
-      console.error('创建周分析失败:', error);
-      throw new Error('创建周分析失败');
+      console.error('创建或更新周分析失败:', error);
+      throw new Error('创建或更新周分析失败');
     }
   }
 
@@ -185,16 +215,31 @@ export class AnalysisAdapter {
   }
 
   /**
-   * 创建月分析
+   * 创建或更新月分析
    * @param summaryData 月分析数据
-   * @returns Promise<MonthlySummaryData> 创建的月分析
+   * @returns Promise<MonthlySummaryData> 创建或更新的月分析
    */
   static async createMonthlySummary(
     summaryData: Omit<MonthlySummaryData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<MonthlySummaryData> {
     try {
-      const summary = await prisma.monthlySummary.create({
-        data: {
+      const summary = await prisma.monthlySummary.upsert({
+        where: {
+          userId_monthStartDate_monthEndDate: {
+            userId: summaryData.userId,
+            monthStartDate: summaryData.monthStartDate,
+            monthEndDate: summaryData.monthEndDate,
+          },
+        },
+        update: {
+          performanceComparison: summaryData.performanceComparison,
+          recurringIssues: summaryData.recurringIssues,
+          strategyExecutionEvaluation: summaryData.strategyExecutionEvaluation,
+          keyLessons: summaryData.keyLessons,
+          iterationSuggestions: summaryData.iterationSuggestions,
+          updatedAt: new Date(),
+        },
+        create: {
           userId: summaryData.userId,
           monthStartDate: summaryData.monthStartDate,
           monthEndDate: summaryData.monthEndDate,
@@ -208,8 +253,8 @@ export class AnalysisAdapter {
 
       return this.formatMonthlySummaryData(summary);
     } catch (error) {
-      console.error('创建月分析失败:', error);
-      throw new Error('创建月分析失败');
+      console.error('创建或更新月分析失败:', error);
+      throw new Error('创建或更新月分析失败');
     }
   }
 

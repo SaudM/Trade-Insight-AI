@@ -52,13 +52,21 @@ export function AnalysisView({
             
             const result = await analyzeDailyTrades({ tradeLogs: logsString });
             
+            // 辅助函数：确保字段为字符串类型
+            const ensureString = (value: any): string => {
+                if (Array.isArray(value)) {
+                    return value.join('\n');
+                }
+                return String(value || '');
+            };
+            
             const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId'> = {
                 date: new Date().toISOString(),
-                summary: result.summary,
-                strengths: result.strengths,
-                weaknesses: result.weaknesses,
-                emotionalImpact: result.emotionalImpactAnalysis,
-                improvementSuggestions: result.improvementSuggestions,
+                summary: ensureString(result.summary),
+                strengths: ensureString(result.strengths),
+                weaknesses: ensureString(result.weaknesses),
+                emotionalImpact: ensureString(result.emotionalImpactAnalysis),
+                improvementSuggestions: ensureString(result.improvementSuggestions),
                 createdAt: new Date(),
             };
     
@@ -71,16 +79,24 @@ export function AnalysisView({
             const logsString = JSON.stringify(filteredTradeLogs, null, 2);
             const result = await weeklyPatternDiscovery({ tradingLogs: logsString });
 
+            // 辅助函数：确保字段为字符串类型
+            const ensureString = (value: any): string => {
+                if (Array.isArray(value)) {
+                    return value.join('\n');
+                }
+                return String(value || '');
+            };
+
             const now = new Date();
             const newReview: Omit<WeeklyReview, 'id' | 'userId'> = {
                 startDate: startOfWeek(now, { weekStartsOn: 1 }).toISOString(),
                 endDate: now.toISOString(),
-                patternSummary: `${result.successPatterns}\n${result.errorPatterns}`,
-                errorPatterns: result.errorPatterns,
-                successPatterns: result.successPatterns,
-                positionSizingAnalysis: result.positionSizingAssessment,
-                emotionalCorrelation: result.emotionCorrelation,
-                improvementPlan: result.improvementPlan,
+                patternSummary: `${ensureString(result.successPatterns)}\n${ensureString(result.errorPatterns)}`,
+                errorPatterns: ensureString(result.errorPatterns),
+                successPatterns: ensureString(result.successPatterns),
+                positionSizingAnalysis: ensureString(result.positionSizingAssessment),
+                emotionalCorrelation: ensureString(result.emotionCorrelation),
+                improvementPlan: ensureString(result.improvementPlan),
                 createdAt: new Date() as any,
             };
 
@@ -116,14 +132,22 @@ export function AnalysisView({
                 previousMonthLogs: previousMonthLogs.map(toPlainObject) 
             });
 
+            // 辅助函数：确保字段为字符串类型
+            const ensureString = (value: any): string => {
+                if (Array.isArray(value)) {
+                    return value.join('\n');
+                }
+                return String(value || '');
+            };
+
             const newSummary: Omit<MonthlySummary, 'id' | 'userId'> = {
                 monthStartDate: startOfCurrentMonth.toISOString(),
                 monthEndDate: new Date().toISOString(),
-                performanceComparison: result.comparisonSummary,
-                recurringIssues: result.persistentIssues,
-                strategyExecutionEvaluation: result.strategyExecutionEvaluation,
-                keyLessons: result.keyLessons,
-                iterationSuggestions: result.iterationSuggestions,
+                performanceComparison: ensureString(result.comparisonSummary),
+                recurringIssues: ensureString(result.persistentIssues),
+                strategyExecutionEvaluation: ensureString(result.strategyExecutionEvaluation),
+                keyLessons: ensureString(result.keyLessons),
+                iterationSuggestions: ensureString(result.iterationSuggestions),
                 createdAt: new Date() as any,
             };
             

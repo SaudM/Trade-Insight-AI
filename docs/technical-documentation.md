@@ -336,6 +336,13 @@ interface SubscriptionStatus {
 
 ## AI 服务架构
 
+### 多AI服务支持
+
+系统支持多种AI服务提供商，包括Google Genkit和DeepSeek API，通过环境变量`AI_PROVIDER`进行切换：
+
+- **Google Genkit**: 使用Google的Gemini模型
+- **DeepSeek API**: 使用DeepSeek的聊天模型
+
 ### Google Genkit 集成
 
 系统使用 Google Genkit 作为 AI 服务框架，提供以下功能：
@@ -379,8 +386,9 @@ export const weeklyPatternFlow = defineFlow({
 
 #### 2. AI 模型配置
 
+**Google Genkit配置**:
 ```typescript
-// src/ai/genkit.ts
+// src/ai/genkit.ts (Google模式)
 import { configureGenkit } from '@genkit-ai/core';
 import { googleGenAI } from '@genkit-ai/google-genai';
 
@@ -394,6 +402,33 @@ export const ai = configureGenkit({
   logLevel: 'debug',
   enableTracingAndMetrics: true
 });
+```
+
+**DeepSeek API配置**:
+```typescript
+// src/ai/deepseek.ts
+import OpenAI from "openai";
+
+export class DeepSeekAI {
+  private client: OpenAI;
+
+  constructor(apiKey?: string) {
+    this.client = new OpenAI({
+      baseURL: 'https://api.deepseek.com',
+      apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
+    });
+  }
+
+  async chatCompletion(messages, options) {
+    const completion = await this.client.chat.completions.create({
+      messages,
+      model: options?.model || "deepseek-chat",
+      temperature: options?.temperature || 0.7,
+      max_tokens: options?.max_tokens || 4000,
+    });
+    return completion.choices[0]?.message?.content || '';
+  }
+}
 ```
 
 #### 3. 开发环境配置
@@ -437,8 +472,6 @@ npm run genkit:dev
 
 # 启动 AI 服务 (监听模式)
 npm run genkit:watch
-```
-
 **环境变量**:
 ```env
 # Firebase 配置
@@ -446,9 +479,16 @@ NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 
-# Google AI 配置
-GOOGLE_GENAI_API_KEY=your_genai_key
+# AI服务配置
+AI_PROVIDER=deepseek  # 可选: 'google' 或 'deepseek'
 
+# DeepSeek API 配置
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com  # 可选，默认为官方API地址
+
+# Google AI 配置 (如果使用Google AI)
+GOOGLE_GENAI_API_KEY=your_genai_key
+```
 # 微信支付配置
 WECHAT_PAY_APP_ID=your_app_id
 WECHAT_PAY_MCH_ID=your_mch_id
