@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { TradeLog } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from "@/components/ui/button";
@@ -75,14 +75,30 @@ const parseTradeResult = (tradeResult: string | number): number => {
  * 交易笔记卡片组件
  * 统一的卡片设计，适用于所有屏幕尺寸
  * 遵循Material Design原则，提供清晰的信息层次和美观的视觉效果
+ * 优化了高度自适应机制，确保只有当前卡片高度变化，不影响其他卡片
  */
 const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [contentHeight, setContentHeight] = useState(0);
+    const contentRef = useRef<HTMLDivElement>(null);
     const tradeResultValue = parseTradeResult(log.tradeResult);
     const isProfit = tradeResultValue >= 0;
     
+    // 计算详细内容的高度
+    useEffect(() => {
+        if (contentRef.current) {
+            if (isExpanded) {
+                // 展开时设置实际内容高度
+                setContentHeight(contentRef.current.scrollHeight);
+            } else {
+                // 收起时设置高度为0
+                setContentHeight(0);
+            }
+        }
+    }, [isExpanded]);
+    
     return (
-        <Card className="hover:shadow-lg transition-all duration-300 border-0 shadow-md bg-white dark:bg-white">
+        <Card className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-md bg-white dark:bg-white overflow-hidden">
             <CardHeader className="pb-4 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -127,39 +143,44 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                             variant="ghost"
                             size="sm"
                             onClick={() => setIsExpanded(!isExpanded)}
-                            className="w-full justify-between text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg p-3 mt-5"
+                            className="w-full justify-between text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg p-3 mt-5 transition-colors duration-200"
                         >
                             <span className="text-sm font-medium">查看详细分析</span>
-                            <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", isExpanded && "rotate-180")} />
+                            <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isExpanded && "rotate-180")} />
                         </Button>
-                        {isExpanded && (
-                            <div className="space-y-5 mt-5">
+                        
+                        {/* 详细分析内容容器 - 使用高度过渡动画 */}
+                        <div 
+                            className="overflow-hidden transition-all duration-500 ease-in-out"
+                            style={{ height: `${contentHeight}px` }}
+                        >
+                            <div ref={contentRef} className="space-y-5">
                                 {log.entryReason && (
-                                    <div className="p-4 rounded-lg bg-gray-50">
+                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
                                         <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">入场理由</p>
                                         <p className="text-gray-700 leading-relaxed">{log.entryReason}</p>
                                     </div>
                                 )}
                                 {log.exitReason && (
-                                    <div className="p-4 rounded-lg bg-gray-50">
+                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
                                         <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">出场理由</p>
                                         <p className="text-gray-700 leading-relaxed">{log.exitReason}</p>
                                     </div>
                                 )}
                                 {log.mindsetState && (
-                                    <div className="p-4 rounded-lg bg-gray-50">
+                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
                                         <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">心态/状态</p>
                                         <p className="text-gray-700 leading-relaxed">{log.mindsetState}</p>
                                     </div>
                                 )}
                                 {log.lessonsLearned && (
-                                    <div className="p-4 rounded-lg bg-gray-50">
+                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
                                         <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">心得体会</p>
                                         <p className="text-gray-700 leading-relaxed">{log.lessonsLearned}</p>
                                     </div>
                                 )}
                             </div>
-                        )}
+                        </div>
                     </>
                 )}
             </CardContent>
@@ -169,7 +190,7 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                     variant="outline"
                     size="sm"
                     onClick={() => handleEdit(log)}
-                    className="rounded-lg border-gray-300 text-gray-700 hover:border-primary/50 hover:bg-primary/5"
+                    className="rounded-lg border-gray-300 text-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors duration-200"
                 >
                     编辑
                 </Button>
@@ -178,7 +199,7 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-0 shadow-none"
+                            className="rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-0 shadow-none transition-colors duration-200"
                         >
                             删除
                         </Button>
@@ -210,6 +231,7 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
  * 交易笔记表格组件
  * 使用统一的卡片布局设计，适配所有屏幕尺寸
  * 提供清晰的信息展示和良好的用户体验
+ * 优化了网格布局，确保卡片高度变化时保持页面布局稳定
  */
 export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { tradeLogs: TradeLog[], handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) {
     if (tradeLogs.length === 0) {
@@ -231,7 +253,8 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
             <div className="text-sm text-gray-500 mb-6">
                 共 {tradeLogs.length} 条交易记录
             </div>
-            <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {/* 优化网格布局，使用 items-start 确保卡片顶部对齐，避免高度变化影响其他卡片 */}
+            <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 items-start">
                 {tradeLogs.map(log => (
                     <TradeLogCard key={log.id} log={log} handleEdit={handleEdit} deleteTradeLog={deleteTradeLog} />
                 ))}
