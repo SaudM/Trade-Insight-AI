@@ -13,6 +13,8 @@ import {z} from 'genkit';
 
 const WeeklyPatternDiscoveryInputSchema = z.object({
   tradingLogs: z.string().describe('A JSON string of the week\'s trading logs.'),
+  weekStartDate: z.string().describe('The start date of the week being analyzed (Monday).'),
+  weekEndDate: z.string().describe('The end date of the week being analyzed (Sunday).'),
 });
 
 export type WeeklyPatternDiscoveryInput = z.infer<
@@ -21,9 +23,9 @@ export type WeeklyPatternDiscoveryInput = z.infer<
 
 const WeeklyPatternDiscoveryOutputSchema = z.object({
   errorPatterns:
-    z.string().describe('Recurring error patterns identified in the trading logs in Chinese.'),
+    z.string().describe('Recurring error patterns identified in the trading logs in Chinese, must include the specific week period being analyzed.'),
   successPatterns:
-    z.string().describe('Successful strategies identified in the trading logs in Chinese.'),
+    z.string().describe('Successful strategies identified in the trading logs in Chinese, must include the specific week period being analyzed.'),
   positionSizingAssessment:
     z.string().describe('Assessment of position sizing effectiveness in Chinese.'),
   emotionCorrelation:
@@ -46,13 +48,13 @@ const weeklyPatternDiscoveryPrompt = ai.definePrompt({
   name: 'weeklyPatternDiscoveryPrompt',
   input: {schema: WeeklyPatternDiscoveryInputSchema},
   output: {schema: WeeklyPatternDiscoveryOutputSchema},
-  prompt: `You are a trading performance analyst. Analyze the provided trading logs to identify patterns, assess position sizing, and correlate emotional states with trading outcomes. Provide your entire analysis in Chinese.
+  prompt: `You are a trading performance analyst. Analyze the provided trading logs for the week period from {{{weekStartDate}}} to {{{weekEndDate}}} to identify patterns, assess position sizing, and correlate emotional states with trading outcomes. Provide your entire analysis in Chinese.
 
   Trading Logs: {{{tradingLogs}}}
 
   Instructions:
-  1. Identify recurring error patterns in the trading logs and provide a summary.
-  2. Identify successful strategies in the trading logs and provide a summary.
+  1. Identify recurring error patterns in the trading logs and provide a summary. MUST include the specific week period ({{{weekStartDate}}} to {{{weekEndDate}}}) being analyzed.
+  2. Identify successful strategies in the trading logs and provide a summary. MUST include the specific week period ({{{weekStartDate}}} to {{{weekEndDate}}}) being analyzed.
   3. Assess the effectiveness of position sizing based on the trading logs.
   4. Correlate emotional states with trading outcomes and provide insights.
   5. Based on the analysis, generate a weekly improvement plan with actionable steps.

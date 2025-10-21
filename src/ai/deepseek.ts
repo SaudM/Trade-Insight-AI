@@ -141,11 +141,41 @@ export const ai = {
         return input[key] || match;
       });
 
+      // 构建输出schema描述
+      const outputSchema = config.output.schema;
+      let schemaDescription = '';
+      
+      if (outputSchema && outputSchema._def && outputSchema._def.shape) {
+        const shape = outputSchema._def.shape();
+        const fields = Object.keys(shape).map(key => {
+          const field = shape[key];
+          const description = field._def?.description || '';
+          return `"${key}": "${description}"`;
+        }).join(', ');
+        schemaDescription = `请返回包含以下字段的JSON对象: {${fields}}`;
+      } else {
+        schemaDescription = '请返回JSON格式的分析结果，包含summary、strengths、weaknesses、emotionalImpactAnalysis、improvementSuggestions字段，所有字段都应该是字符串类型。';
+      }
+
       const result = await deepseekAI.structuredAnalysis(
         prompt,
         input,
-        `请返回符合以下结构的JSON对象：${JSON.stringify(config.output.schema._def || {}, null, 2)}`
+        schemaDescription
       );
+
+      // 确保返回的结果符合预期格式
+      if (result && typeof result === 'object') {
+        // 如果字段是数组，转换为字符串
+        const processedResult: any = {};
+        for (const [key, value] of Object.entries(result)) {
+          if (Array.isArray(value)) {
+            processedResult[key] = value.join('\n');
+          } else {
+            processedResult[key] = String(value || '');
+          }
+        }
+        return { output: processedResult };
+      }
 
       return { output: result };
     };

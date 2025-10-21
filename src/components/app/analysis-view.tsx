@@ -46,38 +46,105 @@ export function AnalysisView({
 
     const handleDailyAnalysis = async () => {
         return handleAnalysisRequest(async () => {
-            const logsString = filteredTradeLogs.map(log => 
-              `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
-            ).join('\n');
-            
-            const result = await analyzeDailyTrades({ tradeLogs: logsString });
-            
-            // 辅助函数：确保字段为字符串类型
-            const ensureString = (value: any): string => {
-                if (Array.isArray(value)) {
-                    return value.join('\n');
+            try {
+                console.log('开始每日分析处理，交易记录总数:', tradeLogs.length);
+                
+                // 获取最近一个完整交易日的数据
+                const sortedLogs = tradeLogs
+                    .filter(log => log.tradeTime)
+                    .sort((a, b) => new Date(b.tradeTime as string).getTime() - new Date(a.tradeTime as string).getTime());
+                
+                console.log('过滤后的交易记录数:', sortedLogs.length);
+                
+                if (sortedLogs.length === 0) {
+                    console.error('没有可用的交易记录');
+                    throw new Error('没有可用的交易记录');
                 }
-                return String(value || '');
-            };
-            
-            const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId'> = {
-                date: new Date().toISOString(),
-                summary: ensureString(result.summary),
-                strengths: ensureString(result.strengths),
-                weaknesses: ensureString(result.weaknesses),
-                emotionalImpact: ensureString(result.emotionalImpactAnalysis),
-                improvementSuggestions: ensureString(result.improvementSuggestions),
-                createdAt: new Date(),
-            };
-    
-            return addDailyAnalysis(newAnalysis as any);
+                
+                // 获取最新交易日期
+                const latestTradeDate = new Date(sortedLogs[0].tradeTime as string);
+                const latestTradeDateStr = latestTradeDate.toDateString();
+                
+                console.log('最新交易日期:', latestTradeDateStr);
+                
+                // 筛选出最近一个完整交易日的所有交易记录
+                const dailyLogs = sortedLogs.filter(log => {
+                    const logDate = new Date(log.tradeTime as string);
+                    return logDate.toDateString() === latestTradeDateStr;
+                });
+                
+                console.log('当日交易记录数:', dailyLogs.length);
+                
+                const logsString = dailyLogs.map(log => 
+                  `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
+                ).join('\n');
+                
+                console.log('准备调用AI分析，日志字符串长度:', logsString.length);
+                
+                const result = await analyzeDailyTrades({ 
+                    tradeLogs: logsString,
+                    analysisDate: latestTradeDate.toLocaleDateString('zh-CN')
+                });
+                
+                console.log('AI分析完成，结果:', result);
+                
+                // 辅助函数：确保字段为字符串类型
+                const ensureString = (value: any): string => {
+                    if (Array.isArray(value)) {
+                        return value.join('\n');
+                    }
+                    return String(value || '');
+                };
+                
+                const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId'> = {
+                    date: latestTradeDate.toISOString(),
+                    summary: ensureString(result.summary),
+                    strengths: ensureString(result.strengths),
+                    weaknesses: ensureString(result.weaknesses),
+                    emotionalImpact: ensureString(result.emotionalImpactAnalysis),
+                    improvementSuggestions: ensureString(result.improvementSuggestions),
+                    createdAt: new Date(),
+                };
+                
+                console.log('准备保存分析结果:', newAnalysis);
+        
+                const savedAnalysis = await addDailyAnalysis(newAnalysis as any);
+                console.log('分析结果保存成功:', savedAnalysis);
+                
+                return savedAnalysis;
+            } catch (error) {
+                console.error('每日分析处理失败:', {
+                    error: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined,
+                    tradeLogsCount: tradeLogs.length,
+                    isProUser
+                });
+                throw error;
+            }
         });
     };
 
     const handleWeeklyAnalysis = async () => {
         return handleAnalysisRequest(async () => {
-            const logsString = JSON.stringify(filteredTradeLogs, null, 2);
-            const result = await weeklyPatternDiscovery({ tradingLogs: logsString });
+            // 获取当周（周一至周日）的交易数据
+            const currentDate = new Date();
+            const startOfCurrentWeek = startOfWeek(currentDate, { weekStartsOn: 1 }); // 周一开始
+            const endOfCurrentWeek = new Date(startOfCurrentWeek);
+            endOfCurrentWeek.setDate(startOfCurrentWeek.getDate() + 6); // 周日结束
+            endOfCurrentWeek.setHours(23, 59, 59, 999);
+            
+            const weeklyLogs = tradeLogs.filter(log => {
+                if (!log.tradeTime) return false;
+                const logDate = new Date(log.tradeTime as string);
+                return logDate >= startOfCurrentWeek && logDate <= endOfCurrentWeek;
+            });
+            
+            const logsString = JSON.stringify(weeklyLogs, null, 2);
+            const result = await weeklyPatternDiscovery({ 
+                tradingLogs: logsString,
+                weekStartDate: startOfCurrentWeek.toLocaleDateString('zh-CN'),
+                weekEndDate: endOfCurrentWeek.toLocaleDateString('zh-CN')
+            });
 
             // 辅助函数：确保字段为字符串类型
             const ensureString = (value: any): string => {
@@ -87,10 +154,9 @@ export function AnalysisView({
                 return String(value || '');
             };
 
-            const now = new Date();
             const newReview: Omit<WeeklyReview, 'id' | 'userId'> = {
-                startDate: startOfWeek(now, { weekStartsOn: 1 }).toISOString(),
-                endDate: now.toISOString(),
+                startDate: startOfCurrentWeek.toISOString(),
+                endDate: endOfCurrentWeek.toISOString(),
                 patternSummary: `${ensureString(result.successPatterns)}\n${ensureString(result.errorPatterns)}`,
                 errorPatterns: ensureString(result.errorPatterns),
                 successPatterns: ensureString(result.successPatterns),
@@ -106,14 +172,24 @@ export function AnalysisView({
 
     const handleMonthlyAnalysis = async () => {
         return handleAnalysisRequest(async () => {
-            const now = new Date();
-            const startOfCurrentMonth = startOfMonth(now);
-            const startOfPreviousMonth = startOfMonth(subMonths(now, 1));
+            const currentTime = new Date();
+            const startOfCurrentMonth = startOfMonth(currentTime);
+            const endOfCurrentMonth = new Date(startOfCurrentMonth.getFullYear(), startOfCurrentMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+            const startOfPreviousMonth = startOfMonth(subMonths(currentTime, 1));
+            const endOfPreviousMonth = new Date(startOfPreviousMonth.getFullYear(), startOfPreviousMonth.getMonth() + 1, 0, 23, 59, 59, 999);
 
-            const currentMonthLogs = tradeLogs.filter(log => new Date(log.tradeTime as string) >= startOfCurrentMonth);
-            const previousMonthLogs = tradeLogs.filter(log => {
+            // 获取当月完整的交易数据（1日至月末）
+            const currentMonthLogs = tradeLogs.filter(log => {
+                if (!log.tradeTime) return false;
                 const logDate = new Date(log.tradeTime as string);
-                return logDate >= startOfPreviousMonth && logDate < startOfCurrentMonth;
+                return logDate >= startOfCurrentMonth && logDate <= endOfCurrentMonth;
+            });
+            
+            // 获取上月完整的交易数据（1日至月末）
+            const previousMonthLogs = tradeLogs.filter(log => {
+                if (!log.tradeTime) return false;
+                const logDate = new Date(log.tradeTime as string);
+                return logDate >= startOfPreviousMonth && logDate <= endOfPreviousMonth;
             });
 
             const toPlainObject = (log: TradeLog) => {
@@ -129,7 +205,9 @@ export function AnalysisView({
 
             const result = await monthlyPerformanceReview({ 
                 currentMonthLogs: currentMonthLogs.map(toPlainObject), 
-                previousMonthLogs: previousMonthLogs.map(toPlainObject) 
+                previousMonthLogs: previousMonthLogs.map(toPlainObject),
+                currentMonthPeriod: `${startOfCurrentMonth.getFullYear()}年${startOfCurrentMonth.getMonth() + 1}月`,
+                previousMonthPeriod: `${startOfPreviousMonth.getFullYear()}年${startOfPreviousMonth.getMonth() + 1}月`
             });
 
             // 辅助函数：确保字段为字符串类型
@@ -142,7 +220,7 @@ export function AnalysisView({
 
             const newSummary: Omit<MonthlySummary, 'id' | 'userId'> = {
                 monthStartDate: startOfCurrentMonth.toISOString(),
-                monthEndDate: new Date().toISOString(),
+                monthEndDate: endOfCurrentMonth.toISOString(),
                 performanceComparison: ensureString(result.comparisonSummary),
                 recurringIssues: ensureString(result.persistentIssues),
                 strategyExecutionEvaluation: ensureString(result.strategyExecutionEvaluation),

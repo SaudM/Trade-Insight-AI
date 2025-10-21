@@ -34,6 +34,8 @@ const MonthlyPerformanceReviewInputSchema = z.object({
   previousMonthLogs:
     z.array(TradingLogSchema)
       .describe('The trading logs for the previous month.'),
+  currentMonthPeriod: z.string().describe('The current month period being analyzed (e.g., "2024年1月").'),
+  previousMonthPeriod: z.string().describe('The previous month period being compared (e.g., "2023年12月").'),
 });
 
 export type MonthlyPerformanceReviewInput = z.infer<
@@ -44,7 +46,7 @@ const MonthlyPerformanceReviewOutputSchema = z.object({
   comparisonSummary:
     z.string()
       .describe(
-        'A summary comparing trading habits and performance between the current and previous months in Chinese.'
+        'A summary comparing trading habits and performance between the current and previous months in Chinese, must include the specific month periods being analyzed.'
       ),
   persistentIssues:
     z.string()
@@ -76,7 +78,7 @@ const monthlyPerformanceReviewPrompt = ai.definePrompt({
   output: {schema: MonthlyPerformanceReviewOutputSchema},
   prompt: `You are an expert trading performance analyst. Your task is to analyze a trader's monthly trading logs and provide a comprehensive performance review in Chinese.
 
-  Compare the trader's trading habits and performance between the current and previous months. Identify any recurring issues in their trading system. Evaluate their strategy execution and discipline. Extract key lessons learned during the month. Provide specific and actionable recommendations for improving their trading system.
+  Compare the trader's trading habits and performance between the current month ({{{currentMonthPeriod}}}) and previous month ({{{previousMonthPeriod}}}). Identify any recurring issues in their trading system. Evaluate their strategy execution and discipline. Extract key lessons learned during the month. Provide specific and actionable recommendations for improving their trading system.
 
   Current Month Logs:
   {{#each currentMonthLogs}}
@@ -90,7 +92,7 @@ const monthlyPerformanceReviewPrompt = ai.definePrompt({
 
   Based on the provided trading logs, generate the following in Chinese:
 
-  Comparison Summary: A summary comparing trading habits and performance between the current and previous months.
+  Comparison Summary: A summary comparing trading habits and performance between the current and previous months. MUST include the specific month periods being analyzed (e.g., "2024年1月" vs "2024年2月").
 
   Persistent Issues: Identifies any recurring issues in the trading system.
 

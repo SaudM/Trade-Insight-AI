@@ -7,6 +7,26 @@ import { useState, useEffect, useCallback } from 'react';
 import type { TradeLog, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 
 /**
+ * 解析JSON字段的辅助函数
+ * @param field 可能是JSON字符串或普通字符串的字段
+ * @returns 解析后的字符串（如果是数组则用换行符连接）
+ */
+function parseJsonField(field: string | null | undefined): string {
+  if (!field) return '';
+  
+  try {
+    const parsed = JSON.parse(field);
+    if (Array.isArray(parsed)) {
+      return parsed.join('\n');
+    }
+    return String(parsed);
+  } catch {
+    // 如果解析失败，说明是普通字符串，直接返回
+    return field;
+  }
+}
+
+/**
  * 交易日志数据获取hook
  * @param uid 系统用户ID
  * @returns 交易日志数据和加载状态
@@ -86,7 +106,16 @@ export function useDailyAnalysesPostgres(uid: string | null) {
 
       const responseData = await response.json();
       const analyses = responseData.data;
-      setData(analyses);
+      
+      // 解析JSON字符串字段
+      const parsedAnalyses = analyses.map((analysis: any) => ({
+        ...analysis,
+        strengths: parseJsonField(analysis.strengths),
+        weaknesses: parseJsonField(analysis.weaknesses),
+        improvementSuggestions: parseJsonField(analysis.improvementSuggestions),
+      }));
+      
+      setData(parsedAnalyses);
     } catch (err) {
       console.error('获取日分析失败:', err);
       setError(err instanceof Error ? err.message : '获取日分析失败');
