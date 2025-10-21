@@ -66,12 +66,23 @@ export async function activateSubscriptionPostgres(params: {
       throw new Error('Database connection failed');
     }
 
+    // 幂等性检查：检查是否已经使用相同的paymentId激活过订阅
+    const existingRecord = await SubscriptionAdapter.getSubscriptionRecordByPaymentId(paymentId);
+    if (existingRecord) {
+      console.log(`订阅激活跳过：支付ID ${paymentId} 已经被处理过`);
+      return; // 直接返回，不重复处理
+    }
+
     // 获取现有订阅信息
     const existingSubscription = await SubscriptionAdapter.getCurrentSubscription(userId);
+
+    console.log('subscriptions-postgres existingSubscription:', existingSubscription);
     
     const now = new Date();
     const daysToAdd = calcPlanDaysPostgres(planId);
     const planName = getPlanNamePostgres(planId);
+    console.log('subscriptions-postgres planName:', planName);
+    console.log('subscriptions-postgres daysToAdd:', daysToAdd);
     
     let newStartDate: Date;
     let newEndDate: Date;
@@ -80,6 +91,7 @@ export async function activateSubscriptionPostgres(params: {
     if (existingSubscription && existingSubscription.status === 'active') {
       // 如果有活跃订阅，从现有到期时间开始累加
       const currentEndDate = new Date(existingSubscription.endDate);
+      console.log('subscriptions-postgres currentEndDate:', currentEndDate);
       
       // 如果当前订阅还未过期，从到期时间开始累加
       if (currentEndDate > now) {
@@ -87,18 +99,21 @@ export async function activateSubscriptionPostgres(params: {
         newStartDate = new Date(existingSubscription.startDate);
         newEndDate = new Date(currentEndDate);
         newEndDate.setDate(newEndDate.getDate() + daysToAdd);
+        console.log('subscriptions-postgres newEndDate.getDate() + daysToAdd:', newEndDate.getDate() + daysToAdd);
       } else {
         // 如果当前订阅已过期，从现在开始
         previousEndDate = currentEndDate;
         newStartDate = now;
         newEndDate = new Date(now);
         newEndDate.setDate(newEndDate.getDate() + daysToAdd);
+        console.log('subscriptions-postgres newEndDate.getDate() + daysToAdd:', newEndDate.getDate() + daysToAdd);
       }
     } else {
       // 如果没有活跃订阅，从现在开始
       newStartDate = now;
       newEndDate = new Date(now);
       newEndDate.setDate(newEndDate.getDate() + daysToAdd);
+      console.log('subscriptions-postgres newEndDate.getDate() + daysToAdd:', newEndDate.getDate() + daysToAdd);
     }
     
     // 创建订阅记录数据

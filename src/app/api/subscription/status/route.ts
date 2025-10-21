@@ -33,19 +33,25 @@ export async function GET(req: NextRequest) {
             // 优先使用PostgreSQL
             order = await findOrderByOutTradeNoPostgres(outTradeNo);
             if (order) {
-              // 标记订单为已支付
-              await markOrderAsPaidPostgres(outTradeNo, res.transaction_id || '');
-              
-              // 激活订阅
-              await activateSubscriptionPostgres({
-                userId: order.userId,
-                planId: order.planId,
-                paymentId: res.transaction_id || order.id,
-                amount: order.amount,
-              });
-              
-              orderProcessed = true;
-              console.log(`Subscription activated via PostgreSQL for user ${order.userId}, plan: ${order.planId}`);
+              // 检查订单是否已经被处理过（幂等性检查）
+              if (order.status === 'paid') {
+                console.log(`订单 ${outTradeNo} 已经被处理过，跳过重复处理`);
+                orderProcessed = true;
+              } else {
+                // 标记订单为已支付
+                await markOrderAsPaidPostgres(outTradeNo, res.transaction_id || '');
+                
+                // 激活订阅
+                await activateSubscriptionPostgres({
+                  userId: order.userId,
+                  planId: order.planId,
+                  paymentId: res.transaction_id || order.id,
+                  amount: order.amount,
+                });
+                
+                orderProcessed = true;
+                console.log(`Subscription activated via PostgreSQL for user ${order.userId}, plan: ${order.planId}`);
+              }
             }
           } catch (postgresError) {
             console.warn('PostgreSQL order processing failed, falling back to Firebase:', postgresError);

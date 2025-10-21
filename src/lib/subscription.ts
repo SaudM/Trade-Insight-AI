@@ -79,7 +79,10 @@ export async function activateSubscription(params: {
   
   const now = new Date();
   const daysToAdd = calcPlanDays(planId);
+  console.log('subscription daysToAdd:', daysToAdd);
   const planName = getPlanName(planId);
+  console.log('subscription planName:', planName);
+
   
   let newStartDate: Date;
   let newEndDate: Date;
@@ -88,33 +91,41 @@ export async function activateSubscription(params: {
   if (existingSubscription && existingSubscription.status === 'active') {
     // 如果有活跃订阅，从现有到期时间开始累加
     const currentEndDate = existingSubscription.endDate;
+    console.log('subscriptions currentEndDate:', currentEndDate);
     
     // 如果当前订阅还未过期，从到期时间开始累加
     if (currentEndDate > now) {
       previousEndDate = currentEndDate;
       newStartDate = existingSubscription.startDate;
       newEndDate = new Date(currentEndDate);
+
       newEndDate.setDate(newEndDate.getDate() + daysToAdd);
+      console.log('subscriptions newEndDate.getDate() + daysToAdd:', newEndDate.getDate() + daysToAdd);
     } else {
       // 如果当前订阅已过期，从现在开始
       previousEndDate = currentEndDate;
       newStartDate = now;
       newEndDate = new Date(now);
       newEndDate.setDate(newEndDate.getDate() + daysToAdd);
+      console.log('subscriptions newEndDate.getDate() + daysToAdd:', newEndDate.getDate() + daysToAdd);
     }
   } else {
     // 如果没有活跃订阅，从现在开始
     newStartDate = now;
     newEndDate = calcExpireDate(planId, now);
+    console.log('subscriptions newEndDate:', newEndDate);
   }
   
   // 计算累计总天数
   const previousTotalDays = existingSubscription?.totalDaysAdded || 0;
+  console.log('subscriptions previousTotalDays:', previousTotalDays);
   const newTotalDaysAdded = previousTotalDays + daysToAdd;
+  console.log('subscriptions newTotalDaysAdded:', newTotalDaysAdded);
   
   // 使用事务来确保数据一致性
   await prisma.$transaction(async (tx) => {
     // 如果存在旧订阅，将其状态设为非活跃
+    console.log('subscriptions existingSubscription:', existingSubscription);
     if (existingSubscription) {
       await tx.subscription.update({
         where: { id: existingSubscription.id },
@@ -123,6 +134,8 @@ export async function activateSubscription(params: {
     }
     
     // 创建新的订阅记录
+    console.log('subscriptions newStartDate:', newStartDate);
+    console.log('subscriptions newEndDate:', newEndDate);
     const newSubscription = await tx.subscription.create({
       data: {
         userId,

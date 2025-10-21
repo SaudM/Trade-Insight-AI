@@ -150,10 +150,14 @@ export class SubscriptionAdapter {
       let endDate: Date;
       let subscriptionId: string;
 
+      console.log('subscriptions-adapter currentSubscription:', currentSubscription);
+
       if (currentSubscription && currentSubscription.endDate > now) {
         // 延长现有订阅
         startDate = currentSubscription.startDate;
+        console.log('subscriptions-adapter startDate:', startDate);
         endDate = new Date(currentSubscription.endDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+        console.log('subscriptions-adapter endDate:', endDate);
         
         const updatedSubscription = await this.updateSubscription(currentSubscription.id, {
           endDate,
@@ -165,6 +169,9 @@ export class SubscriptionAdapter {
         // 创建新订阅
         startDate = now;
         endDate = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
+        console.log('subscriptions-adapter startDate:', startDate);
+        console.log('subscriptions-adapter endDate:', endDate);
         
         const newSubscription = await this.createSubscription({
           userId,
@@ -219,6 +226,26 @@ export class SubscriptionAdapter {
     } catch (error) {
       console.error('创建订阅记录失败:', error);
       throw new Error('创建订阅记录失败');
+    }
+  }
+
+  /**
+   * 根据支付ID查询订阅记录（用于幂等性检查）
+   * @param paymentId 支付ID
+   * @returns Promise<SubscriptionRecordData | null> 订阅记录
+   */
+  static async getSubscriptionRecordByPaymentId(paymentId: string): Promise<SubscriptionRecordData | null> {
+    try {
+      const record = await prisma.subscriptionRecord.findFirst({
+        where: {
+          paymentId,
+        },
+      });
+
+      return record ? this.formatSubscriptionRecordData(record) : null;
+    } catch (error) {
+      console.error('根据支付ID查询订阅记录失败:', error);
+      throw new Error('根据支付ID查询订阅记录失败');
     }
   }
 
