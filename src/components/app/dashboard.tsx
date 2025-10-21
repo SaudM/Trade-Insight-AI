@@ -14,7 +14,7 @@ import { Separator } from '../ui/separator';
 import { CumulativePLChart } from './cumulative-pl-chart';
 import { useMemo } from 'react';
 import { differenceInCalendarDays, isSaturday, isSunday, startOfDay } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
+
 
 type TimePeriod = 'today' | '7d' | '30d' | 'all';
 
@@ -76,7 +76,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
         const uniqueTradeDays = [
             ...new Set(
                 tradeLogs.map(log => {
-                    const date = log.tradeTime instanceof Timestamp ? log.tradeTime.toDate() : new Date(log.tradeTime);
+                    const date = log.tradeTime instanceof Date ? log.tradeTime : new Date(log.tradeTime);
                     return startOfDay(date).getTime();
                 })
             ),

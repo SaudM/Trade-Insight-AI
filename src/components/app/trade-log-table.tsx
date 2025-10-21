@@ -6,6 +6,7 @@ import { ChevronDown, Trash2, Pencil, Calendar, TrendingUp, TrendingDown, Target
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { format } from 'date-fns';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -17,27 +18,21 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Timestamp } from 'firebase/firestore';
+
 
 /**
  * 格式化交易时间
  * 将 Timestamp 或字符串格式的时间转换为可读的日期时间格式
  */
-const formatTradeTime = (tradeTime: string | Timestamp): string => {
+const formatTradeTime = (tradeTime: string | Date): string => {
     let date: Date;
-    if (tradeTime instanceof Timestamp) {
-        date = tradeTime.toDate();
+    if (tradeTime instanceof Date) {
+        date = tradeTime;
     } else {
         date = new Date(tradeTime);
     }
     
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return format(date, 'yyyy-MM-dd HH:mm');
 };
 
 /**

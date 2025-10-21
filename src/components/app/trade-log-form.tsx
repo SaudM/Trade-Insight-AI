@@ -35,7 +35,7 @@ import { FloatingLabelSelect, FloatingLabelSelectItem } from "@/components/ui/fl
 import { MaterialButton } from "@/components/ui/material-button";
 import type { TradeLog } from '@/lib/types';
 import { useEffect } from 'react';
-import { Timestamp } from 'firebase/firestore';
+
 
 // 格式化为本地 date 输入值（YYYY-MM-DD）
 function toLocalDateInputValue(date: Date) {
@@ -43,9 +43,9 @@ function toLocalDateInputValue(date: Date) {
   return d.toISOString().split('T')[0]
 }
 
-// 将字符串或 Firebase Timestamp 转换为 Date
-function toDateFromTradeTime(time: string | Timestamp) {
-  if (time instanceof Timestamp) return time.toDate();
+// 将字符串或 Date 转换为 Date
+function toDateFromTradeTime(time: string | Date) {
+  if (time instanceof Date) return time;
   if (typeof time === 'string') {
     const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(time);
     return new Date(isDateOnly ? `${time}T00:00` : time);

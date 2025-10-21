@@ -6,22 +6,22 @@ import { CardContent, CardHeader, CardTitle, CardDescription } from '@/component
 import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
+
 
 export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   const chartData = useMemo(() => {
     if (!tradeLogs || tradeLogs.length === 0) return [];
     
     const sortedLogs = [...tradeLogs].sort((a, b) => {
-        const dateA = a.tradeTime instanceof Timestamp ? a.tradeTime.toDate() : new Date(a.tradeTime);
-        const dateB = b.tradeTime instanceof Timestamp ? b.tradeTime.toDate() : new Date(b.tradeTime);
+        const dateA = a.tradeTime instanceof Date ? a.tradeTime : new Date(a.tradeTime);
+        const dateB = b.tradeTime instanceof Date ? b.tradeTime : new Date(b.tradeTime);
         return dateA.getTime() - dateB.getTime();
     });
 
     let cumulativePL = 0;
     return sortedLogs.map((log, index) => {
       cumulativePL += parseFloat(log.tradeResult);
-      const date = log.tradeTime instanceof Timestamp ? log.tradeTime.toDate() : new Date(log.tradeTime);
+      const date = log.tradeTime instanceof Date ? log.tradeTime : new Date(log.tradeTime);
       return {
         tradeNumber: index + 1,
         date: format(date, 'yyyy-MM-dd HH:mm'),

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FloatingLabelSelect } from "@/components/ui/floating-label-select";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
+
 import type { DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 import type { LucideIcon } from 'lucide-react';
 
@@ -30,7 +30,7 @@ type ReportViewProps = {
     reports: Report[];
     onGenerate: () => Promise<Report | null | void>;
     tradeLogs: any[];
-    getReportDate: (report: Report) => string | Timestamp;
+    getReportDate: (report: Report) => string | Date;
     cards: CardConfig[];
     isProUser: boolean;
 };
@@ -58,7 +58,7 @@ export function ReportView({
             const latestReport = reportsArray.sort((a, b) => {
                 const dateA = getReportDate(a);
                 const dateB = getReportDate(b);
-                return new Date(dateB instanceof Timestamp ? dateB.toDate() : dateB).getTime() - new Date(dateA instanceof Timestamp ? dateA.toDate() : dateA).getTime();
+                return new Date(dateB instanceof Date ? dateB : dateB).getTime() - new Date(dateA instanceof Date ? dateA : dateA).getTime();
             })[0];
             setSelectedReportId(latestReport.id);
         } else if (reportsArray.length === 0) {
@@ -97,7 +97,7 @@ export function ReportView({
     const sortedReports = Array.isArray(allReports) ? [...allReports].sort((a, b) => {
         const dateA = getReportDate(a);
         const dateB = getReportDate(b);
-        return new Date(dateB instanceof Timestamp ? dateB.toDate() : dateB).getTime() - new Date(dateA instanceof Timestamp ? dateA.toDate() : dateA).getTime()
+        return new Date(dateB instanceof Date ? dateB : dateB).getTime() - new Date(dateA instanceof Date ? dateA : dateA).getTime()
     }) : [];
 
     return (
@@ -114,7 +114,7 @@ export function ReportView({
                             <SelectContent>
                                 {sortedReports.map(r => {
                                     const date = getReportDate(r);
-                                    const formattedDate = format(new Date(date instanceof Timestamp ? date.toDate() : date), 'yyyy年MM月dd日 HH:mm');
+                                    const formattedDate = format(new Date(date instanceof Date ? date : date), 'yyyy/MM/dd/ HH:mm');
                                     return (
                                         <SelectItem key={r.id} value={r.id}>
                                             {formattedDate}

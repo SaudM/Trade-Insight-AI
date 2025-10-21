@@ -10,7 +10,7 @@ import { weeklyPatternDiscovery } from '@/ai/flows/weekly-pattern-discovery';
 import { monthlyPerformanceReview } from '@/ai/flows/monthly-performance-review';
 import { BrainCircuit, Zap, HeartPulse, Lightbulb, Repeat, Trophy, Scaling, ListChecks, GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
 import { startOfWeek, startOfMonth, subMonths } from 'date-fns';
-import type { Timestamp } from 'firebase/firestore';
+
 
 export function AnalysisView({ 
     tradeLogs,
@@ -59,7 +59,7 @@ export function AnalysisView({
                 weaknesses: result.weaknesses,
                 emotionalImpact: result.emotionalImpactAnalysis,
                 improvementSuggestions: result.improvementSuggestions,
-                createdAt: new Date() as any,
+                createdAt: new Date(),
             };
     
             return addDailyAnalysis(newAnalysis as any);
@@ -103,10 +103,10 @@ export function AnalysisView({
             const toPlainObject = (log: TradeLog) => {
               const plainLog: any = { ...log };
               if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
-                plainLog.tradeTime = (plainLog.tradeTime as Timestamp).toDate().toISOString();
+                plainLog.tradeTime = (plainLog.tradeTime as Date).toISOString();
               }
                if (plainLog.createdAt && typeof plainLog.createdAt !== 'string') {
-                 plainLog.createdAt = (plainLog.createdAt as Timestamp).toDate().toISOString();
+                 plainLog.createdAt = (plainLog.createdAt as Date).toISOString();
               }
               return plainLog;
             };

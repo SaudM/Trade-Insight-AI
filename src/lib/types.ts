@@ -1,12 +1,11 @@
 
 
-import { Timestamp } from "firebase/firestore";
 import { z } from 'zod';
 
 export type TradeLog = {
   id: string;
   userId: string;
-  tradeTime: string | Timestamp;
+  tradeTime: string | Date;
   symbol: string;
   direction: 'Buy' | 'Sell' | 'Long' | 'Short' | 'Close';
   positionSize: string;
@@ -15,46 +14,46 @@ export type TradeLog = {
   tradeResult: string;
   mindsetState: string;
   lessonsLearned: string;
-  createdAt: Timestamp;
+  createdAt: Date;
 };
 
 export type DailyAnalysis = {
   id: string;
   userId: string;
-  date: string | Timestamp;
+  date: string | Date;
   summary: string;
   strengths: string;
   weaknesses: string;
   emotionalImpact: string;
   improvementSuggestions: string;
-  createdAt: Timestamp;
+  createdAt: Date;
 }
 
 export type WeeklyReview = {
     id: string;
     userId: string;
-    startDate: string | Timestamp;
-    endDate: string | Timestamp;
+    startDate: string | Date;
+    endDate: string | Date;
     patternSummary: string;
     errorPatterns: string;
     successPatterns: string;
     positionSizingAnalysis: string;
     emotionalCorrelation: string;
     improvementPlan: string;
-    createdAt: Timestamp;
+    createdAt: Date;
 }
 
 export type MonthlySummary = {
     id: string;
     userId: string;
-    monthStartDate: string | Timestamp;
-    monthEndDate: string | Timestamp;
+    monthStartDate: string | Date;
+    monthEndDate: string | Date;
     performanceComparison: string;
     recurringIssues: string;
     strategyExecutionEvaluation: string;
     keyLessons: string;
     iterationSuggestions: string;
-    createdAt: Timestamp;
+    createdAt: Date;
 }
 
 /**
@@ -66,14 +65,14 @@ export type Subscription = {
   userId: string;
   planId: 'monthly' | 'quarterly' | 'semi_annually' | 'annually';
   status: 'active' | 'inactive' | 'cancelled' | 'trialing';
-  startDate: string | Timestamp;
-  endDate: string | Timestamp;
+  startDate: string | Date;
+  endDate: string | Date;
   paymentProvider: 'wechat_pay' | 'alipay' | 'stripe';
   paymentId: string;
-  createdAt: Timestamp;
-  // 新增字段支持多套餐累加
+  createdAt: Date;
+  // 新增字段用于支持多套餐累加
   totalDaysAdded?: number; // 本次订阅添加的总天数
-  accumulatedFrom?: string | Timestamp; // 累加前的到期时间
+  accumulatedFrom?: string | Date; // 累加前的到期时间
   subscriptionHistory?: SubscriptionRecord[]; // 订阅历史记录
 }
 
@@ -88,9 +87,9 @@ export type SubscriptionRecord = {
   amount: number; // 支付金额
   paymentId: string;
   paymentProvider: 'wechat_pay' | 'alipay' | 'stripe';
-  purchaseDate: string | Timestamp;
-  previousEndDate?: string | Timestamp; // 购买前的到期时间
-  newEndDate: string | Timestamp; // 购买后的到期时间
+  purchaseDate: string | Date;
+  previousEndDate?: string | Date; // 购买前的到期时间
+  newEndDate: string | Date; // 购买后的到期时间
 }
 
 /**
@@ -109,9 +108,9 @@ export type Order = {
   paymentId?: string; // 支付平台交易ID
   paymentUrl?: string; // 支付链接（用于二维码等）
   tradeType: 'NATIVE' | 'H5' | 'JSAPI'; // 支付方式
-  createdAt: Timestamp;
-  paidAt?: Timestamp; // 支付完成时间
-  updatedAt: Timestamp;
+  createdAt: Date;
+  paidAt?: Date; // 支付完成时间
+  updatedAt: Date;
 }
 
 export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile';

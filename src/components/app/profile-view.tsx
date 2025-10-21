@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, ExternalLink, LogOut, ShoppingBag, Key, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
-import { Timestamp } from "firebase/firestore";
+
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
@@ -100,8 +100,8 @@ export function ProfileView() {
     const subscriptionEndDate = subscription?.endDate 
         ? (typeof subscription.endDate === 'string' 
             ? new Date(subscription.endDate) 
-            : subscription.endDate instanceof Timestamp 
-                ? subscription.endDate.toDate() 
+            : subscription.endDate instanceof Date 
+                ? subscription.endDate 
                 : new Date(subscription.endDate as any))
         : null;
     const userCreationDate = user?.createdAt ? new Date(user.createdAt) : null;

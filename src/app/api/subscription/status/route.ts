@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayResult } from '@/lib/wxpay';
-import { findOrderByOutTradeNoAdmin, markOrderAsPaidAdmin } from '@/lib/orders-admin';
 import { findOrderByOutTradeNoPostgres, markOrderAsPaidPostgres } from '@/lib/orders-postgres';
-import { activateSubscriptionAdmin } from '@/lib/subscription-admin';
 import { activateSubscriptionPostgres } from '@/lib/subscription-postgres';
 import { checkDatabaseConnection } from '@/lib/db';
-import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,23 +55,9 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        // 如果PostgreSQL处理失败或未连接，使用Firebase作为备用
+        // 如果PostgreSQL处理失败，记录错误
         if (!orderProcessed) {
-          order = await findOrderByOutTradeNoAdmin(outTradeNo);
-          if (order) {
-            // 标记订单为已支付
-            await markOrderAsPaidAdmin(order.userId, order.id, res.transaction_id || '');
-            
-            // 激活订阅（支持多套餐累加）
-            await activateSubscriptionAdmin({
-              userId: order.userId,
-              planId: order.planId,
-              paymentId: res.transaction_id || order.id,
-              amount: order.amount,
-            });
-            
-            console.log(`Subscription activated via Firebase for user ${order.userId}, plan: ${order.planId}`);
-          }
+          console.error(`订单处理失败: ${outTradeNo} - PostgreSQL连接或处理出现问题`);
         }
       } catch (e) {
         console.warn('Failed to update order status or activate subscription after SUCCESS', e);

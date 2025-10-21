@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createPayment } from '@/lib/wxpay';
 import { createOrderPostgres } from '@/lib/orders-postgres';
-import { createOrderAdmin } from '@/lib/orders-admin';
 import { PLAN_NAMES } from '@/lib/orders';
 import { checkDatabaseConnection } from '@/lib/db';
 
@@ -45,23 +44,15 @@ export async function POST(req: NextRequest) {
         tradeType,
       };
 
-      // 检查数据库连接，优先使用PostgreSQL
+      // 使用PostgreSQL创建订单记录
       const isDbConnected = await checkDatabaseConnection();
       
       if (isDbConnected) {
-        try {
-          await createOrderPostgres(userId, orderData);
-          console.log(`PostgreSQL订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
-        } catch (pgError) {
-          console.error('PostgreSQL订单创建失败，回退到Firebase:', pgError);
-          // 回退到Firebase
-          await createOrderAdmin(userId, orderData);
-          console.log(`Firebase订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
-        }
+        await createOrderPostgres(userId, orderData);
+        console.log(`PostgreSQL订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
       } else {
-        // 数据库连接失败，使用Firebase
-        await createOrderAdmin(userId, orderData);
-        console.log(`Firebase订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
+        console.error('数据库连接失败，无法创建订单记录');
+        throw new Error('数据库连接失败');
       }
       
     } catch (orderError) {

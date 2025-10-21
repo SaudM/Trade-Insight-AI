@@ -6,46 +6,7 @@
 
 import { SubscriptionAdapter } from './adapters/subscription-adapter';
 import { checkDatabaseConnection } from './db';
-
-/**
- * 计算套餐对应的天数
- * @param planId 套餐ID
- * @returns 套餐天数
- */
-export function calcPlanDaysPostgres(planId: string): number {
-  switch (planId) {
-    case 'monthly':
-      return 30;
-    case 'quarterly':
-      return 90;
-    case 'semi_annually':
-      return 180;
-    case 'annually':
-      return 365;
-    default:
-      return 30;
-  }
-}
-
-/**
- * 获取套餐名称
- * @param planId 套餐ID
- * @returns 套餐名称
- */
-export function getPlanNamePostgres(planId: string): string {
-  switch (planId) {
-    case 'monthly':
-      return '月度会员';
-    case 'quarterly':
-      return '季度会员';
-    case 'semi_annually':
-      return '半年会员';
-    case 'annually':
-      return '年度会员';
-    default:
-      return '月度会员';
-  }
-}
+import { calcPlanDays, getPlanName } from './subscription-server';
 
 /**
  * 激活订阅（PostgreSQL版本，支持多套餐累加）
@@ -79,8 +40,8 @@ export async function activateSubscriptionPostgres(params: {
     console.log('subscriptions-postgres existingSubscription:', existingSubscription);
     
     const now = new Date();
-    const daysToAdd = calcPlanDaysPostgres(planId);
-    const planName = getPlanNamePostgres(planId);
+    const daysToAdd = calcPlanDays(planId as any);
+  const planName = getPlanName(planId as any);
     console.log('subscriptions-postgres planName:', planName);
     console.log('subscriptions-postgres daysToAdd:', daysToAdd);
     

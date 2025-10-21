@@ -1,9 +1,12 @@
-'use client';
+/**
+ * 服务器端订阅工具函数
+ * 这些函数可以在服务器端安全使用，不依赖客户端环境
+ */
 
 import type { PlanId } from '@prisma/client';
 
 /**
- * 计算套餐对应的天数
+ * 计算套餐对应的天数（服务器端版本）
  * @param planId 套餐ID
  * @returns 套餐天数
  */
@@ -23,7 +26,7 @@ export function calcPlanDays(planId: PlanId): number {
 }
 
 /**
- * 计算套餐到期时间（从指定开始时间）
+ * 计算套餐到期时间（从指定开始时间）（服务器端版本）
  * @param planId 套餐ID
  * @param start 开始时间
  * @returns 到期时间
@@ -36,7 +39,7 @@ export function calcExpireDate(planId: PlanId, start: Date): Date {
 }
 
 /**
- * 获取套餐名称
+ * 获取套餐名称（服务器端版本）
  * @param planId 套餐ID
  * @returns 套餐名称
  */
@@ -56,7 +59,7 @@ export function getPlanName(planId: PlanId): string {
 }
 
 /**
- * 获取套餐价格
+ * 获取套餐价格（服务器端版本）
  * @param planId 套餐ID
  * @returns 套餐价格（元）
  */

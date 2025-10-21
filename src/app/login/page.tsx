@@ -4,6 +4,7 @@ import { LoginForm } from "@/components/app/auth/login-form";
 import { useFirebase } from "@/firebase/provider";
 import { BarChart } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export default function LoginPage() {
   const firebase = useFirebase();
@@ -20,7 +21,9 @@ export default function LoginPage() {
         </div>
 
         {firebase ? (
-          <LoginForm />
+          <Suspense fallback={<div className="text-center text-gray-500">加载中...</div>}>
+            <LoginForm />
+          </Suspense>
         ) : (
           <div className="text-center text-gray-500">
             Firebase is not configured. Please check your environment variables.

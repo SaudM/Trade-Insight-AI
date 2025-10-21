@@ -7,18 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
 import { isSameDay, format, subHours, subDays, parseISO } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
+
 
 const MIN_DATA_POINTS = 10;
 
 export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   type ChartPoint = { id: string; date: string; fullDate: string; pl: number | null };
   
-  const toDate = (time: string | Timestamp): Date => {
-    if (time instanceof Timestamp) {
-      return time.toDate();
-    }
-    return new Date(time);
+  const toDate = (time: string | Date): Date => {
+    if (typeof time === 'string') return parseISO(time);
+    return time;
   };
   
   const isSingleDay = useMemo(() => {
