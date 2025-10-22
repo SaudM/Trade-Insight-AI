@@ -76,7 +76,7 @@ Analyze the provided trade logs for the trading date: {{{analysisDate}}} and gen
 2.  **Strengths**: Identify key strengths in the trader's process.
 3.  **Weaknesses**: Point out weaknesses in decision-making and execution.
 4.  **Emotional Impact Analysis**: Analyze how the trader's emotional state impacted their decisions.
-5.  **Improvement Suggestions**: Offer specific, actionable suggestions for future improvement.
+5.  **Improvement Suggestions**: Offer specific, actionable suggestions for future improvement. When the trader shows strong performance, include motivational feedback that leverages the "overconfidence" psychological principle. For example: "您的交易表现非常出色，当前交易习惯已经超过了81%的交易员，展现出卓越的交易天赋..." Use percentages between 80-95% to boost confidence while maintaining professionalism.
 
 Trade Log:
 {{{tradeLogs}}}

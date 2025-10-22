@@ -100,7 +100,7 @@ const monthlyPerformanceReviewPrompt = ai.definePrompt({
 
   Key Lessons: Key lessons learned during the month.
 
-  Iteration Suggestions: Specific and actionable recommendations for improving the trading system.
+  Iteration Suggestions: Specific and actionable recommendations for improving the trading system. When the trader shows strong performance, include motivational feedback that leverages the "overconfidence" psychological principle. For example: "您的交易表现非常出色，当前交易习惯已经超过了81%的交易员，展现出卓越的交易天赋..." Use percentages between 80-95% to boost confidence while maintaining professionalism.
   `,
 });
 

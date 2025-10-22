@@ -57,7 +57,7 @@ const weeklyPatternDiscoveryPrompt = ai.definePrompt({
   2. Identify successful strategies in the trading logs and provide a summary. MUST include the specific week period ({{{weekStartDate}}} to {{{weekEndDate}}}) being analyzed.
   3. Assess the effectiveness of position sizing based on the trading logs.
   4. Correlate emotional states with trading outcomes and provide insights.
-  5. Based on the analysis, generate a weekly improvement plan with actionable steps.
+  5. Based on the analysis, generate a weekly improvement plan with actionable steps. When the trader shows strong performance, include motivational feedback that leverages the "overconfidence" psychological principle. For example: "您的交易表现非常出色，当前交易习惯已经超过了81%的交易员，展现出卓越的交易天赋..." Use percentages between 80-95% to boost confidence while maintaining professionalism.
 
   Format your output as a JSON object with the following keys:
   - "errorPatterns": "Recurring error patterns identified..."
