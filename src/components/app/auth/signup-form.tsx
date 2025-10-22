@@ -131,7 +131,6 @@ export function SignupForm() {
                 <FormControl>
                   <FloatingLabelInput
                     label="姓名"
-                    placeholder="您的姓名"
                     startIcon={<User className="h-5 w-5" />}
                     error={form.formState.errors.name?.message}
                     {...field}
@@ -149,7 +148,6 @@ export function SignupForm() {
                   <FloatingLabelInput
                     type="email"
                     label="邮箱"
-                    placeholder="you@example.com"
                     startIcon={<Mail className="h-5 w-5" />}
                     error={form.formState.errors.email?.message}
                     {...field}
@@ -166,7 +164,6 @@ export function SignupForm() {
                 <FormControl>
                   <PasswordInput
                     label="密码"
-                    placeholder="********"
                     error={form.formState.errors.password?.message}
                     {...field}
                   />

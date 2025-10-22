@@ -76,7 +76,6 @@ export function ForgotPasswordForm() {
                 <FloatingLabelInput
                   type="email"
                   label="邮箱"
-                  placeholder="you@example.com"
                   startIcon={<Mail className="h-5 w-5" />}
                   error={form.formState.errors.email?.message}
                   {...field}

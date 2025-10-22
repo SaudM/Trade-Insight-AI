@@ -43,10 +43,6 @@ services:
 
   # Next.js 应用服务
   app:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
-    #   target: production
     image: submit2mxh/trade-gpt-image:latest
     container_name: trade-insight-app
     restart: unless-stopped
