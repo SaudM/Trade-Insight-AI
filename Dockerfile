@@ -1,83 +1,45 @@
-# 多阶段构建 Dockerfile for Next.js 应用
+# ==============================
+# 1️⃣ Build Stage
+# ==============================
+FROM node:20-alpine AS builder
 
-# 基础镜像
-FROM node:18-alpine AS base
-
-# 安装依赖阶段
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# 复制包管理文件
-COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+# 安装依赖
+COPY package*.json ./
+RUN npm ci
 
-# 构建阶段
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# 复制所有源文件
 COPY . .
 
-# 设置构建环境变量
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
-
-# 生成 Prisma 客户端
+# 生成 Prisma 客户端（非常关键）
 RUN npx prisma generate
 
-# 构建应用
+# 构建 Next.js standalone 应用
 RUN npm run build
 
-# 生产运行阶段
-FROM base AS production
+# ==============================
+# 2️⃣ Runtime Stage
+# ==============================
+FROM node:20-alpine AS runner
+
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV PORT=3000
+EXPOSE 3000
 
-# 创建非 root 用户
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# 复制 standalone 构建产物
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+RUN mkdir -p ./public
+COPY --from=builder /app/public ./public
 
-# 复制构建产物
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-
-# 复制 Prisma 相关文件
+# ✅ 复制 Prisma 相关目录（关键）
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
-# 复制 package.json 和 node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=deps /app/node_modules ./node_modules
-
-# 创建日志目录
-RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# 启动脚本
-CMD ["npm", "start"]
-
-# 开发阶段（用于本地开发）
-FROM base AS development
-WORKDIR /app
-
-# 安装所有依赖（包括开发依赖）
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# 复制源代码
-COPY . .
-
-# 生成 Prisma 客户端
-RUN npx prisma generate
-
-EXPOSE 9002
-
-CMD ["npm", "run", "dev"]
+# 启动 standalone 服务
+CMD ["node", "server.js"]

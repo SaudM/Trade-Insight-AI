@@ -47,14 +47,14 @@ services:
     container_name: trade-insight-app
     restart: unless-stopped
     ports:
-      - "9002:9002"
+      - "9002:3000"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://trade_user:trade_password_2024@postgres:5432/trade_insight_ai
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - NEXTAUTH_URL=http://localhost:9002
-      - NEXTAUTH_SECRET=your-nextauth-secret-key-here
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=Nn2z8shA3wD9K7AxZ+fKoz5hbKKh8Q7e7f7A4M2jZy8=
       - GEMINI_API_KEY=AIzaSyB-7RC3RBomvCuBiRCN3Np2BV0ohxGglJ8
       # 微信支付相关环境变量
       - WX_NOTIFY_URL=https://fupan.fulitimes.com/api/subscription/notify
@@ -74,31 +74,13 @@ services:
     volumes:
       - ./logs:/app/logs
 
-  # 数据库管理工具 (可选)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: trade-insight-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@tradeinsight.ai
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-    networks:
-      - trade-network
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
 
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
-  pgadmin_data:
-    driver: local
+
 
 networks:
   trade-network:
