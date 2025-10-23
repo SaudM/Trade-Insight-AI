@@ -41,20 +41,19 @@ services:
       timeout: 5s
       retries: 5
 
-  # Next.js 应用服务
+  # Next.js 应用服务（使用现有镜像，开发端口）
   app:
     image: submit2mxh/trade-gpt-image:latest
     container_name: trade-insight-app
     restart: unless-stopped
     ports:
-      - "3001:9002"
+      - "9002:9002"
     environment:
-      # development
-      - NODE_ENV=production
+      - NODE_ENV=development
       - DATABASE_URL=postgresql://trade_user:trade_password_2024@postgres:5432/trade_insight_ai
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_URL=http://localhost:9002
       - NEXTAUTH_SECRET=your-nextauth-secret-key-here
       - GEMINI_API_KEY=AIzaSyB-7RC3RBomvCuBiRCN3Np2BV0ohxGglJ8
       # 微信支付相关环境变量
