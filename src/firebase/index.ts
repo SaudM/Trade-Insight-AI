@@ -7,6 +7,7 @@ import { getAuth } from 'firebase/auth';
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
   if (!firebaseConfig.apiKey) {
+    console.error('Firebase configuration is missing. Please check your firebase config.');
     return {
       firebaseApp: null,
       auth: null,
@@ -19,16 +20,30 @@ export function initializeFirebase() {
     // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
     // without arguments.
     let firebaseApp;
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
+    
+    // Check if we're in a Firebase App Hosting environment
+    const isFirebaseHosting = process.env.FIREBASE_CONFIG || process.env.GCLOUD_PROJECT;
+    
+    if (isFirebaseHosting) {
+      try {
+        // Attempt to initialize via Firebase App Hosting environment variables
+        firebaseApp = initializeApp();
+        console.log('Firebase initialized successfully via App Hosting environment variables.');
+      } catch (e) {
+        console.warn('Firebase App Hosting initialization failed. Falling back to config object.', e);
+        firebaseApp = initializeApp(firebaseConfig);
       }
-      firebaseApp = initializeApp(firebaseConfig);
+    } else {
+      // In development or non-Firebase hosting environments, use the config directly
+      try {
+        firebaseApp = initializeApp(firebaseConfig);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Firebase initialized successfully with config object (development mode).');
+        }
+      } catch (e) {
+        console.error('Firebase initialization failed:', e);
+        throw e;
+      }
     }
 
     return getSdks(firebaseApp);
