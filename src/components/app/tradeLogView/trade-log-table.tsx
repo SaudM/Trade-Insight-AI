@@ -234,7 +234,30 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
  * 优化了网格布局，确保卡片高度变化时保持页面布局稳定
  */
 export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { tradeLogs: TradeLog[], handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) {
-    if (tradeLogs.length === 0) {
+    // 客户端排序逻辑：按创建时间降序排列，确保最新记录显示在最前面
+    const sortedTradeLogs = React.useMemo(() => {
+        if (!tradeLogs || tradeLogs.length === 0) {
+            return [];
+        }
+        
+        return [...tradeLogs].sort((a, b) => {
+            // 处理createdAt字段，支持Date对象和字符串格式
+            const getCreatedAtTime = (log: TradeLog) => {
+                if (!log.createdAt) return 0;
+                return log.createdAt instanceof Date 
+                    ? log.createdAt.getTime() 
+                    : new Date(log.createdAt).getTime();
+            };
+            
+            const timeA = getCreatedAtTime(a);
+            const timeB = getCreatedAtTime(b);
+            
+            // 降序排列：最新的记录在前面
+            return timeB - timeA;
+        });
+    }, [tradeLogs]);
+
+    if (sortedTradeLogs.length === 0) {
         return (
             <div className="text-center text-gray-500 py-16">
                 <div className="flex flex-col items-center gap-4">
@@ -251,11 +274,11 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
     return (
         <div className="space-y-4">
             <div className="text-sm text-gray-500 mb-6">
-                共 {tradeLogs.length} 条交易记录
+                共 {sortedTradeLogs.length} 条交易记录
             </div>
             {/* 优化网格布局，使用 items-start 确保卡片顶部对齐，避免高度变化影响其他卡片 */}
             <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 items-start">
-                {tradeLogs.map(log => (
+                {sortedTradeLogs.map(log => (
                     <TradeLogCard key={log.id} log={log} handleEdit={handleEdit} deleteTradeLog={deleteTradeLog} />
                 ))}
             </div>

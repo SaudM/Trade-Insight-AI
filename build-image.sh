@@ -6,8 +6,8 @@ set -e
 # =============================
 
 IMAGE_NAME="submit2mxh/trade-gpt-image:latest"
-PLATFORMS="linux/arm64/v8"
-#linux/amd64,
+PLATFORMS="linux/amd64"
+#linux/amd64,linux/arm64/v8
 
 # （可选）代理设置
 export https_proxy="http://127.0.0.1:12334"

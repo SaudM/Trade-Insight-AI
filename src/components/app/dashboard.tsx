@@ -8,10 +8,11 @@ import { AppHeader } from './header';
 import { PLChart } from './pl-chart';
 import { WinLossRatioChart } from './win-loss-ratio-chart';
 import { ScrollArea } from '../ui/scroll-area';
-import { TrendingUp, TrendingDown, Percent, Wallet, FileText, Plus, Target, Calculator, Flame } from 'lucide-react';
+import { TrendingUp, TrendingDown, Percent, Wallet, FileText, Plus, Target, Calculator, Flame, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '../ui/separator';
 import { CumulativePLChart } from './cumulative-pl-chart';
+import { ProfessionalReturnChart } from './professional-return-chart';
 import { useMemo } from 'react';
 import { differenceInCalendarDays, isSaturday, isSunday, startOfDay } from 'date-fns';
 
@@ -36,6 +37,18 @@ type DashboardProps = {
  * 针对移动设备进行了响应式优化
  */
 export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod, onAddTradeLog }: DashboardProps) {
+    
+    // 添加调试信息
+    console.log('Dashboard received tradeLogs:', tradeLogs);
+    console.log('Dashboard tradeLogs length:', tradeLogs?.length);
+
+    // 添加可视化调试信息
+    const debugInfo = {
+        tradeLogsLength: tradeLogs?.length || 0,
+        tradeLogsType: typeof tradeLogs,
+        isArray: Array.isArray(tradeLogs),
+        firstTrade: tradeLogs?.[0] || null
+    };
     
     /**
      * 安全解析交易结果为数字
@@ -134,24 +147,23 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
     }
 
     return (
-        <div className="flex flex-col h-full relative min-w-0">
-            <AppHeader title="仪表盘">
-                 <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="flex items-center gap-0.5 sm:gap-1 rounded-md bg-muted p-0.5 sm:p-1">
-                        <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')} className="text-xs sm:text-sm px-2 sm:px-3">今日</Button>
-                        <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')} className="text-xs sm:text-sm px-2 sm:px-3">7天</Button>
-                        <Button variant={timePeriod === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('30d')} className="text-xs sm:text-sm px-2 sm:px-3">30天</Button>
-                        <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')} className="text-xs sm:text-sm px-2 sm:px-3">全部</Button>
+        <div className="flex flex-col h-full">
+            <AppHeader title="交易仪表盘">
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 rounded-md bg-muted p-1">
+                        <Button variant={timePeriod === 'today' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('today')} className="text-xs px-2">今日</Button>
+                        <Button variant={timePeriod === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('7d')} className="text-xs px-2">7天</Button>
+                        <Button variant={timePeriod === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('30d')} className="text-xs px-2">30天</Button>
+                        <Button variant={timePeriod === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimePeriod('all')} className="text-xs px-2">全部</Button>
                     </div>
-                    <Button onClick={handleViewReport} size="sm" variant="outline" className="px-2 sm:px-3 md:w-auto">
-                        <FileText className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline text-xs sm:text-sm">查看报告</span>
+                    <Button onClick={onAddTradeLog}>
+                        <PlusCircle className="mr-2" />
+                        添加交易
                     </Button>
                 </div>
             </AppHeader>
             <ScrollArea className="flex-1">
-
-              <main className="min-w-0 w-full px-2 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 lg:px-8 lg:py-8 space-y-4 sm:space-y-6 overflow-x-hidden">
+                <main className="min-w-0 w-full px-2 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 lg:px-8 lg:py-8 space-y-4 sm:space-y-6 overflow-x-hidden">
                   <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
                       <Card className="col-span-2 sm:col-span-1">
 
@@ -237,7 +249,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                   <div className="grid gap-3 sm:gap-4">
                       <div className="min-w-0 flex flex-col">
                         <Card className="flex flex-col flex-1">
-                          <CumulativePLChart tradeLogs={tradeLogs} />
+                          <ProfessionalReturnChart tradeLogs={tradeLogs} />
                         </Card>
                       </div>
                   </div>

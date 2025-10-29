@@ -114,10 +114,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
         onMouseDown={handleMouseDown}
       >
-        <>
-          {children}
-          <Ripple ref={rippleRef} />
-        </>
+        {asChild ? (
+          children
+        ) : (
+          <>
+            {children}
+            <Ripple ref={rippleRef} />
+          </>
+        )}
       </Comp>
     )
   }

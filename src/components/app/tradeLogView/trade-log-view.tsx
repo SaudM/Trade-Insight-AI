@@ -2,7 +2,7 @@
 "use client";
 
 import type { TradeLog } from '@/lib/types';
-import { AppHeader } from './header';
+import { AppHeader } from '../header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { TradeLogTable } from './trade-log-table';

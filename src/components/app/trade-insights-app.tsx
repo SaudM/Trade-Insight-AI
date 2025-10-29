@@ -6,7 +6,7 @@ import { useState, useMemo, createContext, useEffect } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app/sidebar';
 import { Dashboard } from '@/components/app/dashboard';
-import { TradeLogView } from '@/components/app/trade-log-view';
+import { TradeLogView } from '@/components/app/tradeLogView/trade-log-view';
 import { AnalysisView } from '@/components/app/analysis-view';
 import { ProfileView } from '@/components/app/profile-view';
 import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary, Subscription } from '@/lib/types';
@@ -54,6 +54,12 @@ export function TradeInsightsApp() {
 
   // --- PostgreSQL Data Hooks ---
   const { data: tradeLogs, isLoading: isLoadingLogs, error: tradeLogsError, refetch: refetchTradeLogs } = useTradeLogsPostgres(userData?.user?.id || null);
+  
+  // 添加调试信息
+  console.log('TradeInsightsApp - userData:', userData);
+  console.log('TradeInsightsApp - tradeLogs from hook:', tradeLogs);
+  console.log('TradeInsightsApp - isLoadingLogs:', isLoadingLogs);
+  console.log('TradeInsightsApp - tradeLogsError:', tradeLogsError);
   const { data: dailyAnalyses, isLoading: isLoadingDaily, error: dailyAnalysesError, refetch: refetchDailyAnalyses } = useDailyAnalysesPostgres(userData?.user?.id || null);
   const { data: weeklyReviews, isLoading: isLoadingWeekly, error: weeklyReviewsError, refetch: refetchWeeklyReviews } = useWeeklyReviewsPostgres(userData?.user?.id || null);
   const { data: monthlySummaries, isLoading: isLoadingMonthly, error: monthlySummariesError, refetch: refetchMonthlySummaries } = useMonthlySummariesPostgres(userData?.user?.id || null);
@@ -255,9 +261,27 @@ export function TradeInsightsApp() {
     setIsFormOpen(false);
     setEditingLog(null);
   };
+
+  // 处理Dialog的onOpenChange事件，确保所有关闭场景都正确重置状态
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      // 当对话框关闭时，重置所有相关状态
+      setIsFormOpen(false);
+      setEditingLog(null);
+    } else {
+      setIsFormOpen(true);
+    }
+  };
   
   const filteredTradeLogs = useMemo(() => {
-    if (!tradeLogs) return [];
+    console.log('filteredTradeLogs useMemo - tradeLogs:', tradeLogs);
+    console.log('filteredTradeLogs useMemo - timePeriod:', timePeriod);
+    
+    if (!tradeLogs) {
+      console.log('filteredTradeLogs useMemo - no tradeLogs, returning empty array');
+      return [];
+    }
+    
     const now = new Date();
     const toDate = (time: string | any) => {
       // 处理 Timestamp 类型（Firebase）
@@ -272,18 +296,21 @@ export function TradeInsightsApp() {
       return new Date(time);
     };
     
+    let result;
     if (timePeriod === 'today') {
-        return tradeLogs.filter(log => isSameDay(toDate(log.tradeTime), now));
-    }
-    if (timePeriod === '7d') {
+        result = tradeLogs.filter(log => isSameDay(toDate(log.tradeTime), now));
+    } else if (timePeriod === '7d') {
         const sevenDaysAgo = startOfDay(subDays(now, 7));
-        return tradeLogs.filter(log => toDate(log.tradeTime) >= sevenDaysAgo);
-    }
-    if (timePeriod === '30d') {
+        result = tradeLogs.filter(log => toDate(log.tradeTime) >= sevenDaysAgo);
+    } else if (timePeriod === '30d') {
         const thirtyDaysAgo = startOfDay(subDays(now, 30));
-        return tradeLogs.filter(log => toDate(log.tradeTime) >= thirtyDaysAgo);
+        result = tradeLogs.filter(log => toDate(log.tradeTime) >= thirtyDaysAgo);
+    } else {
+        result = tradeLogs.map(log => ({...log, tradeTime: toDate(log.tradeTime).toISOString()}));
     }
-    return tradeLogs.map(log => ({...log, tradeTime: toDate(log.tradeTime).toISOString()}));
+    
+    console.log('filteredTradeLogs useMemo - result:', result);
+    return result;
   }, [tradeLogs, timePeriod]);
   
   const allLogsForViews = useMemo(() => {
@@ -362,7 +389,7 @@ export function TradeInsightsApp() {
           <AppSidebar activeView={activeView} setActiveView={setActiveView} isProUser={isVipUser} />
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <Dialog open={isFormOpen} onOpenChange={handleDialogOpenChange}>
               <DialogContent className="w-[80vw] max-w-[600px] min-w-[320px] p-0 overflow-hidden rounded-3xl shadow-2xl border-0 bg-white">
                   <ScrollArea className="max-h-[85vh] w-full">
                       <div className="p-6">

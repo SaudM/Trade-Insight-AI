@@ -141,6 +141,26 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
     }
   }, [tradeLog, form]);
 
+  // 处理取消操作，确保表单状态完全重置
+  const handleCancel = () => {
+    // 重置表单到初始状态
+    form.reset({
+      tradeTime: toLocalDateInputValue(new Date()),
+      symbol: '',
+      direction: 'Buy',
+      positionSize: '',
+      tradeResult: '0',
+      mindsetState: '',
+      entryReason: '',
+      exitReason: '',
+      lessonsLearned: '',
+    });
+    // 清除所有表单错误
+    form.clearErrors();
+    // 调用父组件的取消回调
+    onCancel();
+  };
+
   const direction = form.watch('direction');
 
   const isEntry = ['Buy', 'Long', 'Short'].includes(direction);
@@ -345,17 +365,19 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
         </form>
       </Form>
       <DialogFooter className="pt-6 sm:pt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4">
-          <DialogClose asChild>
-            <MaterialButton 
-              type="button" 
-              variant="outlined" 
-              size="medium"
-              onClick={onCancel}
-              className="w-full sm:w-auto"
-            >
-              取消
-            </MaterialButton>
-          </DialogClose>
+          <MaterialButton 
+            type="button" 
+            variant="outlined" 
+            size="medium"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCancel();
+            }}
+            className="w-full sm:w-auto"
+          >
+            取消
+          </MaterialButton>
           <MaterialButton 
             type="submit" 
             variant="filled" 

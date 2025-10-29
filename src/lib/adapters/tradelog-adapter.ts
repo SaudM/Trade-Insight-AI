@@ -134,11 +134,11 @@ export class TradeLogAdapter {
         }
       }
 
-      // 执行查询
+      // 执行查询，按创建时间降序排列，确保最新记录显示在最前面
       const tradeLogs = await prisma.tradeLog.findMany({
         where,
         orderBy: {
-          tradeTime: 'desc',
+          createdAt: 'desc',
         },
         take: limit,
         skip: offset,
@@ -379,7 +379,7 @@ export class TradeLogAdapter {
           ],
         },
         orderBy: {
-          tradeTime: 'desc',
+          createdAt: 'desc',
         },
         take: limit,
       });
@@ -441,7 +441,7 @@ export class TradeLogAdapter {
       const tradeLogs = await prisma.tradeLog.findMany({
         where: { userId: systemUuid },
         orderBy: {
-          tradeTime: 'desc',
+          createdAt: 'desc',
         },
         take: limit,
       });

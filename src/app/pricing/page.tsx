@@ -98,13 +98,8 @@ export default function PricingPage() {
     const { userData, isLoading: isLoadingUserData } = useUserData();
     const subscription = userData?.subscription;
 
-    const isTrialUser = useMemo(() => {
-        if (!user || subscription) return false;
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const userCreationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date();
-        return userCreationDate > thirtyDaysAgo;
-    }, [user, subscription]);
+    // 使用后端返回的试用用户状态，确保数据一致性
+    const isTrialUser = userData?.isTrialUser || false;
 
 
     const handleActivateTrial = async () => {
@@ -369,26 +364,41 @@ export default function PricingPage() {
     
     const renderPlan = (plan: PricingPlan) => {
         const isMonthlyTrial = isTrialUser && plan.id === 'monthly';
+        
+        // 检查用户是否已订阅此套餐
+        const isSubscribed = subscription && subscription.status === 'active' && subscription.planId === plan.id;
+        
+        // 检查订阅是否仍在有效期内
+        const isSubscriptionValid = isSubscribed && subscription.endDate && new Date(subscription.endDate) > new Date();
+        
         return (
             <div
               key={plan.id}
               className={cn(
                 "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
                 plan.isPopular ? "border-blue-200 shadow-xl ring-2 ring-blue-100" : "border-gray-100",
-                isMonthlyTrial && "border-green-200 shadow-xl ring-2 ring-green-100"
+                isMonthlyTrial && "border-green-200 shadow-xl ring-2 ring-green-100",
+                isSubscriptionValid && "border-emerald-200 shadow-xl ring-2 ring-emerald-100"
               )}
             >
-              {plan.isPopular && (
+              {plan.isPopular && !isSubscriptionValid && (
                 <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
                     <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
                         {plan.discount}
                     </div>
                 </div>
               )}
-             {isMonthlyTrial && (
+             {isMonthlyTrial && !isSubscriptionValid && (
                 <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
                     <div className="rounded-full bg-green-600 px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
                         新用户限免
+                    </div>
+                </div>
+             )}
+             {isSubscriptionValid && (
+                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                    <div className="rounded-full bg-emerald-600 px-4 py-1 text-xs font-semibold text-white shadow-md">
+                        已订阅
                     </div>
                 </div>
              )}
@@ -422,34 +432,78 @@ export default function PricingPage() {
                 </ul>
               </div>
 
-             {isMonthlyTrial ? (
+             {/* 根据用户登录状态和订阅状态显示不同的按钮 */}
+             {!user ? (
+                 // 未登录用户：显示立即订阅按钮
                  <Button
-                    onClick={handleActivateTrial}
+                    onClick={() => {
+                        toast({
+                            title: "请先登录",
+                            description: "您需要登录后才能进行订阅。",
+                        });
+                        router.push('/login?redirect=/pricing');
+                    }}
                     size="lg"
-                    variant="default"
-                    disabled={isLoading !== null}
+                    variant={plan.isPopular ? "default" : "tonal"}
                     className={cn(
-                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
-                      "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700",
-                      "text-white shadow-md hover:shadow-lg active:shadow-sm",
+                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
                       "transform hover:scale-[1.02] active:scale-[0.98]",
-                      "focus:ring-2 focus:ring-green-500 focus:ring-offset-2",
-                      "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                      "focus:ring-2 focus:ring-offset-2",
+                      plan.isPopular 
+                        ? cn(
+                            "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
+                            "text-white shadow-md hover:shadow-lg active:shadow-sm",
+                            "focus:ring-blue-500"
+                          )
+                        : cn(
+                            "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
+                            "text-slate-700 border border-slate-200 hover:border-slate-300",
+                            "shadow-sm hover:shadow-md active:shadow-sm",
+                            "focus:ring-slate-400"
+                          )
                     )}
                  >
-                     {isLoading === 'trial' ? (
-                       <div className="flex items-center justify-center gap-2">
-                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                         <span>激活中...</span>
-                       </div>
-                     ) : (
-                       <div className="flex items-center justify-center gap-2">
+                     <div className="flex items-center justify-center gap-2">
+                         <span>立即订阅</span>
+                         <ChevronRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+                     </div>
+                 </Button>
+             ) : isSubscriptionValid ? (
+                 // 已登录且已订阅此套餐：显示已订阅按钮（不可点击）
+                 <Button
+                    size="lg"
+                    variant="outline"
+                    disabled={true}
+                    className={cn(
+                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
+                      "bg-emerald-50 border-emerald-200 text-emerald-700",
+                      "cursor-not-allowed opacity-75"
+                    )}
+                 >
+                     <div className="flex items-center justify-center gap-2">
+                         <CheckCircle className="w-5 h-5" />
+                         <span>已订阅</span>
+                     </div>
+                 </Button>
+             ) : isMonthlyTrial ? (
+                 // 试用用户的月度套餐：显示试用中状态
+                 <Button
+                    size="lg"
+                    variant="outline"
+                    disabled={true}
+                    className={cn(
+                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
+                      "bg-blue-50 border-blue-200 text-blue-700",
+                      "cursor-not-allowed opacity-75"
+                    )}
+                 >
+                     <div className="flex items-center justify-center gap-2">
                          <Gift className="w-5 h-5" />
-                         <span>立即激活试用</span>
-                       </div>
-                     )}
+                         <span>试用中</span>
+                     </div>
                  </Button>
              ) : (
+                 // 已登录但未订阅此套餐：显示立即订阅按钮
                 <Button
                     onClick={() => handleSubscribe(plan)}
                     size="lg"
