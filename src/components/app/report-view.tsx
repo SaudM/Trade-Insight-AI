@@ -107,14 +107,26 @@ export function ReportView({
                 <div className="flex items-center gap-2">
                     {sortedReports && sortedReports.length > 0 && (
                         <FloatingLabelSelect
-                            label="查看历史报告..."
+                            label="历史报告..."
                             onValueChange={setSelectedReportId} 
                             value={selectedReportId}
                         >
                             <SelectContent>
                                 {sortedReports.map(r => {
-                                    const date = getReportDate(r);
-                                    const formattedDate = format(new Date(date instanceof Date ? date : date), 'yyyy/MM/dd/ HH:mm');
+                                    const createdAt = getReportDate(r);
+                                    let formattedDate = '未知日期';
+                                    
+                                    try {
+                                        if (createdAt) {
+                                            const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
+                                            if (!isNaN(date.getTime())) {
+                                                formattedDate = format(date, 'MM-dd HH:mm');
+                                            }
+                                        }
+                                    } catch (error) {
+                                        console.warn('日期格式化失败:', error);
+                                    }
+                                    
                                     return (
                                         <SelectItem key={r.id} value={r.id}>
                                             {formattedDate}

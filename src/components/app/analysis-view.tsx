@@ -252,7 +252,7 @@ export function AnalysisView({
                         reports={dailyAnalyses}
                         onGenerate={handleDailyAnalysis}
                         tradeLogs={filteredTradeLogs}
-                        getReportDate={(r) => (r as DailyAnalysis).date}
+                        getReportDate={(r) => (r as DailyAnalysis).createdAt}
                         isProUser={isProUser}
                         cards={[
                             { id: 'summary', title: '摘要', icon: BrainCircuit, content: (r) => (r as DailyAnalysis).summary },
@@ -271,7 +271,7 @@ export function AnalysisView({
                         reports={weeklyReviews}
                         onGenerate={handleWeeklyAnalysis}
                         tradeLogs={filteredTradeLogs}
-                        getReportDate={(r) => (r as WeeklyReview).endDate}
+                        getReportDate={(r) => (r as WeeklyReview).createdAt}
                         isProUser={isProUser}
                         cards={[
                             { id: 'successPatterns', title: '成功模式', icon: Trophy, content: (r) => (r as WeeklyReview).successPatterns },
@@ -290,7 +290,7 @@ export function AnalysisView({
                         reports={monthlySummaries}
                         onGenerate={handleMonthlyAnalysis}
                         tradeLogs={tradeLogs} // Monthly view uses all logs
-                        getReportDate={(r) => (r as MonthlySummary).monthEndDate}
+                        getReportDate={(r) => (r as MonthlySummary).createdAt}
                         isProUser={isProUser}
                         cards={[
                             { id: 'performanceComparison', title: '对比总结', icon: GitCompareArrows, content: (r) => (r as MonthlySummary).performanceComparison },

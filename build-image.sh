@@ -6,7 +6,7 @@ set -e
 # =============================
 
 IMAGE_NAME="submit2mxh/trade-gpt-image:latest"
-PLATFORMS="linux/amd64"
+PLATFORMS="linux/arm64/v8"
 #linux/amd64,linux/arm64/v8
 
 # （可选）代理设置
