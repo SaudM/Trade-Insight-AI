@@ -185,6 +185,24 @@ async function createTables(client: any) {
       UNIQUE("user_id", "year", "month")
     );
   `);
+
+  
+  // 用户个性化配置表
+  // 与现有users.id的UUID类型保持一致，避免外键类型不一致
+  await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS "user_config" (
+      "id" UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+      "user_id" UUID NOT NULL,
+      "initial_capital" INTEGER NOT NULL DEFAULT 100000,
+      "currency" VARCHAR(10) NOT NULL DEFAULT 'CNY',
+      "chart_preferences" JSONB,
+      "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE("user_id"),
+      FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
+    );
+  `);
 }
 
 /**
@@ -233,21 +251,25 @@ async function verifyTables(client: any) {
   try {
     console.log('🔍 验证数据库表结构...');
     
-    // 验证用户表
-    const userResult = await client.query('SELECT COUNT(*) FROM "User"');
-    console.log(`✅ User表验证成功，当前记录数: ${userResult.rows[0].count}`);
+    // 验证用户表（snake_case）
+    const userResult = await client.query('SELECT COUNT(*) FROM "users"');
+    console.log(`✅ users表验证成功，当前记录数: ${userResult.rows[0].count}`);
     
-    // 验证订单表
-    const orderResult = await client.query('SELECT COUNT(*) FROM "Order"');
-    console.log(`✅ Order表验证成功，当前记录数: ${orderResult.rows[0].count}`);
+    // 验证订单表（snake_case）
+    const orderResult = await client.query('SELECT COUNT(*) FROM "orders"');
+    console.log(`✅ orders表验证成功，当前记录数: ${orderResult.rows[0].count}`);
     
-    // 验证订阅表
-    const subscriptionResult = await client.query('SELECT COUNT(*) FROM "Subscription"');
-    console.log(`✅ Subscription表验证成功，当前记录数: ${subscriptionResult.rows[0].count}`);
+    // 验证订阅表（snake_case）
+    const subscriptionResult = await client.query('SELECT COUNT(*) FROM "subscriptions"');
+    console.log(`✅ subscriptions表验证成功，当前记录数: ${subscriptionResult.rows[0].count}`);
     
-    // 验证交易日志表
-    const tradeLogResult = await client.query('SELECT COUNT(*) FROM "TradeLog"');
-    console.log(`✅ TradeLog表验证成功，当前记录数: ${tradeLogResult.rows[0].count}`);
+    // 验证交易日志表（snake_case）
+    const tradeLogResult = await client.query('SELECT COUNT(*) FROM "trade_logs"');
+    console.log(`✅ trade_logs表验证成功，当前记录数: ${tradeLogResult.rows[0].count}`);
+
+    // 验证用户配置表（snake_case）
+    const userConfigResult = await client.query('SELECT COUNT(*) FROM "user_config"');
+    console.log(`✅ user_config表验证成功，当前记录数: ${userConfigResult.rows[0].count}`);
     
     console.log('✅ 所有表结构验证完成');
     
@@ -264,41 +286,90 @@ async function createIndexes(client: any) {
   try {
     console.log('📊 创建数据库索引...');
     
+    // 辅助方法：确保索引在存在的列上创建（兼容camelCase与snake_case）
+    /**
+     * 确保在存在的列上创建索引（兼容camelCase与snake_case）
+     * @param table 目标表名
+     * @param columns 候选列名列表（优先按顺序匹配）
+     * @param indexName 索引基础名称（会追加列名后缀）
+     */
+    const ensureIndex = async (
+      table: string,
+      columns: string[],
+      indexName: string
+    ) => {
+      for (const col of columns) {
+        const exists = await client.query(
+          `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+          [table, col]
+        );
+        if (exists.rowCount && exists.rows.length > 0) {
+          await client.query(
+            `CREATE INDEX IF NOT EXISTS ${indexName}_${col}_idx ON "${table}"("${col}");`
+          );
+          return; // 成功创建其一即可
+        }
+      }
+      console.log(`⏭️  跳过索引 ${indexName}，列未找到: ${columns.join(' / ')}`);
+    };
+
     // 用户表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "User_email_idx" ON "User"("email");');
-    
+    await ensureIndex('users', ['email'], 'users_email');
+
     // 订单表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "Order_userId_idx" ON "Order"("userId");');
-    await client.query('CREATE INDEX IF NOT EXISTS "Order_outTradeNo_idx" ON "Order"("outTradeNo");');
-    await client.query('CREATE INDEX IF NOT EXISTS "Order_status_idx" ON "Order"("status");');
-    await client.query('CREATE INDEX IF NOT EXISTS "Order_createdAt_idx" ON "Order"("createdAt");');
-    
+    await ensureIndex('orders', ['user_id', 'userId'], 'orders_user');
+    await ensureIndex('orders', ['out_trade_no', 'outTradeNo'], 'orders_out_trade_no');
+    await ensureIndex('orders', ['status'], 'orders_status');
+    await ensureIndex('orders', ['created_at', 'createdAt'], 'orders_created_at');
+
     // 订阅表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "Subscription_userId_idx" ON "Subscription"("userId");');
-    await client.query('CREATE INDEX IF NOT EXISTS "Subscription_status_idx" ON "Subscription"("status");');
-    await client.query('CREATE INDEX IF NOT EXISTS "Subscription_endDate_idx" ON "Subscription"("endDate");');
-    
+    await ensureIndex('subscriptions', ['user_id', 'userId'], 'subscriptions_user');
+    await ensureIndex('subscriptions', ['status'], 'subscriptions_status');
+    await ensureIndex('subscriptions', ['end_date', 'endDate'], 'subscriptions_end_date');
+
     // 订阅记录表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "SubscriptionRecord_subscriptionId_idx" ON "SubscriptionRecord"("subscriptionId");');
-    await client.query('CREATE INDEX IF NOT EXISTS "SubscriptionRecord_purchaseDate_idx" ON "SubscriptionRecord"("purchaseDate");');
-    
+    await ensureIndex('subscription_records', ['subscription_id', 'subscriptionId'], 'subscription_records_subscription');
+    await ensureIndex('subscription_records', ['purchase_date', 'purchaseDate'], 'subscription_records_purchase_date');
+
     // 交易日志表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "TradeLog_userId_idx" ON "TradeLog"("userId");');
-    await client.query('CREATE INDEX IF NOT EXISTS "TradeLog_tradeTime_idx" ON "TradeLog"("tradeTime");');
-    await client.query('CREATE INDEX IF NOT EXISTS "TradeLog_symbol_idx" ON "TradeLog"("symbol");');
-    await client.query('CREATE INDEX IF NOT EXISTS "TradeLog_direction_idx" ON "TradeLog"("direction");');
-    
+    await ensureIndex('trade_logs', ['user_id', 'userId'], 'trade_logs_user');
+    await ensureIndex('trade_logs', ['trade_time', 'tradeTime'], 'trade_logs_trade_time');
+    await ensureIndex('trade_logs', ['symbol'], 'trade_logs_symbol');
+    await ensureIndex('trade_logs', ['direction'], 'trade_logs_direction');
+
     // 每日分析表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "DailyAnalysis_userId_idx" ON "DailyAnalysis"("userId");');
-    await client.query('CREATE INDEX IF NOT EXISTS "DailyAnalysis_date_idx" ON "DailyAnalysis"("date");');
-    
+    await ensureIndex('daily_analyses', ['user_id', 'userId'], 'daily_analyses_user');
+    await ensureIndex('daily_analyses', ['date'], 'daily_analyses_date');
+
     // 周度回顾表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "WeeklyReview_userId_idx" ON "WeeklyReview"("userId");');
-    await client.query('CREATE INDEX IF NOT EXISTS "WeeklyReview_weekStart_idx" ON "WeeklyReview"("weekStart");');
-    
+    await ensureIndex('weekly_reviews', ['user_id', 'userId'], 'weekly_reviews_user');
+    await ensureIndex('weekly_reviews', ['week_start', 'weekStart'], 'weekly_reviews_week_start');
+
     // 月度总结表索引
-    await client.query('CREATE INDEX IF NOT EXISTS "MonthlySummary_userId_idx" ON "MonthlySummary"("userId");');
-    await client.query('CREATE INDEX IF NOT EXISTS "MonthlySummary_year_month_idx" ON "MonthlySummary"("year", "month");');
+    await ensureIndex('monthly_summaries', ['user_id', 'userId'], 'monthly_summaries_user');
+    // 复合索引尝试蛇形命名
+    const msYearExists = await client.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = ANY($2::text[])`,
+      ['monthly_summaries', ['year', 'month']]
+    );
+    if (msYearExists.rowCount && msYearExists.rows.length >= 2) {
+      await client.query('CREATE INDEX IF NOT EXISTS monthly_summaries_year_month_idx ON "monthly_summaries"("year", "month");');
+    } else {
+      // camelCase备选
+      const msCamelExists = await client.query(
+        `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = ANY($2::text[])`,
+        ['monthly_summaries', ['year', 'month']]
+      );
+      if (msCamelExists.rowCount && msCamelExists.rows.length >= 2) {
+        await client.query('CREATE INDEX IF NOT EXISTS monthly_summaries_year_month_idx ON "monthly_summaries"("year", "month");');
+      } else {
+        console.log('⏭️  跳过monthly_summaries_year_month_idx，列未找到');
+      }
+    }
+
+    // 用户个性化配置表索引
+    await ensureIndex('user_config', ['user_id', 'userId'], 'user_config_user');
+    await ensureIndex('user_config', ['created_at', 'createdAt'], 'user_config_created_at');
     
     console.log('✅ 数据库索引创建完成');
     

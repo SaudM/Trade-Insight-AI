@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { 
   LineChart, 
   Line, 
@@ -16,12 +16,17 @@ import {
 import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, RotateCcw, TrendingUp, TrendingDown } from 'lucide-react';
+import { MdDesignServices } from 'react-icons/md';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { useUserData } from '@/hooks/use-user-data';
 import type { TradeLog } from '@/lib/types';
 import { format, parseISO, isValid } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
-// 初始资金配置
-const INITIAL_CAPITAL = 100000;
+// 初始资金默认值（用于本地占位，真实值从服务器获取）
+const DEFAULT_INITIAL_CAPITAL = 100000;
 
 // 图表配置 - 符合中国用户习惯：红涨绿跌
 const CHART_CONFIG = {
@@ -122,9 +127,54 @@ const CustomLegend = ({ finalReturn }: { finalReturn: number }) => {
   );
 };
 
+/**
+ * 专业累计收益率曲线组件
+ * 显示基于用户初始资金与交易记录计算的复合收益率曲线，并支持个性化设计对话框设置初始资金。
+ */
 export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null);
   const [showBrush, setShowBrush] = useState(false);
+  const { userData } = useUserData();
+  const userId = userData?.user?.id || null;
+  const [initialCapital, setInitialCapital] = useState<number>(DEFAULT_INITIAL_CAPITAL);
+  const [designOpen, setDesignOpen] = useState(false);
+  const [inputCapital, setInputCapital] = useState<string>(String(DEFAULT_INITIAL_CAPITAL));
+
+  /**
+   * 解析 /api/user-config 返回的响应数据
+   * 后端可能返回扁平结构或包裹在 data 中的结构，此处做兼容处理。
+   * @param payload 后端返回的 JSON 对象
+   * @returns 解析出的 initialCapital 数值（若不可用则返回默认值）
+   */
+  const parseUserConfigResponse = useCallback((payload: any): number => {
+    const maybeFlat = payload?.initialCapital;
+    const maybeWrapped = payload?.data?.initialCapital;
+    const capital = Number(
+      (typeof maybeFlat !== 'undefined' ? maybeFlat : maybeWrapped) ?? DEFAULT_INITIAL_CAPITAL
+    );
+    return Number.isFinite(capital) && capital >= 0 ? Math.round(capital) : DEFAULT_INITIAL_CAPITAL;
+  }, []);
+
+  /**
+   * 加载服务器端的初始资金配置；若不存在则由后端创建默认值100,000。
+   */
+  useEffect(() => {
+    const fetchConfig = async () => {
+      if (!userId) return;
+      try {
+        const res = await fetch(`/api/user-config?uid=${userId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const capital = parseUserConfigResponse(data);
+          setInitialCapital(capital);
+          setInputCapital(String(capital));
+        }
+      } catch (e) {
+        // 保持默认值，避免打断用户体验
+      }
+    };
+    fetchConfig();
+  }, [userId, parseUserConfigResponse]);
 
   // 计算复合收益率数据
   const chartData = useMemo(() => {
@@ -132,8 +182,7 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
       return [];
     }
 
-    console.log('=== Professional Return Chart Processing ===');
-    console.log('Input tradeLogs:', tradeLogs.length, 'records');
+    // 移除调试日志，保持组件整洁
 
     // 按时间排序交易记录
     const sortedLogs = [...tradeLogs].sort((a, b) => {
@@ -143,7 +192,7 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
     });
 
     let cumulativeMultiplier = 1; // 复合收益率乘数
-    let cumulativeValue = INITIAL_CAPITAL; // 累计账户价值
+    let cumulativeValue = initialCapital; // 累计账户价值（基于用户配置的初始资金）
 
     const result: ReturnDataPoint[] = sortedLogs.map((log, index) => {
       const tradeResult = parseFloat(log.tradeResult) || 0;
@@ -176,19 +225,22 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
       };
     });
 
-    console.log('Generated chart data points:', result.length);
-    console.log('Final cumulative return:', result[result.length - 1]?.cumulativeReturn.toFixed(2) + '%');
-    
     return result;
-  }, [tradeLogs]);
+  }, [tradeLogs, initialCapital]);
 
-  // 重置缩放
+  /**
+   * 重置缩放
+   * 清除缩放区间并隐藏刷子控件，恢复完整视图。
+   */
   const handleResetZoom = useCallback(() => {
     setZoomDomain(null);
     setShowBrush(false);
   }, []);
 
-  // 缩放控制
+  /**
+   * 缩放控制（放大）
+   * 选择中间50%的数据区间进行聚焦显示，并启用Brush便于进一步调整。
+   */
   const handleZoomIn = useCallback(() => {
     if (chartData.length === 0) return;
     
@@ -200,6 +252,10 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
     setShowBrush(true);
   }, [chartData]);
 
+  /**
+   * 缩放控制（缩小）
+   * 取消缩放并隐藏Brush，回到默认视角。
+   */
   const handleZoomOut = useCallback(() => {
     setZoomDomain(null);
     setShowBrush(false);
@@ -251,10 +307,21 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
           <div>
             <CardTitle className="text-xl font-bold">专业累计收益率曲线</CardTitle>
             <CardDescription className="mt-1">
-              基于复合收益率计算的专业金融图表 (初始资金: ¥{INITIAL_CAPITAL.toLocaleString()})
-            </CardDescription>
+              基于复合收益率计算的专业金融图表 (初始资金: ¥{initialCapital.toLocaleString()})
+          </CardDescription>
           </div>
           <div className="flex gap-2">
+            {/* 个性化设计：初始资金设置 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDesignOpen(true)}
+              className="h-8 w-8 p-0"
+              aria-label="设计个性化设置"
+              title="设计"
+            >
+              <MdDesignServices className="h-4 w-4" />
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -423,6 +490,66 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
           渲染性能: {chartData.length > 1000 ? '高性能模式' : '标准模式'}
         </div>
       </CardContent>
+
+      {/* 个性化设计对话框：设置初始资金 */}
+      <Dialog open={designOpen} onOpenChange={setDesignOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>个性化设计</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="initialCapital" className="text-right">
+                初始资金 (元)
+              </Label>
+              <Input
+                id="initialCapital"
+                type="number"
+                min={0}
+                className="col-span-3"
+                value={inputCapital}
+                onChange={(e) => setInputCapital(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDesignOpen(false);
+                setInputCapital(String(initialCapital));
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!userId) {
+                  setDesignOpen(false);
+                  return;
+                }
+                const parsed = Number(inputCapital);
+                const nextCapital = isNaN(parsed) || parsed < 0 ? initialCapital : Math.round(parsed);
+                try {
+                  const res = await fetch(`/api/user-config?uid=${userId}` , {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initialCapital: nextCapital }),
+                  });
+                  if (res.ok) {
+                    setInitialCapital(nextCapital);
+                  }
+                } catch (_) {
+                  // 忽略错误，保持当前值
+                }
+                setDesignOpen(false);
+              }}
+            >
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

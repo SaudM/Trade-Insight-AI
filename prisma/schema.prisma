@@ -21,6 +21,7 @@ model User {
   subscriptions    Subscription[]
   tradeLogs        TradeLog[]
   weeklyReviews    WeeklyReview[]
+  userConfig       UserConfig?
 
   @@map("users")
 }
@@ -169,6 +170,22 @@ model MonthlySummary {
   @@index([monthStartDate], map: "idx_monthly_summaries_month_start")
   @@index([userId], map: "idx_monthly_summaries_user_id")
   @@map("monthly_summaries")
+}
+
+// 用户个性化配置
+model UserConfig {
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  initialCapital   Int       @default(100000) @map("initial_capital")
+  currency         String    @default("CNY") @db.VarChar(10)
+  chartPreferences Json?     @map("chart_preferences")
+  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId])
+  @@map("user_config")
 }
 
 enum TradeDirection {
