@@ -85,7 +85,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { userId, tradeTime, symbol, direction, positionSize, entryReason, exitReason, tradeResult, mindsetState, lessonsLearned } = body;
 
-    if (!userId || !tradeTime || !symbol || !direction || !positionSize || !tradeResult || !mindsetState || !lessonsLearned) {
+    /**
+     * 后端字段校验（允许“心得体会”为空）
+     * - 必填项：userId、tradeTime、symbol、direction、positionSize、tradeResult、mindsetState
+     * - 可选项：entryReason、exitReason、lessonsLearned（空字符串将被接受）
+     */
+    if (!userId || !tradeTime || !symbol || !direction || !positionSize || !tradeResult || !mindsetState) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
         status: 400 
       });
@@ -106,6 +111,7 @@ export async function POST(req: NextRequest) {
 
     try {
       // 创建交易日志
+      const safeLessonsLearned = typeof lessonsLearned === 'string' ? lessonsLearned : '';
       const tradeLog = await TradeLogAdapter.createTradeLog({
         userId,
         tradeTime: new Date(tradeTime),
@@ -116,7 +122,7 @@ export async function POST(req: NextRequest) {
         exitReason,
         tradeResult,
         mindsetState,
-        lessonsLearned,
+        lessonsLearned: safeLessonsLearned,
       });
 
       // 清除相关缓存（异步操作，不阻塞响应）
