@@ -12,46 +12,43 @@ const INITIAL_CAPITAL = 100000;
 
 /**
  * 累计盈亏率图表组件
- * 逻辑规范：仅纳入平仓（Sell/Close）交易的 tradeResult；Buy/Long/Short 不计入。
+ * 设计说明：
+ * - 使用“交易笔数”作为 X 轴序列，避免同一时间折叠到同一日期造成顺序混淆；
+ * - 仅纳入 Sell/Close 平仓记录的 tradeResult；Buy/Long/Short 不计入；
+ * - 排序规则：tradeTime 升序 → createdAt 升序 → id 字典序升序，确保稳定序列。
  */
 export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
-  // 添加更明显的调试信息
-  console.log('=== CumulativeReturnChart Debug Start ===');
-  console.log('Received tradeLogs:', tradeLogs);
-  console.log('tradeLogs length:', tradeLogs?.length);
-  console.log('tradeLogs type:', typeof tradeLogs);
-  console.log('Initial capital for return calculation:', INITIAL_CAPITAL);
-  console.log('=== CumulativeReturnChart Debug End ===');
   
   const chartData = useMemo(() => {
     if (!tradeLogs || tradeLogs.length === 0) {
-      console.log('No tradeLogs data available');
       return [];
     }
-    
-    console.log('Processing tradeLogs for return calculation:', tradeLogs);
-    
-    // 仅统计平仓方向
+
+    // 仅统计平仓方向，并进行稳定排序（tradeTime → createdAt → id）
     const exitLogs = tradeLogs.filter(l => (l.direction === 'Sell' || l.direction === 'Close'));
     const sortedLogs = [...exitLogs].sort((a, b) => {
-        const dateA = a.tradeTime instanceof Date ? a.tradeTime : new Date(a.tradeTime);
-        const dateB = b.tradeTime instanceof Date ? b.tradeTime : new Date(b.tradeTime);
-        return dateA.getTime() - dateB.getTime();
+      const timeA = a.tradeTime instanceof Date ? a.tradeTime.getTime() : new Date(a.tradeTime).getTime();
+      const timeB = b.tradeTime instanceof Date ? b.tradeTime.getTime() : new Date(b.tradeTime).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+
+      const createdA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as any).getTime();
+      const createdB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as any).getTime();
+      if (Number.isFinite(createdA) && Number.isFinite(createdB) && createdA !== createdB) {
+        return createdA - createdB;
+      }
+
+      const idA = String((a as any).id ?? '');
+      const idB = String((b as any).id ?? '');
+      return idA.localeCompare(idB);
     });
 
     let cumulativePL = 0;
     const result = sortedLogs.map((log, index) => {
       const parsed = parseFloat(log.tradeResult);
       const plValue = Number.isFinite(parsed) ? parsed : 0;
-      console.log(`Trade ${index + 1}: ${log.symbol}, tradeResult: ${log.tradeResult}, parsed: ${plValue}`);
       cumulativePL += plValue;
-      
-      // 计算累计收益率 = (累计盈亏 / 初始资金) * 100
       const cumulativeReturn = (cumulativePL / INITIAL_CAPITAL) * 100;
-      
       const date = log.tradeTime instanceof Date ? log.tradeTime : new Date(log.tradeTime);
-      console.log(`Cumulative PL: ${cumulativePL}, Cumulative Return: ${cumulativeReturn.toFixed(2)}%`);
-      
       return {
         tradeNumber: index + 1,
         date: format(date, 'yyyy-MM-dd HH:mm'),
@@ -59,8 +56,6 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         cumulativeReturn: cumulativeReturn,
       };
     });
-    
-    console.log('Chart data generated with returns:', result);
     return result;
   }, [tradeLogs]);
 
@@ -99,7 +94,8 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                 tickMargin={8} 
                 type="number"
                 domain={['dataMin', 'dataMax']}
-                label={{ value: "交易笔数", position: "insideBottom", offset: -15 }}
+                tickFormatter={(value) => `第${value}笔`}
+                label={{ value: "卖出收益情况", position: "insideBottom", offset: -15 }}
               />
               <YAxis 
                 tickLine={false} 

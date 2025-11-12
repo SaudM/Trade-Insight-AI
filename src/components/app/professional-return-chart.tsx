@@ -179,7 +179,14 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
     fetchConfig();
   }, [userId, parseUserConfigResponse]);
 
-  // 计算复合收益率数据（排除 Buy/Long/Short）
+  /**
+   * 计算复合收益率数据（仅 Sell/Close）
+   * 排序规则：
+   * 1) 按 tradeTime 升序；
+   * 2) 若 tradeTime 相同，按 createdAt 升序；
+   * 3) 若仍相同，按 id 字典序升序；
+   * 目的：确保“交易笔数”序列稳定、可重复，避免同一时间导致顺序感知异常。
+   */
   const chartData = useMemo(() => {
     if (!tradeLogs || tradeLogs.length === 0) {
       return [];
@@ -187,12 +194,22 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
 
     // 移除调试日志，保持组件整洁
 
-    // 过滤仅保留 Sell/Close，并按时间排序
+    // 过滤仅保留 Sell/Close，并进行稳定排序（见 compareTradesBySequence）
     const exitLogs = tradeLogs.filter(l => (l.direction === 'Sell' || l.direction === 'Close'));
     const sortedLogs = [...exitLogs].sort((a, b) => {
-      const dateA = a.tradeTime instanceof Date ? a.tradeTime : new Date(a.tradeTime);
-      const dateB = b.tradeTime instanceof Date ? b.tradeTime : new Date(b.tradeTime);
-      return dateA.getTime() - dateB.getTime();
+      const timeA = a.tradeTime instanceof Date ? a.tradeTime.getTime() : new Date(a.tradeTime).getTime();
+      const timeB = b.tradeTime instanceof Date ? b.tradeTime.getTime() : new Date(b.tradeTime).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+
+      const createdA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as any).getTime();
+      const createdB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as any).getTime();
+      if (Number.isFinite(createdA) && Number.isFinite(createdB) && createdA !== createdB) {
+        return createdA - createdB;
+      }
+
+      const idA = String((a as any).id ?? '');
+      const idB = String((b as any).id ?? '');
+      return idA.localeCompare(idB);
     });
 
     let cumulativeMultiplier = 1; // 复合收益率乘数
@@ -426,6 +443,7 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
                 tick={{ fontSize: 12, fill: CHART_CONFIG.colors.text }}
                 axisLine={{ stroke: CHART_CONFIG.colors.grid }}
                 tickLine={{ stroke: CHART_CONFIG.colors.grid }}
+                label={{ value: '交易笔数', position: 'insideBottom', offset: -10 }}
               />
               
               <YAxis
