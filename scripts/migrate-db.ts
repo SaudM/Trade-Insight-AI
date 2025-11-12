@@ -142,6 +142,23 @@ async function createTables(client: any) {
     );
   `);
 
+  // 确保存在买入价格列（仅当方向为 Buy 时使用），保留4位小数
+  try {
+    const colExists = await client.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+      ['trade_logs', 'buy_price']
+    );
+    if (!colExists.rowCount || colExists.rows.length === 0) {
+      await client.query('ALTER TABLE "trade_logs" ADD COLUMN "buy_price" DECIMAL(12,4) NULL;');
+      console.log('✅ 已为 trade_logs 表添加列: buy_price DECIMAL(12,4)');
+    } else {
+      console.log('⏭️  列 buy_price 已存在，跳过添加');
+    }
+  } catch (error) {
+    console.error('❌ 添加 buy_price 列失败:', error);
+    throw error;
+  }
+
   // 每日分析表
   await client.query(`
     CREATE TABLE IF NOT EXISTS "daily_analyses" (

@@ -149,7 +149,8 @@ const FloatingLabelSelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-lg py-3 px-3 text-sm outline-none",
+      // 右侧勾选图标采用绝对定位，为避免与文本重叠，这里增加右内边距
+      "relative flex w-full cursor-default select-none items-center rounded-lg py-3 pl-3 pr-10 text-sm outline-none",
       "focus:bg-blue-50 focus:text-blue-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       "hover:bg-gray-50 transition-colors duration-150",
       className

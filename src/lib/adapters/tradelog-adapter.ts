@@ -3,8 +3,8 @@
  * 提供与Firebase兼容的接口，底层使用PostgreSQL
  */
 
-import { PrismaClient, TradeLog, TradeDirection } from '@prisma/client';
-import { prisma } from '../db';
+import { PrismaClient, TradeLog, TradeDirection, Prisma } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
 
 /**
@@ -17,6 +17,12 @@ export interface TradeLogData {
   symbol: string;
   direction: TradeDirection;
   positionSize: string;
+  /** 买入价格（方向为 Buy 时可用）；支持 string/number/Decimal 并在入库前统一规范化 */
+  buyPrice?: string | number | Prisma.Decimal | null;
+  /** 卖出价格（方向为 Sell/Close 时可用）；支持 string/number/Decimal 并在入库前统一规范化 */
+  sellPrice?: string | number | Prisma.Decimal | null;
+  /** 卖出股数（方向为 Sell/Close 时可用）；正整数 */
+  sellQuantity?: number | null;
   entryReason?: string;
   exitReason?: string;
   tradeResult: string;
@@ -80,19 +86,84 @@ export class TradeLogAdapter {
         systemUuid = user.id;
       }
 
+      // 基础价格校验：方向为 Buy 时要求正数并限定精度与范围
+      let normalizedBuyPrice: Prisma.Decimal | undefined;
+      if (tradeLogData.direction === 'Buy') {
+        const raw = tradeLogData.buyPrice;
+        if (raw === undefined || raw === null) {
+          throw new Error('买入操作必须提供买入价格');
+        }
+        // 统一转换为字符串后构造Decimal，兼容number/string/Decimal
+        const num = new Prisma.Decimal(String(raw));
+        if (num.isNegative() || num.isZero()) {
+          throw new Error('买入价格必须为正数');
+        }
+        // 限制最大值以匹配schema(12,4) => 整数位最多8位，最大 99,999,999.9999
+        const max = new Prisma.Decimal('99999999.9999');
+        if (num.greaterThan(max)) {
+          throw new Error('买入价格超出允许范围');
+        }
+        // 规范为4位小数
+        normalizedBuyPrice = new Prisma.Decimal(num.toFixed(4));
+      }
+
+      /**
+       * 卖出字段校验与规范化：方向为 Sell/Close 时
+       * - sellPrice 必须为正数并保留4位小数
+       * - sellQuantity 必须为正整数
+       */
+      let normalizedSellPrice: Prisma.Decimal | undefined | null = undefined;
+      let normalizedSellQuantity: number | undefined | null = undefined;
+      if (tradeLogData.direction === 'Sell' || tradeLogData.direction === 'Close') {
+        const rawSellPrice = tradeLogData.sellPrice;
+        const rawSellQuantity = tradeLogData.sellQuantity;
+        if (rawSellPrice === undefined || rawSellPrice === null) {
+          throw new Error('卖出/平仓操作必须提供卖出价格');
+        }
+        const sp = new Prisma.Decimal(String(rawSellPrice));
+        if (sp.isNegative() || sp.isZero()) {
+          throw new Error('卖出价格必须为正数');
+        }
+        const max = new Prisma.Decimal('99999999.9999');
+        if (sp.greaterThan(max)) {
+          throw new Error('卖出价格超出允许范围');
+        }
+        normalizedSellPrice = new Prisma.Decimal(sp.toFixed(4));
+
+        if (rawSellQuantity === undefined || rawSellQuantity === null) {
+          throw new Error('卖出/平仓操作必须提供卖出股数');
+        }
+        const sq = Number(rawSellQuantity);
+        if (!Number.isFinite(sq) || sq <= 0 || !Number.isInteger(sq)) {
+          throw new Error('卖出股数必须为正整数');
+        }
+        normalizedSellQuantity = sq;
+      }
+      // 构造数据对象，使用any以避免在Prisma类型未刷新时的编译错误
+      const createData: any = {
+        userId: systemUuid,
+        tradeTime: tradeLogData.tradeTime,
+        symbol: tradeLogData.symbol,
+        direction: tradeLogData.direction,
+        positionSize: tradeLogData.positionSize,
+        entryReason: tradeLogData.entryReason,
+        exitReason: tradeLogData.exitReason,
+        tradeResult: tradeLogData.tradeResult,
+        mindsetState: tradeLogData.mindsetState,
+        lessonsLearned: tradeLogData.lessonsLearned,
+      };
+      if (normalizedBuyPrice !== undefined) {
+        createData.buyPrice = normalizedBuyPrice;
+      }
+      if (normalizedSellPrice !== undefined) {
+        createData.sellPrice = normalizedSellPrice;
+      }
+      if (normalizedSellQuantity !== undefined) {
+        createData.sellQuantity = normalizedSellQuantity;
+      }
+
       const tradeLog = await prisma.tradeLog.create({
-        data: {
-          userId: systemUuid,
-          tradeTime: tradeLogData.tradeTime,
-          symbol: tradeLogData.symbol,
-          direction: tradeLogData.direction,
-          positionSize: tradeLogData.positionSize,
-          entryReason: tradeLogData.entryReason,
-          exitReason: tradeLogData.exitReason,
-          tradeResult: tradeLogData.tradeResult,
-          mindsetState: tradeLogData.mindsetState,
-          lessonsLearned: tradeLogData.lessonsLearned,
-        },
+        data: createData,
       });
 
       return this.formatTradeLogData(tradeLog);
@@ -180,9 +251,69 @@ export class TradeLogAdapter {
     updateData: Partial<Omit<TradeLogData, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
   ): Promise<TradeLogData> {
     try {
+      // 对buyPrice进行校验与规范化（若提供）
+      let buyPriceData: Prisma.Decimal | undefined | null = undefined;
+      if (updateData.buyPrice !== undefined) {
+        if (updateData.buyPrice === null) {
+          buyPriceData = null;
+        } else {
+          const num = new Prisma.Decimal(String(updateData.buyPrice));
+          if (num.isNegative() || num.isZero()) {
+            throw new Error('买入价格必须为正数');
+          }
+          const max = new Prisma.Decimal('99999999.9999');
+          if (num.greaterThan(max)) {
+            throw new Error('买入价格超出允许范围');
+          }
+          buyPriceData = new Prisma.Decimal(num.toFixed(4));
+        }
+      }
+
+      // 对sellPrice、sellQuantity进行校验与规范化（若提供）
+      let sellPriceData: Prisma.Decimal | undefined | null = undefined;
+      if (updateData.sellPrice !== undefined) {
+        if (updateData.sellPrice === null) {
+          sellPriceData = null;
+        } else {
+          const num = new Prisma.Decimal(String(updateData.sellPrice));
+          if (num.isNegative() || num.isZero()) {
+            throw new Error('卖出价格必须为正数');
+          }
+          const max = new Prisma.Decimal('99999999.9999');
+          if (num.greaterThan(max)) {
+            throw new Error('卖出价格超出允许范围');
+          }
+          sellPriceData = new Prisma.Decimal(num.toFixed(4));
+        }
+      }
+      let sellQuantityData: number | undefined | null = undefined;
+      if (updateData.sellQuantity !== undefined) {
+        if (updateData.sellQuantity === null) {
+          sellQuantityData = null;
+        } else {
+          const q = Number(updateData.sellQuantity);
+          if (!Number.isFinite(q) || q <= 0 || !Number.isInteger(q)) {
+            throw new Error('卖出股数必须为正整数');
+          }
+          sellQuantityData = q;
+        }
+      }
+
+      // 使用any以避免Prisma类型未刷新时的编译错误
+      const updatePayload: any = { ...updateData };
+      if (buyPriceData !== undefined) {
+        updatePayload.buyPrice = buyPriceData;
+      }
+      if (sellPriceData !== undefined) {
+        updatePayload.sellPrice = sellPriceData;
+      }
+      if (sellQuantityData !== undefined) {
+        updatePayload.sellQuantity = sellQuantityData;
+      }
+
       const tradeLog = await prisma.tradeLog.update({
         where: { id: tradeLogId },
-        data: updateData,
+        data: updatePayload,
       });
 
       return this.formatTradeLogData(tradeLog);
@@ -404,6 +535,9 @@ export class TradeLogAdapter {
       symbol: tradeLog.symbol,
       direction: tradeLog.direction,
       positionSize: tradeLog.positionSize,
+      buyPrice: tradeLog.buyPrice ?? null,
+      sellPrice: tradeLog.sellPrice ?? null,
+      sellQuantity: tradeLog.sellQuantity ?? null,
       entryReason: tradeLog.entryReason,
       exitReason: tradeLog.exitReason,
       tradeResult: tradeLog.tradeResult,

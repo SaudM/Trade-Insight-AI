@@ -83,17 +83,118 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, tradeTime, symbol, direction, positionSize, entryReason, exitReason, tradeResult, mindsetState, lessonsLearned } = body;
+    /**
+     * 动态校验入参（按方向必填）
+     * - 公共必填：userId、tradeTime、symbol、direction、tradeResult、mindsetState
+     * - 开仓（Buy/Long/Short）：要求 positionSize 与 buyPrice（正数）
+     * - 平仓（Sell/Close）：要求 sellPrice（正数）与 sellQuantity（正整数）；positionSize 不再作为必填。
+     *   为提升健壮性，若 positionSize 为空字符串或仅空白，将在存储前回退为 String(sellQuantity) 确保一致写入。
+     */
+    const { userId, tradeTime, symbol, direction, positionSize, entryReason, exitReason, tradeResult, mindsetState, lessonsLearned, buyPrice, sellPrice, sellQuantity } = body;
+
+    const searchParams = new URL(req.url).searchParams;
+    const headers = Object.fromEntries(req.headers.entries());
 
     /**
-     * 后端字段校验（允许“心得体会”为空）
-     * - 必填项：userId、tradeTime、symbol、direction、positionSize、tradeResult、mindsetState
-     * - 可选项：entryReason、exitReason、lessonsLearned（空字符串将被接受）
+     * 公共必填校验：不包含 positionSize（由方向校验决定）
      */
-    if (!userId || !tradeTime || !symbol || !direction || !positionSize || !tradeResult || !mindsetState) {
+    if (!userId || !tradeTime || !symbol || !direction || !tradeResult || !mindsetState) {
+      console.error('400 Error - Missing required fields', {
+        requestInfo: {
+          method: req.method,
+          url: req.url,
+          headers,
+          query: Object.fromEntries(searchParams.entries()),
+          body
+        },
+        errorMessage: 'Missing required fields'
+      });
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
         status: 400 
       });
+    }
+    
+    // 方向动态必填与数值校验
+    const dir = String(direction);
+    const isOpening = ['Buy', 'Long', 'Short'].includes(dir);
+    const isClosing = ['Sell', 'Close'].includes(dir);
+    if (!isOpening && !isClosing) {
+      console.error('400 Error - Invalid direction', {
+        requestInfo: {
+          method: req.method,
+          url: req.url,
+          headers,
+          query: Object.fromEntries(searchParams.entries()),
+          body
+        },
+        errorMessage: 'Invalid trade direction'
+      });
+      return new Response(JSON.stringify({ error: 'Invalid trade direction' }), { status: 400 });
+    }
+
+    if (isOpening) {
+      // positionSize 必填
+      if (!positionSize) {
+        console.error('400 Error - Missing positionSize for opening', {
+          requestInfo: {
+            method: req.method,
+            url: req.url,
+            headers,
+            query: Object.fromEntries(searchParams.entries()),
+            body
+          },
+          errorMessage: 'Missing positionSize for Buy/Long/Short'
+        });
+        return new Response(JSON.stringify({ error: 'Missing positionSize for Buy/Long/Short' }), { status: 400 });
+      }
+
+      // buyPrice 必填且为正数
+      const priceNum = Number(buyPrice);
+      if (!Number.isFinite(priceNum) || priceNum <= 0) {
+        console.error('400 Error - Invalid buyPrice', {
+          requestInfo: {
+            method: req.method,
+            url: req.url,
+            headers,
+            query: Object.fromEntries(searchParams.entries()),
+            body
+          },
+          errorMessage: 'Invalid buyPrice for opening direction'
+        });
+        return new Response(JSON.stringify({ error: 'Invalid buyPrice for Buy/Long/Short' }), { status: 400 });
+      }
+    }
+
+    if (isClosing) {
+      // 卖出价格与股数必填
+      const sp = Number(sellPrice);
+      const sq = Number(sellQuantity);
+      if (!Number.isFinite(sp) || sp <= 0) {
+        console.error('400 Error - Invalid sellPrice', {
+          requestInfo: {
+            method: req.method,
+            url: req.url,
+            headers,
+            query: Object.fromEntries(searchParams.entries()),
+            body
+          },
+          errorMessage: 'Invalid sellPrice for Sell/Close'
+        });
+        return new Response(JSON.stringify({ error: 'Invalid sellPrice for Sell/Close' }), { status: 400 });
+      }
+      if (!Number.isFinite(sq) || sq <= 0 || !Number.isInteger(sq)) {
+        console.error('400 Error - Invalid sellQuantity', {
+          requestInfo: {
+            method: req.method,
+            url: req.url,
+            headers,
+            query: Object.fromEntries(searchParams.entries()),
+            body
+          },
+          errorMessage: 'Invalid sellQuantity for Sell/Close'
+        });
+        return new Response(JSON.stringify({ error: 'Invalid sellQuantity for Sell/Close' }), { status: 400 });
+      }
     }
 
     // 检查数据库连接
@@ -112,12 +213,38 @@ export async function POST(req: NextRequest) {
     try {
       // 创建交易日志
       const safeLessonsLearned = typeof lessonsLearned === 'string' ? lessonsLearned : '';
+      // 对于平仓方向，若 positionSize 为空字符串或仅空白，回退为 sellQuantity；开仓方向保留严格必填
+      const cleanPositionSize = typeof positionSize === 'string' ? positionSize.trim() : positionSize;
+      const effectivePositionSize = (
+        typeof cleanPositionSize === 'string' && cleanPositionSize.length > 0
+      )
+        ? cleanPositionSize
+        : (isClosing && sellQuantity != null ? String(sellQuantity) : undefined);
+
+      if (!effectivePositionSize) {
+        // 兜底校验：当方向为平仓且既无有效 positionSize 又无 sellQuantity
+        console.error('400 Error - Missing position size for closing', {
+          requestInfo: {
+            method: req.method,
+            url: req.url,
+            headers,
+            query: Object.fromEntries(searchParams.entries()),
+            body
+          },
+          errorMessage: 'Missing position size or sellQuantity for Sell/Close'
+        });
+        return new Response(JSON.stringify({ error: 'Missing position size or sellQuantity for Sell/Close' }), { status: 400 });
+      }
       const tradeLog = await TradeLogAdapter.createTradeLog({
         userId,
         tradeTime: new Date(tradeTime),
         symbol,
         direction,
-        positionSize,
+        positionSize: effectivePositionSize,
+        buyPrice: direction === 'Buy' ? buyPrice : undefined,
+        // 在 Sell/Close 方向下，入库时保留卖出价格与股数
+        sellPrice: (isClosing ? sellPrice : undefined),
+        sellQuantity: (isClosing ? Number(sellQuantity) : undefined),
         entryReason,
         exitReason,
         tradeResult,
@@ -131,8 +258,18 @@ export async function POST(req: NextRequest) {
 
       return Response.json(tradeLog);
 
-    } catch (error) {
-      console.error('创建交易日志失败:', error);
+    } catch (error: any) {
+      console.error('创建交易日志失败:', {
+        requestInfo: {
+          method: req.method,
+          url: req.url,
+          headers,
+          query: Object.fromEntries(searchParams.entries()),
+          body
+        },
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
       return new Response(JSON.stringify({ 
         error: 'Failed to create trade log',
         source: 'postgres'
@@ -142,7 +279,21 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (err: any) {
-    console.error('trade-logs POST API error:', err);
+    const searchParams = new URL(req.url).searchParams;
+    const headers = Object.fromEntries(req.headers.entries());
+    const body = await req.json().catch(() => ({})); // 如果 body 解析失败，使用空对象
+
+    console.error('trade-logs POST API error:', {
+      requestInfo: {
+        method: req.method,
+        url: req.url,
+        headers,
+        query: Object.fromEntries(searchParams.entries()),
+        body
+      },
+      errorMessage: err.message,
+      errorStack: err.stack
+    });
     return new Response(JSON.stringify({ error: err.message || 'Internal error' }), { 
       status: 500 
     });

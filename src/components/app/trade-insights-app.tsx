@@ -236,22 +236,44 @@ export function TradeInsightsApp() {
     setIsFormOpen(true);
   };
 
+  /**
+   * 提交交易表单（页面容器层）
+   * 逻辑说明：
+   * - 将表单数据整理为后端需要的载荷；
+   * - 买入方向时，确保包含 buyPrice 提交到后端；
+   * - 卖出/平仓方向时，保留 sellPrice 与 sellQuantity 提交到后端；
+   * - 保证 positionSize 始终为字符串以满足类型；
+   * - 根据是否存在 id 判断是更新还是新建；
+   */
   const handleFormSubmit = (log: TradeLogFormValues) => {
     const common = {
       tradeTime: log.tradeTime,
       symbol: log.symbol,
       direction: log.direction,
-      positionSize: log.positionSize,
+      // 保证字符串类型，避免 undefined 造成类型不兼容
+      positionSize: log.positionSize ?? '',
       tradeResult: log.tradeResult ?? '0',
       mindsetState: log.mindsetState,
       entryReason: log.entryReason ?? '',
       exitReason: log.exitReason ?? '',
       lessonsLearned: log.lessonsLearned ?? '',
     };
+    // 买入方向：向后端提交买入价格（数值类型以满足 TradeLog 类型）
+    const withBuyPrice = (log.direction === 'Buy' && log.buyPrice)
+      ? { ...common, buyPrice: Number(log.buyPrice) }
+      : common;
+    // 卖出/平仓方向：向后端提交卖出价格与卖出股数（数值类型，供后端计算与校验）
+    const withExitFields = ((log.direction === 'Sell' || log.direction === 'Close') && log.sellPrice && log.sellQuantity)
+      ? { ...common, sellPrice: Number(log.sellPrice), sellQuantity: Number(log.sellQuantity) }
+      : common;
+
+    // 根据方向选择最终提交载荷
+    const payload = (log.direction === 'Buy') ? withBuyPrice : withExitFields;
+
     if (log.id) {
-      updateTradeLog({ id: log.id, ...common });
+      updateTradeLog({ id: log.id, ...payload });
     } else {
-      addTradeLog(common);
+      addTradeLog(payload);
     }
     setIsFormOpen(false);
     setEditingLog(null);

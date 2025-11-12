@@ -33,6 +33,12 @@ model TradeLog {
   symbol         String         @db.VarChar(50)
   direction      TradeDirection
   positionSize   String         @map("position_size") @db.VarChar(100)
+  // 买入价格（仅当方向为 Buy 时使用），保留4位小数以兼容美股与外汇价格精度
+  buyPrice       Decimal?       @map("buy_price") @db.Decimal(12, 4)
+  // 卖出价格（仅当方向为 Sell/Close 时使用），保留4位小数
+  sellPrice      Decimal?       @map("sell_price") @db.Decimal(12, 4)
+  // 卖出股数（仅当方向为 Sell/Close 时使用），正整数
+  sellQuantity   Int?           @map("sell_quantity")
   entryReason    String?        @map("entry_reason")
   exitReason     String?        @map("exit_reason")
   tradeResult    String         @map("trade_result")
