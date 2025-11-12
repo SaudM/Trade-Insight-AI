@@ -240,8 +240,8 @@ export function TradeInsightsApp() {
    * 提交交易表单（页面容器层）
    * 逻辑说明：
    * - 将表单数据整理为后端需要的载荷；
-   * - 买入方向时，确保包含 buyPrice 提交到后端；
-   * - 卖出/平仓方向时，保留 sellPrice 与 sellQuantity 提交到后端；
+   * - 买入/开仓：仅提交 buyPrice，不携带 tradeResult（由后端统一规范为 "0"）；
+   * - 卖出/平仓：保留 sellPrice、sellQuantity，并携带 tradeResult 提交；
    * - 保证 positionSize 始终为字符串以满足类型；
    * - 根据是否存在 id 判断是更新还是新建；
    */
@@ -252,7 +252,6 @@ export function TradeInsightsApp() {
       direction: log.direction,
       // 保证字符串类型，避免 undefined 造成类型不兼容
       positionSize: log.positionSize ?? '',
-      tradeResult: log.tradeResult ?? '0',
       mindsetState: log.mindsetState,
       entryReason: log.entryReason ?? '',
       exitReason: log.exitReason ?? '',
@@ -264,16 +263,27 @@ export function TradeInsightsApp() {
       : common;
     // 卖出/平仓方向：向后端提交卖出价格与卖出股数（数值类型，供后端计算与校验）
     const withExitFields = ((log.direction === 'Sell' || log.direction === 'Close') && log.sellPrice && log.sellQuantity)
-      ? { ...common, sellPrice: Number(log.sellPrice), sellQuantity: Number(log.sellQuantity) }
+      ? { 
+          ...common, 
+          sellPrice: Number(log.sellPrice), 
+          sellQuantity: Number(log.sellQuantity),
+          // 仅在平仓时携带 tradeResult，由表单层计算并传入
+          ...(log.tradeResult ? { tradeResult: log.tradeResult } : {})
+        }
       : common;
 
     // 根据方向选择最终提交载荷
     const payload = (log.direction === 'Buy') ? withBuyPrice : withExitFields;
-
+    /**
+     * 为兼容后端放宽校验（Buy/开仓不要求 tradeResult），此处不强制添加该字段。
+     * 由于 hooks 的类型仍要求 tradeResult，为避免类型冲突而影响运行时语义，
+     * 在调用处进行窄化处理并使用 `any` 进行桥接，确保 Buy 不携带 tradeResult。
+     */
+    const payloadForSubmit: any = payload;
     if (log.id) {
-      updateTradeLog({ id: log.id, ...payload });
+      updateTradeLog({ id: log.id, ...payloadForSubmit } as any);
     } else {
-      addTradeLog(payload);
+      addTradeLog(payloadForSubmit as any);
     }
     setIsFormOpen(false);
     setEditingLog(null);

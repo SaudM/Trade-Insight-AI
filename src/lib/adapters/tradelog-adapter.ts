@@ -60,6 +60,12 @@ export interface TradeStatsData {
 /**
  * 交易日志数据访问层适配器类
  */
+/**
+ * 交易日志数据访问层适配器类
+ * 逻辑规范：
+ * - Buy/开仓不计算收益，服务端强制 tradeResult 为 "0"
+ * - Sell/Close/平仓仅接受数值型盈亏并统一为两位小数字符串
+ */
 export class TradeLogAdapter {
   /**
    * 创建新交易日志
@@ -139,6 +145,20 @@ export class TradeLogAdapter {
         }
         normalizedSellQuantity = sq;
       }
+      // 统一规范 tradeResult：
+      // - Buy 不计盈亏，强制为 "0"
+      // - Sell/Close 将传入值安全解析为Decimal并格式化为两位小数
+      const normalizedTradeResult = (() => {
+        try {
+          if (tradeLogData.direction === 'Buy') return '0';
+          const num = new Prisma.Decimal(String(tradeLogData.tradeResult ?? '0'));
+          // 保留两位小数便于图表显示，避免浮点误差
+          return num.toFixed(2);
+        } catch {
+          return '0';
+        }
+      })();
+
       // 构造数据对象，使用any以避免在Prisma类型未刷新时的编译错误
       const createData: any = {
         userId: systemUuid,
@@ -148,7 +168,7 @@ export class TradeLogAdapter {
         positionSize: tradeLogData.positionSize,
         entryReason: tradeLogData.entryReason,
         exitReason: tradeLogData.exitReason,
-        tradeResult: tradeLogData.tradeResult,
+        tradeResult: normalizedTradeResult,
         mindsetState: tradeLogData.mindsetState,
         lessonsLearned: tradeLogData.lessonsLearned,
       };
@@ -251,13 +271,30 @@ export class TradeLogAdapter {
     updateData: Partial<Omit<TradeLogData, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
   ): Promise<TradeLogData> {
     try {
+      /**
+       * 更新逻辑中的 tradeResult 规范：
+       * - 若方向为 Buy（或将方向修改为 Buy），强制写入 "0"；
+       * - 若方向为 Sell/Close，若提供 tradeResult 则格式化为两位小数，否则保持原值；
+       */
+      const normalizedUpdate: any = { ...updateData };
+      if (normalizedUpdate.direction === 'Buy') {
+        normalizedUpdate.tradeResult = '0';
+      } else if (normalizedUpdate.tradeResult !== undefined) {
+        try {
+          const num = new Prisma.Decimal(String(normalizedUpdate.tradeResult));
+          normalizedUpdate.tradeResult = num.toFixed(2);
+        } catch {
+          normalizedUpdate.tradeResult = '0';
+        }
+      }
+
       // 对buyPrice进行校验与规范化（若提供）
       let buyPriceData: Prisma.Decimal | undefined | null = undefined;
-      if (updateData.buyPrice !== undefined) {
-        if (updateData.buyPrice === null) {
+      if (normalizedUpdate.buyPrice !== undefined) {
+        if (normalizedUpdate.buyPrice === null) {
           buyPriceData = null;
         } else {
-          const num = new Prisma.Decimal(String(updateData.buyPrice));
+          const num = new Prisma.Decimal(String(normalizedUpdate.buyPrice));
           if (num.isNegative() || num.isZero()) {
             throw new Error('买入价格必须为正数');
           }
@@ -271,11 +308,11 @@ export class TradeLogAdapter {
 
       // 对sellPrice、sellQuantity进行校验与规范化（若提供）
       let sellPriceData: Prisma.Decimal | undefined | null = undefined;
-      if (updateData.sellPrice !== undefined) {
-        if (updateData.sellPrice === null) {
+      if (normalizedUpdate.sellPrice !== undefined) {
+        if (normalizedUpdate.sellPrice === null) {
           sellPriceData = null;
         } else {
-          const num = new Prisma.Decimal(String(updateData.sellPrice));
+          const num = new Prisma.Decimal(String(normalizedUpdate.sellPrice));
           if (num.isNegative() || num.isZero()) {
             throw new Error('卖出价格必须为正数');
           }
@@ -287,11 +324,11 @@ export class TradeLogAdapter {
         }
       }
       let sellQuantityData: number | undefined | null = undefined;
-      if (updateData.sellQuantity !== undefined) {
-        if (updateData.sellQuantity === null) {
+      if (normalizedUpdate.sellQuantity !== undefined) {
+        if (normalizedUpdate.sellQuantity === null) {
           sellQuantityData = null;
         } else {
-          const q = Number(updateData.sellQuantity);
+          const q = Number(normalizedUpdate.sellQuantity);
           if (!Number.isFinite(q) || q <= 0 || !Number.isInteger(q)) {
             throw new Error('卖出股数必须为正整数');
           }
@@ -300,7 +337,7 @@ export class TradeLogAdapter {
       }
 
       // 使用any以避免Prisma类型未刷新时的编译错误
-      const updatePayload: any = { ...updateData };
+      const updatePayload: any = { ...normalizedUpdate };
       if (buyPriceData !== undefined) {
         updatePayload.buyPrice = buyPriceData;
       }

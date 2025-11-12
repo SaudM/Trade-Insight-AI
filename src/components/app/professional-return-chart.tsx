@@ -129,7 +129,10 @@ const CustomLegend = ({ finalReturn }: { finalReturn: number }) => {
 
 /**
  * 专业累计收益率曲线组件
- * 显示基于用户初始资金与交易记录计算的复合收益率曲线，并支持个性化设计对话框设置初始资金。
+ * 功能说明：
+ * - 仅统计平仓类交易（Sell/Close），开仓（Buy/Long/Short）不计入收益；
+ * - 使用交易盈亏与账户价值计算复合收益率曲线；
+ * - 支持设置初始资金并响应式展示。
  */
 export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null);
@@ -176,7 +179,7 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
     fetchConfig();
   }, [userId, parseUserConfigResponse]);
 
-  // 计算复合收益率数据
+  // 计算复合收益率数据（排除 Buy/Long/Short）
   const chartData = useMemo(() => {
     if (!tradeLogs || tradeLogs.length === 0) {
       return [];
@@ -184,8 +187,9 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
 
     // 移除调试日志，保持组件整洁
 
-    // 按时间排序交易记录
-    const sortedLogs = [...tradeLogs].sort((a, b) => {
+    // 过滤仅保留 Sell/Close，并按时间排序
+    const exitLogs = tradeLogs.filter(l => (l.direction === 'Sell' || l.direction === 'Close'));
+    const sortedLogs = [...exitLogs].sort((a, b) => {
       const dateA = a.tradeTime instanceof Date ? a.tradeTime : new Date(a.tradeTime);
       const dateB = b.tradeTime instanceof Date ? b.tradeTime : new Date(b.tradeTime);
       return dateA.getTime() - dateB.getTime();
@@ -195,7 +199,8 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
     let cumulativeValue = initialCapital; // 累计账户价值（基于用户配置的初始资金）
 
     const result: ReturnDataPoint[] = sortedLogs.map((log, index) => {
-      const tradeResult = parseFloat(log.tradeResult) || 0;
+      // 安全解析 tradeResult，非数值时按0处理
+      const tradeResult = Number.isFinite(parseFloat(log.tradeResult)) ? parseFloat(log.tradeResult) : 0;
       
       // 计算日收益率 = 交易盈亏 / 当前账户价值
       const dailyReturn = cumulativeValue > 0 ? (tradeResult / cumulativeValue) * 100 : 0;

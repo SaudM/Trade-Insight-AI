@@ -10,6 +10,10 @@ import { format } from 'date-fns';
 // 假设初始资金为10万元作为收益率计算基准
 const INITIAL_CAPITAL = 100000;
 
+/**
+ * 累计盈亏率图表组件
+ * 逻辑规范：仅纳入平仓（Sell/Close）交易的 tradeResult；Buy/Long/Short 不计入。
+ */
 export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   // 添加更明显的调试信息
   console.log('=== CumulativeReturnChart Debug Start ===');
@@ -27,7 +31,9 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     
     console.log('Processing tradeLogs for return calculation:', tradeLogs);
     
-    const sortedLogs = [...tradeLogs].sort((a, b) => {
+    // 仅统计平仓方向
+    const exitLogs = tradeLogs.filter(l => (l.direction === 'Sell' || l.direction === 'Close'));
+    const sortedLogs = [...exitLogs].sort((a, b) => {
         const dateA = a.tradeTime instanceof Date ? a.tradeTime : new Date(a.tradeTime);
         const dateB = b.tradeTime instanceof Date ? b.tradeTime : new Date(b.tradeTime);
         return dateA.getTime() - dateB.getTime();
@@ -35,7 +41,8 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
 
     let cumulativePL = 0;
     const result = sortedLogs.map((log, index) => {
-      const plValue = parseFloat(log.tradeResult);
+      const parsed = parseFloat(log.tradeResult);
+      const plValue = Number.isFinite(parsed) ? parsed : 0;
       console.log(`Trade ${index + 1}: ${log.symbol}, tradeResult: ${log.tradeResult}, parsed: ${plValue}`);
       cumulativePL += plValue;
       

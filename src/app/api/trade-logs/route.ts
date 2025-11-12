@@ -97,8 +97,9 @@ export async function POST(req: NextRequest) {
 
     /**
      * 公共必填校验：不包含 positionSize（由方向校验决定）
+     * 说明：Buy/开仓不需要传入 tradeResult；Sell/Close/平仓可携带数值型 tradeResult 以提升体验。
      */
-    if (!userId || !tradeTime || !symbol || !direction || !tradeResult || !mindsetState) {
+    if (!userId || !tradeTime || !symbol || !direction || !mindsetState) {
       console.error('400 Error - Missing required fields', {
         requestInfo: {
           method: req.method,

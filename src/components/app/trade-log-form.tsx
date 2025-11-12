@@ -391,9 +391,9 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
 
   /**
    * 提交表单：
-   * - 买入方向保留 buyPrice 提交后端；
-   * - 卖出/平仓方向保留 sellPrice 与 sellQuantity 供后端计算与校验；
-   * - 始终提交客户端计算的 tradeResult 以提升体验。
+   * - 买入/开仓：提交 buyPrice，且不传入 tradeResult（由服务端规范为 "0"）；
+   * - 卖出/平仓：保留 sellPrice、sellQuantity，并提交 tradeResult 以提升体验；
+   * - 避免中间计算字段污染后端。
    */
   function handleFormSubmit(values: TradeLogFormValues) {
     // 卖出方向提交前校验：禁止超量卖出与负持仓
@@ -411,8 +411,12 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
       }
     }
     const finalValues = { ...values };
-    // 始终使用自动计算的盈亏结果提交
-    finalValues.tradeResult = String(computedProfit);
+    // 仅在平仓方向提交 tradeResult；买入方向不传入
+    if (['Sell', 'Close'].includes(finalValues.direction)) {
+      finalValues.tradeResult = String(computedProfit);
+    } else {
+      delete (finalValues as any).tradeResult;
+    }
     // 买入方向：规范化并保留买入价格用于后端存储
     if (finalValues.direction === 'Buy') {
       const bp = Number(values.buyPrice);
