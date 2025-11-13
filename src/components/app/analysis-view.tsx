@@ -10,8 +10,17 @@ import { weeklyPatternDiscovery } from '@/ai/flows/weekly-pattern-discovery';
 import { monthlyPerformanceReview } from '@/ai/flows/monthly-performance-review';
 import { BrainCircuit, Zap, HeartPulse, Lightbulb, Repeat, Trophy, Scaling, ListChecks, GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
 import { startOfWeek, startOfMonth, subMonths } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 
+/**
+ * 组件：分析报告视图（AnalysisView）
+ * 功能说明：
+ * - Tabs 采用受控模式并与 URL 参数同步（tab=daily/weekly/monthly），刷新/直达时能保持指定 Tab。
+ * - 报告生成成功后仅更新本地对应列表，避免整页刷新导致当前 Tab 重置。
+ * - 保障切换流畅，减少不必要的重渲染与布局跳动。
+ */
 export function AnalysisView({ 
     tradeLogs,
     filteredTradeLogs,
@@ -35,6 +44,40 @@ export function AnalysisView({
     isProUser: boolean;
     onOpenSubscriptionModal: () => void;
 }) {
+    // Tabs 受控状态：从 URL 参数初始化并在切换时写回 URL（保留历史）
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+
+    const getInitialTab = (): 'daily' | 'weekly' | 'monthly' => {
+        const t = searchParams?.get('tab');
+        return t === 'weekly' || t === 'monthly' || t === 'daily' ? t : 'daily';
+    };
+
+    const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>(getInitialTab());
+
+    useEffect(() => {
+        const t = searchParams?.get('tab');
+        if (t === 'weekly' || t === 'monthly' || t === 'daily') setActiveTab(t);
+    }, [searchParams]);
+
+    const handleTabChange = (value: string) => {
+        const next = (value === 'weekly' || value === 'monthly' || value === 'daily') ? value : 'daily';
+        setActiveTab(next);
+        const sp = new URLSearchParams(Array.from(searchParams?.entries() || []));
+        sp.set('tab', next);
+        router.push(`${pathname}?${sp.toString()}`, { scroll: false });
+    };
+
+    // 本地报告列表：生成成功后仅更新对应列表并轻量重渲染
+    const [localDailyAnalyses, setLocalDailyAnalyses] = useState<DailyAnalysis[]>(dailyAnalyses);
+    const [localWeeklyReviews, setLocalWeeklyReviews] = useState<WeeklyReview[]>(weeklyReviews);
+    const [localMonthlySummaries, setLocalMonthlySummaries] = useState<MonthlySummary[]>(monthlySummaries);
+
+    // 与父级数据保持同步（例如服务端重新渲染后）
+    useEffect(() => setLocalDailyAnalyses(dailyAnalyses), [dailyAnalyses]);
+    useEffect(() => setLocalWeeklyReviews(weeklyReviews), [weeklyReviews]);
+    useEffect(() => setLocalMonthlySummaries(monthlySummaries), [monthlySummaries]);
 
     const handleAnalysisRequest = async (analysisFn: () => Promise<any>) => {
         if (!isProUser) {
@@ -110,7 +153,8 @@ export function AnalysisView({
         
                 const savedAnalysis = await addDailyAnalysis(newAnalysis as any);
                 console.log('分析结果保存成功:', savedAnalysis);
-                
+                // 仅更新每日分析区域，避免整页刷新引发 Tab 重置
+                setLocalDailyAnalyses(prev => [savedAnalysis as DailyAnalysis, ...prev]);
                 return savedAnalysis;
             } catch (error) {
                 console.error('每日分析处理失败:', {
@@ -166,7 +210,10 @@ export function AnalysisView({
                 createdAt: new Date() as any,
             };
 
-            return addWeeklyAnalysis(newReview as any);
+            const savedReview = await addWeeklyAnalysis(newReview as any);
+            // 仅更新每周回顾区域
+            setLocalWeeklyReviews(prev => [savedReview as WeeklyReview, ...prev]);
+            return savedReview;
         });
     };
 
@@ -229,14 +276,17 @@ export function AnalysisView({
                 createdAt: new Date() as any,
             };
             
-            return addMonthlySummary(newSummary as any);
+            const savedSummary = await addMonthlySummary(newSummary as any);
+            // 仅更新月度总结区域
+            setLocalMonthlySummaries(prev => [savedSummary as MonthlySummary, ...prev]);
+            return savedSummary;
         });
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full" style={{ ['--report-button-gap-top' as any]: '24px' }}>
             <AppHeader title="分析报告" />
-            <Tabs defaultValue="daily" className="flex flex-col flex-1">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col flex-1">
                 <div className="px-4 md:px-6 lg:px-8 bg-white border-t-0">
                     <TabsList>
                         <TabsTrigger value="daily">每日分析</TabsTrigger>
@@ -249,7 +299,7 @@ export function AnalysisView({
                     <ReportView
                         reportType="每日"
                         reportName="分析"
-                        reports={dailyAnalyses}
+                        reports={localDailyAnalyses}
                         onGenerate={handleDailyAnalysis}
                         tradeLogs={filteredTradeLogs}
                         getReportDate={(r) => (r as DailyAnalysis).createdAt}
@@ -268,7 +318,7 @@ export function AnalysisView({
                      <ReportView
                         reportType="每周"
                         reportName="回顾"
-                        reports={weeklyReviews}
+                        reports={localWeeklyReviews}
                         onGenerate={handleWeeklyAnalysis}
                         tradeLogs={filteredTradeLogs}
                         getReportDate={(r) => (r as WeeklyReview).createdAt}
@@ -287,7 +337,7 @@ export function AnalysisView({
                     <ReportView
                         reportType="月度"
                         reportName="总结"
-                        reports={monthlySummaries}
+                        reports={localMonthlySummaries}
                         onGenerate={handleMonthlyAnalysis}
                         tradeLogs={tradeLogs} // Monthly view uses all logs
                         getReportDate={(r) => (r as MonthlySummary).createdAt}

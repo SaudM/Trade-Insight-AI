@@ -71,7 +71,8 @@ export class AnalysisAdapter {
       // userId现在是系统UUID，直接使用
       const analyses = await prisma.dailyAnalysis.findMany({
         where: { userId: userId },
-        orderBy: { date: 'desc' },
+        // 改为按创建时间排序，确保同一日期的多份报告显示顺序合理
+        orderBy: { createdAt: 'desc' },
         take: limit,
       });
 
@@ -91,22 +92,9 @@ export class AnalysisAdapter {
     analysisData: Omit<DailyAnalysisData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<DailyAnalysisData> {
     try {
-      const analysis = await prisma.dailyAnalysis.upsert({
-        where: {
-          userId_date: {
-            userId: analysisData.userId,
-            date: analysisData.date,
-          },
-        },
-        update: {
-          summary: analysisData.summary,
-          strengths: analysisData.strengths,
-          weaknesses: analysisData.weaknesses,
-          emotionalImpact: analysisData.emotionalImpact,
-          improvementSuggestions: analysisData.improvementSuggestions,
-          updatedAt: new Date(),
-        },
-        create: {
+      // 允许同一日期生成多份报告：改为 create 而非 upsert
+      const analysis = await prisma.dailyAnalysis.create({
+        data: {
           userId: analysisData.userId,
           date: analysisData.date,
           summary: analysisData.summary,
@@ -135,7 +123,8 @@ export class AnalysisAdapter {
       // userId现在是系统UUID，直接使用
       const reviews = await prisma.weeklyReview.findMany({
         where: { userId: userId },
-        orderBy: { startDate: 'desc' },
+        // 改为按创建时间排序，支持同一周多份回顾的显示
+        orderBy: { createdAt: 'desc' },
         take: limit,
       });
 
@@ -155,24 +144,9 @@ export class AnalysisAdapter {
     reviewData: Omit<WeeklyReviewData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<WeeklyReviewData> {
     try {
-      const review = await prisma.weeklyReview.upsert({
-        where: {
-          userId_startDate_endDate: {
-            userId: reviewData.userId,
-            startDate: reviewData.startDate,
-            endDate: reviewData.endDate,
-          },
-        },
-        update: {
-          patternSummary: reviewData.patternSummary,
-          errorPatterns: reviewData.errorPatterns,
-          successPatterns: reviewData.successPatterns,
-          positionSizingAnalysis: reviewData.positionSizingAnalysis,
-          emotionalCorrelation: reviewData.emotionalCorrelation,
-          improvementPlan: reviewData.improvementPlan,
-          updatedAt: new Date(),
-        },
-        create: {
+      // 允许同一周生成多份回顾：改为 create 而非 upsert
+      const review = await prisma.weeklyReview.create({
+        data: {
           userId: reviewData.userId,
           startDate: reviewData.startDate,
           endDate: reviewData.endDate,
@@ -203,7 +177,8 @@ export class AnalysisAdapter {
       // userId现在是系统UUID，直接使用
       const summaries = await prisma.monthlySummary.findMany({
         where: { userId: userId },
-        orderBy: { monthStartDate: 'desc' },
+        // 改为按创建时间排序，支持同一月多份总结的显示
+        orderBy: { createdAt: 'desc' },
         take: limit,
       });
 
@@ -223,23 +198,9 @@ export class AnalysisAdapter {
     summaryData: Omit<MonthlySummaryData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<MonthlySummaryData> {
     try {
-      const summary = await prisma.monthlySummary.upsert({
-        where: {
-          userId_monthStartDate_monthEndDate: {
-            userId: summaryData.userId,
-            monthStartDate: summaryData.monthStartDate,
-            monthEndDate: summaryData.monthEndDate,
-          },
-        },
-        update: {
-          performanceComparison: summaryData.performanceComparison,
-          recurringIssues: summaryData.recurringIssues,
-          strategyExecutionEvaluation: summaryData.strategyExecutionEvaluation,
-          keyLessons: summaryData.keyLessons,
-          iterationSuggestions: summaryData.iterationSuggestions,
-          updatedAt: new Date(),
-        },
-        create: {
+      // 允许同一月生成多份总结：改为 create 而非 upsert
+      const summary = await prisma.monthlySummary.create({
+        data: {
           userId: summaryData.userId,
           monthStartDate: summaryData.monthStartDate,
           monthEndDate: summaryData.monthEndDate,
