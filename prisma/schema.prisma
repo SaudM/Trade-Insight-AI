@@ -134,6 +134,7 @@ model DailyAnalysis {
   @@index([date], map: "idx_daily_analyses_date")
   @@index([userId], map: "idx_daily_analyses_user_id")
   @@index([createdAt], map: "idx_daily_analyses_created_at")
+  @@unique([userId, date])
   @@map("daily_analyses")
 }
 
@@ -155,6 +156,7 @@ model WeeklyReview {
   @@index([startDate], map: "idx_weekly_reviews_start_date")
   @@index([userId], map: "idx_weekly_reviews_user_id")
   @@index([createdAt], map: "idx_weekly_reviews_created_at")
+  @@unique([userId, startDate, endDate])
   @@map("weekly_reviews")
 }
 
@@ -175,6 +177,7 @@ model MonthlySummary {
   @@index([monthStartDate], map: "idx_monthly_summaries_month_start")
   @@index([userId], map: "idx_monthly_summaries_user_id")
   @@index([createdAt], map: "idx_monthly_summaries_created_at")
+  @@unique([userId, monthStartDate, monthEndDate])
   @@map("monthly_summaries")
 }
 

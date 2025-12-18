@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 type AppSidebarProps = {
   activeView: View;
   setActiveView: (view: View) => void;
-  isProUser: boolean; 
+  isProUser: boolean;
 };
 
 export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarProps) {
@@ -48,10 +48,10 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
     <Sidebar>
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center size-10 bg-primary rounded-xl text-primary-foreground shadow-md">
-                <UserIcon className="h-6 w-6" />
-            </div>
-            <h1 className="font-headline text-2xl font-medium text-primary tracking-tight">复利复盘</h1>
+          <div className="flex items-center justify-center size-10 bg-primary rounded-xl text-primary-foreground shadow-md">
+            <UserIcon className="h-6 w-6" />
+          </div>
+          <h1 className="font-headline text-2xl font-medium text-primary tracking-tight">复利复盘</h1>
         </div>
       </SidebarHeader>
       <SidebarMenu className="px-4 py-2 space-y-2">
@@ -59,7 +59,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
           <SidebarMenuButton
             onClick={() => setActiveView('dashboard')}
             isActive={activeView === 'dashboard'}
-            tooltip={{children: '仪表盘'}}
+            tooltip={{ children: '仪表盘' }}
           >
             <LayoutDashboard />
             <span className="text-base font-medium">仪表盘</span>
@@ -69,11 +69,11 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
           <SidebarMenuButton
             onClick={() => setActiveView('analysis')}
             isActive={activeView === 'analysis'}
-            tooltip={{children: '分析报告'}}
+            tooltip={{ children: '分析报告' }}
           >
             <FileText />
             <span className="text-base font-medium">分析报告</span>
-             {!isProUser && (
+            {!isProUser && (
               <Badge variant="outline" className="ml-auto h-6 px-2 bg-accent/20 border-accent/50 text-accent text-xs font-medium group-data-[active=true]:bg-accent/30">
                 <Sparkles className="mr-1 h-3 w-3" />
                 升级
@@ -85,7 +85,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
           <SidebarMenuButton
             onClick={() => setActiveView('tradelog')}
             isActive={activeView === 'tradelog'}
-            tooltip={{children: '交易笔记'}}
+            tooltip={{ children: '交易笔记' }}
           >
             <Book />
             <span className="text-base font-medium">交易笔记</span>
@@ -93,9 +93,19 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
+            onClick={() => setActiveView('recommendations')}
+            isActive={activeView === 'recommendations'}
+            tooltip={{ children: '精选推荐' }}
+          >
+            <Sparkles className="text-accent" />
+            <span className="text-base font-medium">精选推荐</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
             onClick={() => setActiveView('profile')}
             isActive={activeView === 'profile'}
-            tooltip={{children: '个人中心'}}
+            tooltip={{ children: '个人中心' }}
           >
             <UserIcon />
             <span className="text-base font-medium">个人中心</span>

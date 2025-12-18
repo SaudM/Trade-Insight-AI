@@ -54,13 +54,27 @@ export class UserConfigAdapter {
     if (existing) {
       return mapToDTO(existing as any);
     }
-    const created = await prisma.userConfig.create({
-      // 由于历史Prisma类型与当前表结构可能不一致，这里显式使用 any 断言以避免类型报错。
-      data: {
-        userId,
-        initialCapital: 100000,
-        currency: 'CNY',
-      } as any,
+    const created = await prisma.$transaction(async (tx) => {
+      // 确认关联的 User 记录存在，防止外键冲突（常见于数据库重置后前端仍保留旧UID的情况）
+      const userExists = await tx.user.findUnique({ where: { id: userId } });
+      if (!userExists) {
+        console.warn(`User ${userId} not found in database. Returning default mock config.`);
+        return {
+          id: 'temp-config-' + userId,
+          userId,
+          initialCapital: 100000,
+          currency: 'CNY',
+          chartPreferences: null
+        };
+      }
+
+      return await tx.userConfig.create({
+        data: {
+          userId,
+          initialCapital: 100000,
+          currency: 'CNY',
+        } as any,
+      });
     });
     return mapToDTO(created as any);
   }

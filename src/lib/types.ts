@@ -36,30 +36,30 @@ export type DailyAnalysis = {
 }
 
 export type WeeklyReview = {
-    id: string;
-    userId: string;
-    startDate: string | Date;
-    endDate: string | Date;
-    patternSummary: string;
-    errorPatterns: string;
-    successPatterns: string;
-    positionSizingAnalysis: string;
-    emotionalCorrelation: string;
-    improvementPlan: string;
-    createdAt: Date;
+  id: string;
+  userId: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  patternSummary: string;
+  errorPatterns: string;
+  successPatterns: string;
+  positionSizingAnalysis: string;
+  emotionalCorrelation: string;
+  improvementPlan: string;
+  createdAt: Date;
 }
 
 export type MonthlySummary = {
-    id: string;
-    userId: string;
-    monthStartDate: string | Date;
-    monthEndDate: string | Date;
-    performanceComparison: string;
-    recurringIssues: string;
-    strategyExecutionEvaluation: string;
-    keyLessons: string;
-    iterationSuggestions: string;
-    createdAt: Date;
+  id: string;
+  userId: string;
+  monthStartDate: string | Date;
+  monthEndDate: string | Date;
+  performanceComparison: string;
+  recurringIssues: string;
+  strategyExecutionEvaluation: string;
+  keyLessons: string;
+  iterationSuggestions: string;
+  createdAt: Date;
 }
 
 /**
@@ -119,7 +119,7 @@ export type Order = {
   updatedAt: Date;
 }
 
-export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile';
+export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile' | 'recommendations';
 
 export const StockSchema = z.object({
   value: z.string(),
@@ -184,4 +184,28 @@ export type TradeLeg = {
   createdAt: Date;
 };
 
-    
+export interface Performance {
+  t_day: number;
+  daily: number;
+  cum: number;
+  date: string;
+}
+
+export interface Recommendation {
+  id?: string;
+  symbol: string;
+  name: string;
+  signal_type: string;
+  signal_date: string;
+  initial_price: number;
+  stop_loss_ref: number;
+  max_track_days: number;
+  performance: Performance[];
+}
+
+export interface HeatmapData {
+  total: number;
+  max_track_days: number;
+  data: Recommendation[];
+}
+

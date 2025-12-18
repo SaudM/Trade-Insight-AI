@@ -9,6 +9,7 @@ import { Dashboard } from '@/components/app/dashboard';
 import { TradeLogView } from '@/components/app/tradeLogView/trade-log-view';
 import { AnalysisView } from '@/components/app/analysis-view';
 import { ProfileView } from '@/components/app/profile-view';
+import { RecommendationsView } from '@/components/app/recommendations-view';
 import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary, Subscription } from '@/lib/types';
 import { useFirebase } from '@/firebase';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
@@ -19,11 +20,11 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TradeLogForm, type TradeLogFormValues } from './trade-log-form';
 import { useUserData } from '@/hooks/use-user-data';
-import { 
-  useTradeLogsPostgres, 
-  useDailyAnalysesPostgres, 
-  useWeeklyReviewsPostgres, 
-  useMonthlySummariesPostgres 
+import {
+  useTradeLogsPostgres,
+  useDailyAnalysesPostgres,
+  useWeeklyReviewsPostgres,
+  useMonthlySummariesPostgres
 } from '@/hooks/use-postgres-data';
 
 import { SubscriptionModal } from './subscription-modal';
@@ -33,17 +34,17 @@ export function TradeInsightsApp() {
   const [activeView, setActiveView] = useState<View>('dashboard');
   const { user } = useFirebase();
   const { toast } = useToast();
-  
+
   // --- Form Dialog State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<TradeLog | null>(null);
-  
+
   // --- Subscription Modal State ---
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
   // --- User Data from PostgreSQL (with Firebase fallback) ---
   const { userData, isLoading: isLoadingUserData, error: userDataError } = useUserData();
-  
+
   // Extract user info and subscription status
   // 将试用用户也视为VIP用户，确保有效期内的用户都能使用分析功能
   const isProUser = userData?.isProUser || false;
@@ -54,7 +55,7 @@ export function TradeInsightsApp() {
 
   // --- PostgreSQL Data Hooks ---
   const { data: tradeLogs, isLoading: isLoadingLogs, error: tradeLogsError, refetch: refetchTradeLogs } = useTradeLogsPostgres(userData?.user?.id || null);
-  
+
   // 添加调试信息
   console.log('TradeInsightsApp - userData:', userData);
   console.log('TradeInsightsApp - tradeLogs from hook:', tradeLogs);
@@ -72,17 +73,17 @@ export function TradeInsightsApp() {
       toast({ variant: 'destructive', title: "未登录", description: "请先登录。" });
       return false;
     }
-    
+
     if (isLoadingUserData) {
       toast({ variant: 'destructive', title: "请稍候", description: "正在加载用户数据，请稍后再试。" });
       return false;
     }
-    
+
     if (!userData?.user) {
       toast({ variant: 'destructive', title: "用户错误", description: "用户数据未找到，请重新登录。" });
       return false;
     }
-    
+
     return true;
   };
 
@@ -93,18 +94,18 @@ export function TradeInsightsApp() {
    */
   const addTradeLog = async (log: Omit<TradeLog, 'id' | 'userId' | 'createdAt'>) => {
     if (!validateUser()) return;
-    
+
     try {
       const response = await fetch('/api/trade-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...log, userId: userData!.user!.id }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create trade log');
       }
-      
+
       toast({ title: '交易笔记已添加' });
       // 刷新交易日志数据，而不是刷新整个页面
       await refetchTradeLogs();
@@ -122,11 +123,11 @@ export function TradeInsightsApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...analysis, userId: userData!.user!.id }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create daily analysis');
       }
-      
+
       toast({ title: '每日分析已添加' });
       setActiveView('analysis');
       // 刷新每日分析数据，而不是刷新整个页面
@@ -145,11 +146,11 @@ export function TradeInsightsApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...review, userId: userData!.user!.id }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create weekly review');
       }
-      
+
       toast({ title: '每周回顾已添加' });
       setActiveView('analysis');
       // 刷新每周回顾数据，而不是刷新整个页面
@@ -168,11 +169,11 @@ export function TradeInsightsApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...summary, userId: userData!.user!.id }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create monthly summary');
       }
-      
+
       toast({ title: '月度总结已添加' });
       setActiveView('analysis');
       // 刷新月度总结数据，而不是刷新整个页面
@@ -191,11 +192,11 @@ export function TradeInsightsApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...updatedLog, userId: userData!.user!.id }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update trade log');
       }
-      
+
       toast({ title: "交易笔记已更新" });
       // 刷新交易日志数据，而不是刷新整个页面
       await refetchTradeLogs();
@@ -211,11 +212,11 @@ export function TradeInsightsApp() {
       const response = await fetch(`/api/trade-logs/${id}?userId=${userData.user.id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete trade log');
       }
-      
+
       toast({ title: "交易笔记已删除" });
       // 刷新交易笔记数据而不是重新加载整个页面
       await refetchTradeLogs();
@@ -263,13 +264,13 @@ export function TradeInsightsApp() {
       : common;
     // 卖出/平仓方向：向后端提交卖出价格与卖出股数（数值类型，供后端计算与校验）
     const withExitFields = ((log.direction === 'Sell' || log.direction === 'Close') && log.sellPrice && log.sellQuantity)
-      ? { 
-          ...common, 
-          sellPrice: Number(log.sellPrice), 
-          sellQuantity: Number(log.sellQuantity),
-          // 仅在平仓时携带 tradeResult，由表单层计算并传入
-          ...(log.tradeResult ? { tradeResult: log.tradeResult } : {})
-        }
+      ? {
+        ...common,
+        sellPrice: Number(log.sellPrice),
+        sellQuantity: Number(log.sellQuantity),
+        // 仅在平仓时携带 tradeResult，由表单层计算并传入
+        ...(log.tradeResult ? { tradeResult: log.tradeResult } : {})
+      }
       : common;
 
     // 根据方向选择最终提交载荷
@@ -304,16 +305,16 @@ export function TradeInsightsApp() {
       setIsFormOpen(true);
     }
   };
-  
+
   const filteredTradeLogs = useMemo(() => {
     console.log('filteredTradeLogs useMemo - tradeLogs:', tradeLogs);
     console.log('filteredTradeLogs useMemo - timePeriod:', timePeriod);
-    
+
     if (!tradeLogs) {
       console.log('filteredTradeLogs useMemo - no tradeLogs, returning empty array');
       return [];
     }
-    
+
     const now = new Date();
     const toDate = (time: string | any) => {
       // 处理 Timestamp 类型（Firebase）
@@ -327,24 +328,24 @@ export function TradeInsightsApp() {
       }
       return new Date(time);
     };
-    
+
     let result;
     if (timePeriod === 'today') {
-        result = tradeLogs.filter(log => isSameDay(toDate(log.tradeTime), now));
+      result = tradeLogs.filter(log => isSameDay(toDate(log.tradeTime), now));
     } else if (timePeriod === '7d') {
-        const sevenDaysAgo = startOfDay(subDays(now, 7));
-        result = tradeLogs.filter(log => toDate(log.tradeTime) >= sevenDaysAgo);
+      const sevenDaysAgo = startOfDay(subDays(now, 7));
+      result = tradeLogs.filter(log => toDate(log.tradeTime) >= sevenDaysAgo);
     } else if (timePeriod === '30d') {
-        const thirtyDaysAgo = startOfDay(subDays(now, 30));
-        result = tradeLogs.filter(log => toDate(log.tradeTime) >= thirtyDaysAgo);
+      const thirtyDaysAgo = startOfDay(subDays(now, 30));
+      result = tradeLogs.filter(log => toDate(log.tradeTime) >= thirtyDaysAgo);
     } else {
-        result = tradeLogs.map(log => ({...log, tradeTime: toDate(log.tradeTime).toISOString()}));
+      result = tradeLogs.map(log => ({ ...log, tradeTime: toDate(log.tradeTime).toISOString() }));
     }
-    
+
     console.log('filteredTradeLogs useMemo - result:', result);
     return result;
   }, [tradeLogs, timePeriod]);
-  
+
   const allLogsForViews = useMemo(() => {
     if (!tradeLogs) return [];
     return tradeLogs.map(log => {
@@ -371,46 +372,48 @@ export function TradeInsightsApp() {
         </div>
       );
     }
-    
+
     switch (activeView) {
       case 'dashboard':
-        return <Dashboard 
-                  tradeLogs={filteredTradeLogs} 
-                  setActiveView={setActiveView} 
-                  timePeriod={timePeriod} 
-                  setTimePeriod={setTimePeriod}
-                  onAddTradeLog={handleAddTradeLogClick} 
-                />;
+        return <Dashboard
+          tradeLogs={filteredTradeLogs}
+          setActiveView={setActiveView}
+          timePeriod={timePeriod}
+          setTimePeriod={setTimePeriod}
+          onAddTradeLog={handleAddTradeLogClick}
+        />;
       case 'tradelog':
-        return <TradeLogView 
-                  tradeLogs={allLogsForViews} 
-                  deleteTradeLog={deleteTradeLog} 
-                  onAddTradeLog={handleAddTradeLogClick}
-                  onEditTradeLog={handleEditTradeLogClick}
-                />;
+        return <TradeLogView
+          tradeLogs={allLogsForViews}
+          deleteTradeLog={deleteTradeLog}
+          onAddTradeLog={handleAddTradeLogClick}
+          onEditTradeLog={handleEditTradeLogClick}
+        />;
       case 'analysis':
-        return <AnalysisView 
-                  tradeLogs={allLogsForViews}
-                  filteredTradeLogs={filteredTradeLogs}
-                  dailyAnalyses={dailyAnalyses || []}
-                  weeklyReviews={weeklyReviews || []}
-                  monthlySummaries={monthlySummaries || []}
-                  addDailyAnalysis={addDailyAnalysis}
-                  addWeeklyAnalysis={addWeeklyAnalysis}
-                  addMonthlySummary={addMonthlySummary}
-                  isProUser={isVipUser}
-                  onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
-                />;
+        return <AnalysisView
+          tradeLogs={allLogsForViews}
+          filteredTradeLogs={filteredTradeLogs}
+          dailyAnalyses={dailyAnalyses || []}
+          weeklyReviews={weeklyReviews || []}
+          monthlySummaries={monthlySummaries || []}
+          addDailyAnalysis={addDailyAnalysis}
+          addWeeklyAnalysis={addWeeklyAnalysis}
+          addMonthlySummary={addMonthlySummary}
+          isProUser={isVipUser}
+          onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+        />;
       case 'profile':
         return <ProfileView />;
+      case 'recommendations':
+        return <RecommendationsView />;
       default:
-        return <Dashboard 
-                  tradeLogs={filteredTradeLogs} 
-                  setActiveView={setActiveView} 
-                  timePeriod={timePeriod} 
-                  setTimePeriod={setTimePeriod} 
-                  onAddTradeLog={handleAddTradeLogClick}
-                />;
+        return <Dashboard
+          tradeLogs={filteredTradeLogs}
+          setActiveView={setActiveView}
+          timePeriod={timePeriod}
+          setTimePeriod={setTimePeriod}
+          onAddTradeLog={handleAddTradeLogClick}
+        />;
     }
   };
 
@@ -423,15 +426,15 @@ export function TradeInsightsApp() {
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={handleDialogOpenChange}>
               <DialogContent className="w-[80vw] max-w-[600px] min-w-[320px] p-0 overflow-hidden rounded-3xl shadow-2xl border-0 bg-white">
-                  <ScrollArea className="max-h-[85vh] w-full">
-                      <div className="p-6">
-                          <TradeLogForm 
-                              tradeLog={editingLog} 
-                              onSubmit={handleFormSubmit}
-                              onCancel={handleFormCancel}
-                          />
-                      </div>
-                  </ScrollArea>
+                <ScrollArea className="max-h-[85vh] w-full">
+                  <div className="p-6">
+                    <TradeLogForm
+                      tradeLog={editingLog}
+                      onSubmit={handleFormSubmit}
+                      onCancel={handleFormCancel}
+                    />
+                  </div>
+                </ScrollArea>
               </DialogContent>
             </Dialog>
             <SubscriptionModal isOpen={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen} />
