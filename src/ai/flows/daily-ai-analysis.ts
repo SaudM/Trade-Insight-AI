@@ -8,8 +8,8 @@
  * - DailyTradeAnalysisOutput - The return type for the analyzeDailyTrades function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 const DailyTradeAnalysisInputSchema = z.object({
   tradeLogs: z.string().describe('A comprehensive log of the day\'s trading activities, formatted as a multi-line string where each line is a trade. The logs are in Chinese.'),
@@ -38,9 +38,9 @@ export async function analyzeDailyTrades(input: DailyTradeAnalysisInput): Promis
       tradeLogsLength: input.tradeLogs.length,
       tradeLogsPreview: input.tradeLogs.substring(0, 200) + '...'
     });
-    
+
     const result = await dailyTradeAnalysisFlow(input);
-    
+
     console.log('每日交易分析完成，结果:', {
       summaryLength: result.summary?.length || 0,
       strengthsLength: result.strengths?.length || 0,
@@ -48,7 +48,7 @@ export async function analyzeDailyTrades(input: DailyTradeAnalysisInput): Promis
       emotionalImpactAnalysisLength: result.emotionalImpactAnalysis?.length || 0,
       improvementSuggestionsLength: result.improvementSuggestions?.length || 0
     });
-    
+
     return result;
   } catch (error) {
     console.error('每日交易分析失败:', {
@@ -65,8 +65,8 @@ export async function analyzeDailyTrades(input: DailyTradeAnalysisInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'dailyTradeAnalysisPrompt',
-  input: {schema: DailyTradeAnalysisInputSchema},
-  output: {schema: DailyTradeAnalysisOutputSchema},
+  input: { schema: DailyTradeAnalysisInputSchema },
+  output: { schema: DailyTradeAnalysisOutputSchema },
   prompt: `You are an expert trading analyst. Your task is to analyze a trader's daily trade log, which is provided in Chinese. Provide your entire analysis in Chinese and format the output as a JSON object.
 
 The trade log is a multi-line string. Each line represents one trade with the following fields: 时间 (Time), 标的 (Symbol), 方向 (Direction), 仓位大小 (Position Size), 盈亏 (P/L), 入场理由 (Entry Reason), 出场理由 (Exit Reason), 心态 (Mindset), and 心得 (Lessons Learned).
@@ -95,13 +95,13 @@ const dailyTradeAnalysisFlow = ai.defineFlow(
   async input => {
     try {
       console.log('调用AI分析提示，输入验证通过');
-      const {output} = await prompt(input);
-      
+      const { output } = await prompt(input);
+
       if (!output) {
         console.error('AI分析返回空结果');
         throw new Error('AI分析返回空结果');
       }
-      
+
       console.log('AI分析提示调用成功');
       return output;
     } catch (error) {

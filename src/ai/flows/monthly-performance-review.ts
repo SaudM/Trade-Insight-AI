@@ -8,8 +8,8 @@
  * - MonthlyPerformanceReviewOutput - The return type for the monthlyPerformanceReview function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 const TradingLogSchema = z.object({
   tradeTime: z.string().describe('The time the trade was executed.'),
@@ -23,7 +23,7 @@ const TradingLogSchema = z.object({
   tradeResult: z.string().describe('The profit or loss of the trade.'),
   mindsetState:
     z.string()
-    .describe('The trader’s emotional and mental state during the trade.'),
+      .describe('The trader’s emotional and mental state during the trade.'),
   lessonsLearned: z.string().describe('Lessons learned from the trade.'),
 });
 
@@ -74,8 +74,8 @@ export async function monthlyPerformanceReview(
 
 const monthlyPerformanceReviewPrompt = ai.definePrompt({
   name: 'monthlyPerformanceReviewPrompt',
-  input: {schema: MonthlyPerformanceReviewInputSchema},
-  output: {schema: MonthlyPerformanceReviewOutputSchema},
+  input: { schema: MonthlyPerformanceReviewInputSchema },
+  output: { schema: MonthlyPerformanceReviewOutputSchema },
   prompt: `You are an expert trading performance analyst. Your task is to analyze a trader's monthly trading logs and provide a comprehensive performance review in Chinese.
 
   Compare the trader's trading habits and performance between the current month ({{{currentMonthPeriod}}}) and previous month ({{{previousMonthPeriod}}}). Identify any recurring issues in their trading system. Evaluate their strategy execution and discipline. Extract key lessons learned during the month. Provide specific and actionable recommendations for improving their trading system.
@@ -111,7 +111,7 @@ const monthlyPerformanceReviewFlow = ai.defineFlow(
     outputSchema: MonthlyPerformanceReviewOutputSchema,
   },
   async input => {
-    const {output} = await monthlyPerformanceReviewPrompt(input);
+    const { output } = await monthlyPerformanceReviewPrompt(input);
     return output!;
   }
 );

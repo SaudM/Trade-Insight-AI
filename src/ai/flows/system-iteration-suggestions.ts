@@ -8,8 +8,8 @@
  * - SuggestSystemIterationOutput - The return type for the suggestSystemIteration function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 const SuggestSystemIterationInputSchema = z.object({
   monthlyReport: z
@@ -38,8 +38,8 @@ export async function suggestSystemIteration(
 
 const prompt = ai.definePrompt({
   name: 'suggestSystemIterationPrompt',
-  input: {schema: SuggestSystemIterationInputSchema},
-  output: {schema: SuggestSystemIterationOutputSchema},
+  input: { schema: SuggestSystemIterationInputSchema },
+  output: { schema: SuggestSystemIterationOutputSchema },
   prompt: `You are an expert trading system analyst. Your task is to provide the entire analysis in Chinese.
 
   Based on the monthly trading report and comparison with the previous month, provide specific, actionable recommendations for improving the trading system.
@@ -61,7 +61,7 @@ const suggestSystemIterationFlow = ai.defineFlow(
     outputSchema: SuggestSystemIterationOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const { output } = await prompt(input);
     return output!;
   }
 );

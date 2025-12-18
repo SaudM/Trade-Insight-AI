@@ -10,8 +10,8 @@
  * @exports WeeklyImprovementPlanOutput - The return type for the weeklyImprovementPlan function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 const WeeklyImprovementPlanInputSchema = z.object({
   weeklySummary: z
@@ -37,8 +37,8 @@ export async function weeklyImprovementPlan(
 
 const prompt = ai.definePrompt({
   name: 'weeklyImprovementPlanPrompt',
-  input: {schema: WeeklyImprovementPlanInputSchema},
-  output: {schema: WeeklyImprovementPlanOutputSchema},
+  input: { schema: WeeklyImprovementPlanInputSchema },
+  output: { schema: WeeklyImprovementPlanOutputSchema },
   prompt: `Based on the following weekly trading summary, create a list of actionable steps in Chinese that the trader can take to improve their trading habits and performance next week.
 
 Weekly Summary: 
@@ -54,7 +54,7 @@ const weeklyImprovementPlanFlow = ai.defineFlow(
     outputSchema: WeeklyImprovementPlanOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const { output } = await prompt(input);
     return output!;
   }
 );

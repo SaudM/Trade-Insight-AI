@@ -8,8 +8,8 @@
  * - WeeklyPatternDiscoveryOutput - The return type for the weeklyPatternDiscovery function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 const WeeklyPatternDiscoveryInputSchema = z.object({
   tradingLogs: z.string().describe('A JSON string of the week\'s trading logs.'),
@@ -46,8 +46,8 @@ export async function weeklyPatternDiscovery(
 
 const weeklyPatternDiscoveryPrompt = ai.definePrompt({
   name: 'weeklyPatternDiscoveryPrompt',
-  input: {schema: WeeklyPatternDiscoveryInputSchema},
-  output: {schema: WeeklyPatternDiscoveryOutputSchema},
+  input: { schema: WeeklyPatternDiscoveryInputSchema },
+  output: { schema: WeeklyPatternDiscoveryOutputSchema },
   prompt: `You are a trading performance analyst. Analyze the provided trading logs for the week period from {{{weekStartDate}}} to {{{weekEndDate}}} to identify patterns, assess position sizing, and correlate emotional states with trading outcomes. Provide your entire analysis in Chinese.
 
   Trading Logs: {{{tradingLogs}}}
@@ -75,7 +75,7 @@ const weeklyPatternDiscoveryFlow = ai.defineFlow(
     outputSchema: WeeklyPatternDiscoveryOutputSchema,
   },
   async input => {
-    const {output} = await weeklyPatternDiscoveryPrompt(input);
+    const { output } = await weeklyPatternDiscoveryPrompt(input);
     return output!;
   }
 );
