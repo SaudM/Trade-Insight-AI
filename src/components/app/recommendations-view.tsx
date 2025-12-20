@@ -32,7 +32,7 @@ type SortDirection = 'asc' | 'desc' | null;
 export function RecommendationsView() {
     const [data, setData] = useState<HeatmapData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [signalDate, setSignalDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+    const [signalDate, setSignalDate] = useState<string>("");
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [sortField, setSortField] = useState<SortField>(null);
     const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -47,6 +47,12 @@ export function RecommendationsView() {
             }
             const result = await response.json();
             setData(result);
+
+            // If fetching latest (empty date) and we got data, update the date picker
+            if (!date && result?.data?.length > 0) {
+                // Assuming all records share the same signal_date or we pick the first one as representative
+                setSignalDate(result.data[0].signal_date);
+            }
         } catch (error) {
             console.error('Error fetching heatmap:', error);
             toast({
