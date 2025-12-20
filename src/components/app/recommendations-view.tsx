@@ -3,25 +3,39 @@
 
 import { useEffect, useState } from 'react';
 import { AppHeader } from './header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Calendar as CalendarIcon, Filter, TrendingUp, TrendingDown, Info } from 'lucide-react';
-import { format, subDays, parseISO } from 'date-fns';
+import { Loader2, Calendar as CalendarIcon, Filter, Info, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import type { Recommendation, HeatmapData, Performance } from '@/lib/types';
+import type { Recommendation, HeatmapData } from '@/lib/types';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useToast } from '@/hooks/use-toast';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
+
+type SortField = 'signal_type' | number | null; // number represents t_day
+type SortDirection = 'asc' | 'desc' | null;
 
 export function RecommendationsView() {
     const [data, setData] = useState<HeatmapData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [signalDate, setSignalDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [sortField, setSortField] = useState<SortField>(null);
+    const [sortDirection, setSortDirection] = useState<SortDirection>(null);
     const { toast } = useToast();
 
     const fetchHeatmap = async (date: string) => {
@@ -40,8 +54,6 @@ export function RecommendationsView() {
                 title: '获取数据失败',
                 description: '无法从外部API获取热力图数据，请确保后端服务已启动。',
             });
-            // Set dummy data for visualization if API fails (optional, but good for demo)
-            // setData(getDummyData()); 
         } finally {
             setIsLoading(false);
         }
@@ -51,160 +63,254 @@ export function RecommendationsView() {
         fetchHeatmap(signalDate);
     }, [signalDate]);
 
-    const getColorClass = (value: number | undefined) => {
-        if (value === undefined) return 'bg-gray-100 text-gray-400';
-        if (value > 5) return 'bg-red-600 text-white';
-        if (value > 2) return 'bg-red-400 text-white';
-        if (value > 0) return 'bg-red-200 text-red-800';
-        if (value === 0) return 'bg-gray-200 text-gray-800';
-        if (value > -2) return 'bg-green-200 text-green-800';
-        if (value > -5) return 'bg-green-400 text-white';
-        return 'bg-green-600 text-white';
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            if (sortDirection === 'desc') setSortDirection('asc');
+            else if (sortDirection === 'asc') {
+                setSortField(null);
+                setSortDirection(null);
+            }
+        } else {
+            setSortField(field);
+            setSortDirection('desc');
+        }
     };
 
-    const dates = Array.from({ length: 7 }, (_, i) => {
-        const d = subDays(new Date(), i);
-        return format(d, 'yyyy-MM-dd');
-    });
+    const getSortedData = () => {
+        if (!data?.data) return [];
+        if (!sortField || !sortDirection) return data.data;
+
+        return [...data.data].sort((a, b) => {
+            let valA: any;
+            let valB: any;
+
+            if (sortField === 'signal_type') {
+                valA = a.signal_type;
+                valB = b.signal_type;
+            } else if (typeof sortField === 'number') {
+                valA = a.performance.find(p => p.t_day === sortField)?.daily ?? -999;
+                valB = b.performance.find(p => p.t_day === sortField)?.daily ?? -999;
+            }
+
+            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    };
+
+    const sortedRecommendations = getSortedData();
+
+    const getColorClass = (value: number | undefined) => {
+        if (value === undefined) return 'bg-slate-50 text-slate-300';
+        if (value > 5) return 'bg-red-500 text-white';
+        if (value > 2) return 'bg-red-400 text-white';
+        if (value > 0) return 'bg-red-100 text-red-700';
+        if (value === 0) return 'bg-slate-100 text-slate-600';
+        if (value > -2) return 'bg-green-100 text-green-700';
+        if (value > -5) return 'bg-green-400 text-white';
+        return 'bg-green-500 text-white';
+    };
+
+
+    const SortIndicator = ({ field }: { field: SortField }) => {
+        if (sortField !== field) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />;
+        if (sortDirection === 'desc') return <ArrowDown className="ml-1 h-3 w-3 text-primary animate-in fade-in duration-300" />;
+        return <ArrowUp className="ml-1 h-3 w-3 text-primary animate-in fade-in duration-300" />;
+    };
+
+    // Get all unique dates from performance data to use as headers
+    const getPerformanceDates = (recommendations: Recommendation[]) => {
+        const dateSet = new Set<string>();
+        recommendations.forEach(rec => {
+            rec.performance.forEach(p => {
+                if (p.date) {
+                    // Format as MM-dd for headers
+                    const d = p.date.split('T')[0];
+                    dateSet.add(d);
+                }
+            });
+        });
+        return Array.from(dateSet).sort();
+    };
+
+    const performanceDates = data ? getPerformanceDates(data.data) : [];
 
     return (
         <div className="flex flex-col h-full bg-slate-50/50">
             <AppHeader title="精选推荐" />
 
-            <div className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                            <Filter className="h-5 w-5" />
+            <div className="flex-1 p-4 md:p-6 lg:p-8 space-y-4 overflow-hidden flex flex-col">
+                {/* Filter Section */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-3 px-4 rounded-xl shadow-sm border border-slate-200/60 shrink-0">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Filter className="h-4 w-4 text-slate-400" />
+                            <h2 className="text-sm font-semibold text-slate-700">信号日期</h2>
+                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-[160px] h-8 text-xs justify-start text-left font-normal rounded-lg border-slate-200 focus:ring-primary/20 bg-slate-50/50 hover:bg-slate-100/50",
+                                            !signalDate && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-3 w-3 opacity-50" />
+                                        {signalDate ? signalDate : <span>选择日期</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white overflow-hidden" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={new Date(signalDate)}
+                                        onSelect={(date) => {
+                                            if (date) {
+                                                setSignalDate(format(date, 'yyyy-MM-dd'));
+                                                setIsCalendarOpen(false); // Auto-close after selection
+                                            }
+                                        }}
+                                        disabled={(date) => {
+                                            // Disable weekends (Saturday = 6, Sunday = 0)
+                                            const day = date.getDay();
+                                            return day === 0 || day === 6 || date > new Date();
+                                        }}
+                                        initialFocus
+                                        className="bg-white p-4"
+                                        classNames={{
+                                            day_today: "bg-slate-100 text-primary font-bold rounded-lg",
+                                            day_selected: "bg-primary text-white hover:bg-primary hover:text-white rounded-lg",
+                                            day: "h-9 w-9 p-0 font-medium transition-all hover:bg-slate-100 rounded-lg",
+                                            caption_label: "text-sm font-bold text-slate-800",
+                                            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-slate-100 rounded-md transition-all",
+                                        }}
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
-                        <div>
-                            <h2 className="text-lg font-semibold text-slate-800">推荐筛选</h2>
-                            <p className="text-sm text-slate-500">查看不同日期的精选股票信号</p>
-                        </div>
+
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-slate-600">信号日期:</span>
-                        <Select value={signalDate} onValueChange={setSignalDate}>
-                            <SelectTrigger className="w-[180px] rounded-xl border-slate-200 focus:ring-primary/20">
-                                <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
-                                <SelectValue placeholder="选择日期" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-200">
-                                {dates.map((date) => (
-                                    <SelectItem key={date} value={date} className="rounded-lg">
-                                        {date === format(new Date(), 'yyyy-MM-dd') ? `今天 (${date})` : date}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <div className="flex items-center gap-4 text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded bg-red-400"></div>
+                            盈利
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded bg-green-400"></div>
+                            亏损
+                        </div>
                     </div>
                 </div>
 
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-70" />
-                        <p className="text-slate-500 font-medium animate-pulse">正在加载热力图数据...</p>
-                    </div>
-                ) : data && data.data.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6">
-                        {data.data.map((rec) => (
-                            <Card key={`${rec.symbol}-${rec.signal_date}`} className="overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl group">
-                                <CardHeader className="bg-white border-b border-slate-50 p-6">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors">{rec.name}</span>
-                                                    <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{rec.symbol}</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 mt-1">
-                                                    <Badge variant={rec.signal_type === 'STRONG_BUY' ? 'destructive' : 'default'} className="rounded-full px-3 font-semibold">
-                                                        {rec.signal_type === 'STRONG_BUY' ? '强力买入' : '建议买入'}
-                                                    </Badge>
-                                                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                                                        <CalendarIcon className="h-3 w-3" />
-                                                        推荐日: {rec.signal_date}
-                                                    </span>
-                                                </div>
+                {/* Content Section */}
+                <Card className="flex-1 overflow-hidden border-slate-200/60 shadow-sm rounded-xl bg-white flex flex-col">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center flex-1 space-y-4">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
+                            <p className="text-slate-400 text-sm font-medium animate-pulse">正在同步市场数据...</p>
+                        </div>
+                    ) : data && data.data.length > 0 ? (
+                        <div className="flex-1 overflow-auto">
+                            <Table className="relative">
+                                <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-md">
+                                    <TableRow className="hover:bg-transparent border-slate-200">
+                                        <TableHead className="w-[150px] font-bold text-slate-700 text-xs text-left">证券/代码</TableHead>
+                                        <TableHead
+                                            className="w-[80px] font-bold text-slate-700 text-xs text-center cursor-pointer hover:bg-slate-100/50 transition-colors group"
+                                            onClick={() => handleSort('signal_type')}
+                                        >
+                                            <div className="flex items-center justify-center">
+                                                信号类型
+                                                <SortIndicator field="signal_type" />
                                             </div>
-                                        </div>
+                                        </TableHead>
+                                        <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">推荐时</TableHead>
+                                        <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">止损价</TableHead>
+                                        {/* Performance Columns - Always render 7 columns */}
+                                        {Array.from({ length: 7 }, (_, i) => {
+                                            const tDay = i + 1;
+                                            const dateObj = data?.data.flatMap(r => r.performance).find(p => p.t_day === tDay);
+                                            const displayHeader = dateObj?.date ? dateObj.date.split('T')[0].substring(5) : `T+${tDay}`;
 
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-right">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs text-slate-400 font-medium">推荐价</span>
-                                                <span className="text-lg font-bold text-slate-700">¥{rec.initial_price}</span>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs text-slate-400 font-medium">止损参考</span>
-                                                <span className="text-lg font-bold text-red-500/80">¥{rec.stop_loss_ref}</span>
-                                            </div>
-                                            <div className="flex flex-col hidden md:flex">
-                                                <span className="text-xs text-slate-400 font-medium">追踪天数</span>
-                                                <span className="text-lg font-bold text-slate-700">{rec.max_track_days}天</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="bg-slate-50/30 p-6">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                                <TrendingUp className="h-4 w-4 text-primary" />
-                                                后续表现追踪 (T+N)
-                                            </h4>
-                                            <div className="flex items-center gap-4 text-[10px] uppercase tracking-wider font-bold text-slate-400">
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                                    上涨
+                                            return (
+                                                <TableHead
+                                                    key={i}
+                                                    className="w-[85px] font-bold text-slate-700 text-xs text-center p-1 cursor-pointer hover:bg-slate-100/50 transition-colors group"
+                                                    onClick={() => handleSort(tDay)}
+                                                >
+                                                    <div className="flex items-center justify-center">
+                                                        {displayHeader}
+                                                        <SortIndicator field={tDay} />
+                                                    </div>
+                                                </TableHead>
+                                            );
+                                        })}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {sortedRecommendations.map((rec) => (
+                                        <TableRow key={`${rec.symbol}-${rec.signal_date}`} className="group hover:bg-slate-50/50 transition-colors border-slate-100">
+                                            <TableCell className="py-3 w-[150px]">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-900 group-hover:text-primary transition-colors text-sm">{rec.name}</span>
+                                                    <span className="text-[10px] font-mono text-slate-400 uppercase">{rec.symbol}</span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                                    下跌
-                                                </div>
-                                            </div>
-                                        </div>
+                                            </TableCell>
+                                            <TableCell className="text-center w-[80px]">
+                                                <Badge
+                                                    variant={rec.signal_type === 'STRONG_BUY' ? 'destructive' : 'secondary'}
+                                                    className={cn(
+                                                        "px-2 py-0 h-5 text-[10px] rounded-md font-bold whitespace-nowrap",
+                                                        rec.signal_type === 'STRONG_BUY' ? "bg-red-500 text-white" : "bg-indigo-500 text-white"
+                                                    )}
+                                                >
+                                                    {rec.signal_type === 'STRONG_BUY' ? '买入' : '关注'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right font-semibold text-slate-600 text-xs w-[90px]">
+                                                ¥{rec.initial_price}
+                                            </TableCell>
+                                            <TableCell className="text-right font-semibold text-red-400 text-xs w-[90px]">
+                                                {rec.stop_loss_ref ? `¥${rec.stop_loss_ref}` : '-'}
+                                            </TableCell>
 
-                                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
-                                            {Array.from({ length: rec.max_track_days || 7 }, (_, i) => {
+                                            {/* Heatmap Cells - Always render 7 cells */}
+                                            {Array.from({ length: 7 }, (_, i) => {
                                                 const tDay = i + 1;
                                                 const perf = rec.performance.find(p => p.t_day === tDay);
-
                                                 return (
-                                                    <div
-                                                        key={tDay}
-                                                        className={cn(
-                                                            "flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-200 border",
+                                                    <TableCell key={tDay} className="p-1 w-[85px]">
+                                                        <div className={cn(
+                                                            "h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-300 border border-white",
                                                             getColorClass(perf?.daily),
-                                                            perf ? "border-transparent shadow-sm" : "border-slate-100 bg-white"
-                                                        )}
-                                                    >
-                                                        <span className="text-[10px] font-bold opacity-60 uppercase mb-1">T + {tDay}</span>
-                                                        <span className="text-sm font-black">
-                                                            {perf ? `${perf.daily > 0 ? '+' : ''}${perf.daily}%` : '-'}
-                                                        </span>
-                                                        {perf && (
-                                                            <span className="text-[9px] font-bold opacity-40 mt-1">
-                                                                累: {perf.cum}%
+                                                            !perf && "bg-slate-50/50"
+                                                        )}>
+                                                            <span className="text-xs font-black">
+                                                                {perf ? `${perf.daily > 0 ? '+' : ''}${perf.daily}%` : '-'}
                                                             </span>
-                                                        )}
-                                                    </div>
+                                                            {perf && (
+                                                                <span className="text-[9px] font-bold opacity-50">
+                                                                    {perf.cum}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
                                                 );
                                             })}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-64 bg-white rounded-3xl border border-dashed border-slate-200 space-y-3">
-                        <div className="p-4 bg-slate-50 rounded-full">
-                            <Info className="h-8 w-8 text-slate-300" />
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </div>
-                        <p className="text-slate-400 font-medium">该日期暂无推荐信号数据</p>
-                    </div>
-                )}
+                    ) : (
+                        <div className="flex flex-col items-center justify-center flex-1 space-y-3 opacity-60">
+                            <div className="p-3 bg-slate-50 rounded-full">
+                                <Info className="h-6 w-6 text-slate-300" />
+                            </div>
+                            <p className="text-slate-400 text-sm font-medium">该日期暂无推荐信号数据</p>
+                        </div>
+                    )}
+                </Card>
             </div>
         </div>
     );

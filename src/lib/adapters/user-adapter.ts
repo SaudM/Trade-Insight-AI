@@ -113,7 +113,7 @@ export class UserAdapter {
   private static async createPresetDataForNewUser(uid: string): Promise<void> {
     try {
       console.log(`开始为新用户 ${uid} 创建预设数据...`);
-      
+
       // 检查用户是否已有数据，避免重复创建
       const hasData = await PresetDataService.hasPresetData(uid);
       if (hasData) {
@@ -217,7 +217,7 @@ export class UserAdapter {
       // 检查注册时间是否在30天内
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       return user.createdAt > thirtyDaysAgo;
     } catch (error) {
       console.error('检查用户试用状态失败:', error);
@@ -235,21 +235,16 @@ export class UserAdapter {
     subscription: Subscription | null;
     isProUser: boolean;
     isTrialUser: boolean;
-  }> {
+  } | null> {
     try {
       const user = await this.getUserByUid(uid);
       if (!user) {
-        return {
-          user: null,
-          subscription: null,
-          isProUser: false,
-          isTrialUser: false,
-        };
+        return null;
       }
 
       const subscription = await this.getUserCurrentSubscription(user.id);
       const isProUser = subscription !== null;
-      
+
       // 计算试用状态（基于用户创建时间）
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -277,16 +272,11 @@ export class UserAdapter {
     subscription: Subscription | null;
     isProUser: boolean;
     isTrialUser: boolean;
-  }> {
+  } | null> {
     try {
       const user = await this.getUserByFirebaseUid(firebaseUid);
       if (!user) {
-        return {
-          user: null,
-          subscription: null,
-          isProUser: false,
-          isTrialUser: false,
-        };
+        return null;
       }
 
       const subscription = await this.getUserCurrentSubscription(user.id);
