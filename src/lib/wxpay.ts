@@ -12,6 +12,7 @@ export interface CreatePaymentInput {
   price: number; // yuan
   userId: string;
   tradeType: TradeType;
+  payerClientIp?: string;
 }
 
 export interface CreatePaymentResult {
@@ -58,6 +59,9 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
         description,
         out_trade_no,
         amount,
+        scene_info: {
+          payer_client_ip: input.payerClientIp || '127.0.0.1',
+        },
       });
       const raw = res?.data;
       let data: any;
@@ -76,7 +80,10 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
         description,
         out_trade_no,
         amount,
-        scene_info: { h5_info: { type: 'Wap' } },
+        scene_info: {
+          h5_info: { type: 'Wap' },
+          payer_client_ip: input.payerClientIp || '127.0.0.1',
+        },
       });
       const raw = res?.data;
       let data: any;

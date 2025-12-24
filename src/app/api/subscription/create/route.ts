@@ -22,11 +22,21 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
 
-    const res = await createPayment({ planId, price, userId, tradeType });
-    
+    // 获取客户端真实 IP
+    const forwardHeader = req.headers.get('x-forwarded-for');
+    const clientIp = forwardHeader ? forwardHeader.split(',')[0].trim() : (req.headers.get('x-real-ip') || '127.0.0.1');
+
+    const res = await createPayment({
+      planId,
+      price,
+      userId,
+      tradeType,
+      payerClientIp: clientIp
+    });
+
     if (res.error) {
-        console.error('subscription/create payment error:', res.error);
-        return new Response(JSON.stringify({ error: res.error }), { status: 500 });
+      console.error('subscription/create payment error:', res.error);
+      return new Response(JSON.stringify({ error: res.error }), { status: 500 });
     }
 
     // 创建支付订单成功后，保存订单记录到数据库
@@ -46,7 +56,7 @@ export async function POST(req: NextRequest) {
 
       // 使用PostgreSQL创建订单记录
       const isDbConnected = await checkDatabaseConnection();
-      
+
       if (isDbConnected) {
         await createOrderPostgres(userId, orderData);
         console.log(`PostgreSQL订单记录创建成功 for user ${userId}, outTradeNo: ${res.outTradeNo}`);
@@ -54,13 +64,13 @@ export async function POST(req: NextRequest) {
         console.error('数据库连接失败，无法创建订单记录');
         throw new Error('数据库连接失败');
       }
-      
+
     } catch (orderError) {
       console.error('订单记录创建失败:', orderError);
       // 即使订单记录创建失败，也返回支付信息，因为支付订单已经创建成功
       // 可以通过后续的支付回调来补充订单记录
     }
-    
+
     return Response.json({ paymentUrl: res.paymentUrl, outTradeNo: res.outTradeNo });
 
   } catch (err: any) {
