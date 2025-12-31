@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Sparkles, ChevronRight, Gift } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import FinancialParticlesBackground from "@/components/ui/financial-particles-background";
+import { StockMarketBackground } from "@/components/ui/stock-market-background";
 import type { PricingPlan, Subscription } from "@/lib/types";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
 } from "@/components/ui/accordion"
 import { useUser, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -20,48 +20,49 @@ import { QRCodeModal } from '@/components/app/qrcode-modal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
 import { useUserData } from '@/hooks/use-user-data';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const pricingPlans: PricingPlan[] = [
-  {
-    id: 'monthly',
-    name: '月度会员',
-    duration: '/月',
-    price: 14,
-    originalPrice: 28,
-    discount: '新用户专享',
-    features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
-  },
-  {
-    id: 'quarterly',
-    name: '季度会员',
-    duration: '/季',
-    price: 0.01,
-    originalPrice: 84,
-    pricePerMonth: 13,
-    discount: '节省35%',
-    features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
-  },
-  {
-    id: 'semi_annually',
-    name: '半年会员',
-    duration: '/半年',
-    price: 74,
-    originalPrice: 168,
-    pricePerMonth: 12.3,
-    discount: '推荐',
-    features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
-    isPopular: true,
-  },
-  {
-    id: 'annually',
-    name: '年度会员',
-    duration: '/年',
-    price: 134,
-    originalPrice: 336,
-    pricePerMonth: 11.2,
-    discount: '最佳性价比',
-    features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步', '优先客服支持', '新功能尝鲜'],
-  },
+    {
+        id: 'monthly',
+        name: '月度会员',
+        duration: '/月',
+        price: 14,
+        originalPrice: 28,
+        discount: '新用户专享',
+        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
+    },
+    {
+        id: 'quarterly',
+        name: '季度会员',
+        duration: '/季',
+        price: 0.01,
+        originalPrice: 84,
+        pricePerMonth: 13,
+        discount: '节省35%',
+        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
+    },
+    {
+        id: 'semi_annually',
+        name: '半年会员',
+        duration: '/半年',
+        price: 74,
+        originalPrice: 168,
+        pricePerMonth: 12.3,
+        discount: '推荐',
+        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
+        isPopular: true,
+    },
+    {
+        id: 'annually',
+        name: '年度会员',
+        duration: '/年',
+        price: 134,
+        originalPrice: 336,
+        pricePerMonth: 11.2,
+        discount: '最佳性价比',
+        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步', '优先客服支持', '新功能尝鲜'],
+    },
 ];
 
 const faqs = [
@@ -93,7 +94,7 @@ export default function PricingPage() {
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
     const [processedPayments, setProcessedPayments] = useState<Set<string>>(new Set());
-    
+
     // --- User Data from PostgreSQL (with Firebase fallback) ---
     const { userData, isLoading: isLoadingUserData } = useUserData();
     const subscription = userData?.subscription;
@@ -141,16 +142,16 @@ export default function PricingPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  planId: plan.id,
-                  price: plan.price,
-                  userId: user.uid,
-                  tradeType,
+                    planId: plan.id,
+                    price: plan.price,
+                    userId: user.uid,
+                    tradeType,
                 }),
             });
             const result = await createRes.json();
 
             if (result.error) {
-              throw new Error(typeof result.error === 'object' ? JSON.stringify(result.error) : result.error);
+                throw new Error(typeof result.error === 'object' ? JSON.stringify(result.error) : result.error);
             }
 
             if (result.paymentUrl && result.outTradeNo) {
@@ -161,7 +162,7 @@ export default function PricingPage() {
                     window.location.href = result.paymentUrl;
                 }
             } else {
-                 toast({
+                toast({
                     variant: "destructive",
                     title: "创建订单失败",
                     description: "无法获取支付链接，请稍后重试。",
@@ -170,15 +171,15 @@ export default function PricingPage() {
             }
 
         } catch (error: any) {
-             console.error('Payment flow error:', error);
-             toast({
+            console.error('Payment flow error:', error);
+            toast({
                 variant: "destructive",
                 title: "支付出错",
                 description: error.message || "处理您的订阅时发生未知错误，请联系客服。",
-             });
-             if (!isMobile) {
-               setIsLoading(null);
-             }
+            });
+            if (!isMobile) {
+                setIsLoading(null);
+            }
         }
     };
 
@@ -192,21 +193,21 @@ export default function PricingPage() {
         const maxAttempts = 40; // 总共约5分钟
         const baseInterval = 2000; // 基础间隔2秒
         const maxInterval = 10000; // 最大间隔10秒
-        
+
         const poll = async () => {
             attempts++;
             if (!user) {
                 return;
             }
-            
+
             try {
                 console.log(`检查支付状态 (第${attempts}次):`, outTradeNo);
                 const res = await fetch(`/api/subscription/status?outTradeNo=${encodeURIComponent(outTradeNo)}`);
-                
+
                 if (!res.ok) {
                     consecutiveErrors++;
                     console.warn(`支付状态查询失败 (第${consecutiveErrors}次错误):`, res.status);
-                    
+
                     // 如果连续错误超过3次，增加间隔
                     if (consecutiveErrors >= 3) {
                         const nextInterval = Math.min(baseInterval * Math.pow(2, consecutiveErrors - 3), maxInterval);
@@ -216,10 +217,10 @@ export default function PricingPage() {
                 } else {
                     consecutiveErrors = 0; // 重置错误计数
                 }
-                
+
                 const data = await res.json();
                 console.log('支付状态查询结果:', data);
-                
+
                 if (data.trade_state === 'SUCCESS') {
                     // 检查是否已经处理过这个支付
                     const paymentKey = `${outTradeNo}-${data.transaction_id}`;
@@ -227,10 +228,10 @@ export default function PricingPage() {
                         console.log('支付已处理过，跳过重复处理:', paymentKey);
                         return;
                     }
-                    
+
                     // 标记为已处理
                     setProcessedPayments(prev => new Set(prev).add(paymentKey));
-                    
+
                     // 清理轮询
                     if (pollingIntervalId) {
                         clearTimeout(pollingIntervalId);
@@ -238,7 +239,7 @@ export default function PricingPage() {
                     }
                     setQrCodeUrl(null);
                     setIsLoading(null);
-                    
+
                     try {
                         console.log('开始激活订阅...');
                         // 调用API端点激活订阅
@@ -265,25 +266,25 @@ export default function PricingPage() {
 
                         const activateResult = await activateResponse.json();
                         console.log('激活订阅成功:', activateResult);
-                        
+
                         // 清理用户数据缓存，确保获取最新的订阅信息
                         await fetch('/api/cache/clear', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                cacheKeys: [`user:info:${user.uid}`, `subscription:${user.uid}`] 
+                            body: JSON.stringify({
+                                cacheKeys: [`user:info:${user.uid}`, `subscription:${user.uid}`]
                             })
                         });
-                        
+
                         toast({ title: '支付成功', description: '您的订阅已生效。即将跳转到个人中心...' });
                         setTimeout(() => router.push('/'), 2000);
                         return; // 成功处理，退出轮询
                     } catch (error) {
                         console.error('激活订阅失败:', error);
-                        toast({ 
+                        toast({
                             variant: 'destructive',
-                            title: '激活失败', 
-                            description: '支付成功但激活订阅时出错，请联系客服。' 
+                            title: '激活失败',
+                            description: '支付成功但激活订阅时出错，请联系客服。'
                         });
                         return; // 激活失败，退出轮询
                     }
@@ -296,19 +297,19 @@ export default function PricingPage() {
                     }
                     setIsLoading(null);
                     setQrCodeUrl(null);
-                    toast({ 
-                        variant: 'destructive', 
-                        title: '订单已取消', 
-                        description: '订单已被取消，请重新尝试订阅。' 
+                    toast({
+                        variant: 'destructive',
+                        title: '订单已取消',
+                        description: '订单已被取消，请重新尝试订阅。'
                     });
                     return;
                 }
-                
+
             } catch (e) {
                 consecutiveErrors++;
                 console.warn(`支付状态检查出错 (第${consecutiveErrors}次错误):`, e);
             }
-            
+
             // 检查是否超过最大尝试次数
             if (attempts >= maxAttempts) {
                 console.log('支付状态检查超时，停止轮询');
@@ -318,298 +319,336 @@ export default function PricingPage() {
                 }
                 setIsLoading(null);
                 setQrCodeUrl(null);
-                toast({ 
-                    variant: 'destructive', 
-                    title: '支付超时', 
-                    description: '订单已超时，请重新尝试订阅。如已支付，请联系客服。' 
+                toast({
+                    variant: 'destructive',
+                    title: '支付超时',
+                    description: '订单已超时，请重新尝试订阅。如已支付，请联系客服。'
                 });
                 return;
             }
-            
+
             // 计算下次轮询间隔：前10次用短间隔，之后逐渐增加
             let nextInterval = baseInterval;
             if (attempts > 10) {
                 nextInterval = Math.min(baseInterval * Math.pow(1.5, attempts - 10), maxInterval);
             }
-            
+
             // 如果有连续错误，增加间隔
             if (consecutiveErrors > 0) {
                 nextInterval = Math.min(nextInterval * Math.pow(2, consecutiveErrors), maxInterval);
             }
-            
+
             console.log(`下次检查间隔: ${nextInterval}ms`);
             const timeoutId = setTimeout(poll, nextInterval);
             setPollingIntervalId(timeoutId);
         };
-        
+
         // 开始第一次检查
         poll();
     }
-    
+
     /**
      * 取消订阅尝试
      * 清理轮询定时器和相关状态
      */
     const cancelSubscriptionAttempt = () => {
-      if (pollingIntervalId) {
-        clearTimeout(pollingIntervalId); // 使用clearTimeout替代clearInterval
-        setPollingIntervalId(null);
-      }
-      setIsLoading(null);
-      setQrCodeUrl(null);
-      // 清理已处理的支付记录
-      setProcessedPayments(new Set());
-      console.log('订阅尝试已取消');
+        if (pollingIntervalId) {
+            clearTimeout(pollingIntervalId); // 使用clearTimeout替代clearInterval
+            setPollingIntervalId(null);
+        }
+        setIsLoading(null);
+        setQrCodeUrl(null);
+        // 清理已处理的支付记录
+        setProcessedPayments(new Set());
+        console.log('订阅尝试已取消');
     }
-    
+
     const renderPlan = (plan: PricingPlan) => {
         const isMonthlyTrial = isTrialUser && plan.id === 'monthly';
-        
+
         // 检查用户是否已订阅此套餐
         const isSubscribed = subscription && subscription.status === 'active' && subscription.planId === plan.id;
-        
+
         // 检查订阅是否仍在有效期内
         const isSubscriptionValid = isSubscribed && subscription.endDate && new Date(subscription.endDate) > new Date();
-        
+
         return (
             <div
-              key={plan.id}
-              className={cn(
-                "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
-                plan.isPopular ? "border-blue-200 shadow-xl ring-2 ring-blue-100" : "border-gray-100",
-                isMonthlyTrial && "border-green-200 shadow-xl ring-2 ring-green-100",
-                isSubscriptionValid && "border-emerald-200 shadow-xl ring-2 ring-emerald-100"
-              )}
+                key={plan.id}
+                className={cn(
+                    "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
+                    plan.isPopular ? "border-blue-200 shadow-xl ring-2 ring-blue-100" : "border-gray-100",
+                    isMonthlyTrial && "border-green-200 shadow-xl ring-2 ring-green-100",
+                    isSubscriptionValid && "border-emerald-200 shadow-xl ring-2 ring-emerald-100"
+                )}
             >
-              {plan.isPopular && !isSubscriptionValid && (
-                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                    <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
-                        {plan.discount}
-                    </div>
-                </div>
-              )}
-             {isMonthlyTrial && !isSubscriptionValid && (
-                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                    <div className="rounded-full bg-green-600 px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
-                        新用户限免
-                    </div>
-                </div>
-             )}
-             {isSubscriptionValid && (
-                <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                    <div className="rounded-full bg-emerald-600 px-4 py-1 text-xs font-semibold text-white shadow-md">
-                        已订阅
-                    </div>
-                </div>
-             )}
-
-              <div className="flex-1">
-                <h3 className="text-xl font-bold font-headline text-center mt-2">{plan.name}</h3>
-                
-                {isMonthlyTrial ? (
-                     <div className="my-6 text-center flex flex-col items-center justify-center h-[90px]">
-                        <Gift className="w-12 h-12 text-green-500 mb-2"/>
-                        <p className="text-lg font-bold text-green-600">免费体验30天</p>
-                    </div>
-                ) : (
-                    <div className="my-6 text-center h-[90px]">
-                      <span className="text-5xl font-bold">¥{plan.price}</span>
-                      <span className="text-gray-500">{plan.duration}</span>
-                      <div className="h-6 mt-1">
-                        <span className="text-sm text-gray-500 line-through">原价 ¥{plan.originalPrice}</span>
-                        {plan.pricePerMonth && <span className="ml-2 text-sm text-accent"> (折合 ¥{plan.pricePerMonth.toFixed(1)}/月)</span>}
-                      </div>
+                {plan.isPopular && !isSubscriptionValid && (
+                    <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                        <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+                            {plan.discount}
+                        </div>
                     </div>
                 )}
-                
-                <ul className="space-y-4 text-sm mb-10">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                      <span className="text-gray-600">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {isMonthlyTrial && !isSubscriptionValid && (
+                    <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                        <div className="rounded-full bg-green-600 px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+                            新用户限免
+                        </div>
+                    </div>
+                )}
+                {isSubscriptionValid && (
+                    <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
+                        <div className="rounded-full bg-emerald-600 px-4 py-1 text-xs font-semibold text-white shadow-md">
+                            已订阅
+                        </div>
+                    </div>
+                )}
 
-             {/* 根据用户登录状态和订阅状态显示不同的按钮 */}
-             {!user ? (
-                 // 未登录用户：显示立即订阅按钮
-                 <Button
-                    onClick={() => {
-                        toast({
-                            title: "请先登录",
-                            description: "您需要登录后才能进行订阅。",
-                        });
-                        router.push('/login?redirect=/pricing');
-                    }}
-                    size="lg"
-                    variant={plan.isPopular ? "default" : "tonal"}
-                    className={cn(
-                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
-                      "transform hover:scale-[1.02] active:scale-[0.98]",
-                      "focus:ring-2 focus:ring-offset-2",
-                      plan.isPopular 
-                        ? cn(
-                            "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
-                            "text-white shadow-md hover:shadow-lg active:shadow-sm",
-                            "focus:ring-blue-500"
-                          )
-                        : cn(
-                            "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
-                            "text-slate-700 border border-slate-200 hover:border-slate-300",
-                            "shadow-sm hover:shadow-md active:shadow-sm",
-                            "focus:ring-slate-400"
-                          )
-                    )}
-                 >
-                     <div className="flex items-center justify-center gap-2">
-                         <span>立即订阅</span>
-                         <ChevronRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
-                     </div>
-                 </Button>
-             ) : isSubscriptionValid ? (
-                 // 已登录且已订阅此套餐：显示已订阅按钮（不可点击）
-                 <Button
-                    size="lg"
-                    variant="outline"
-                    disabled={true}
-                    className={cn(
-                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
-                      "bg-emerald-50 border-emerald-200 text-emerald-700",
-                      "cursor-not-allowed opacity-75"
-                    )}
-                 >
-                     <div className="flex items-center justify-center gap-2">
-                         <CheckCircle className="w-5 h-5" />
-                         <span>已订阅</span>
-                     </div>
-                 </Button>
-             ) : isMonthlyTrial ? (
-                 // 试用用户的月度套餐：显示试用中状态
-                 <Button
-                    size="lg"
-                    variant="outline"
-                    disabled={true}
-                    className={cn(
-                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
-                      "bg-blue-50 border-blue-200 text-blue-700",
-                      "cursor-not-allowed opacity-75"
-                    )}
-                 >
-                     <div className="flex items-center justify-center gap-2">
-                         <Gift className="w-5 h-5" />
-                         <span>试用中</span>
-                     </div>
-                 </Button>
-             ) : (
-                 // 已登录但未订阅此套餐：显示立即订阅按钮
-                <Button
-                    onClick={() => handleSubscribe(plan)}
-                    size="lg"
-                    variant={plan.isPopular ? "default" : "tonal"}
-                    disabled={isLoading !== null}
-                    className={cn(
-                      "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
-                      "transform hover:scale-[1.02] active:scale-[0.98]",
-                      "focus:ring-2 focus:ring-offset-2",
-                      "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none",
-                      plan.isPopular 
-                        ? cn(
-                            "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
-                            "text-white shadow-md hover:shadow-lg active:shadow-sm",
-                            "focus:ring-blue-500"
-                          )
-                        : cn(
-                            "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
-                            "text-slate-700 border border-slate-200 hover:border-slate-300",
-                            "shadow-sm hover:shadow-md active:shadow-sm",
-                            "focus:ring-slate-400"
-                          )
-                    )}
-                >
-                    {isLoading === plan.id ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
-                        <span>处理中...</span>
-                      </div>
+                <div className="flex-1">
+                    <h3 className="text-xl font-bold font-headline text-center mt-2">{plan.name}</h3>
+
+                    {isMonthlyTrial ? (
+                        <div className="my-6 text-center flex flex-col items-center justify-center h-[90px]">
+                            <Gift className="w-12 h-12 text-green-500 mb-2" />
+                            <p className="text-lg font-bold text-green-600">免费体验30天</p>
+                        </div>
                     ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        <span>立即订阅</span>
-                        <ChevronRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
-                      </div>
+                        <div className="my-6 text-center h-[90px]">
+                            <span className="text-5xl font-bold">¥{plan.price}</span>
+                            <span className="text-gray-500">{plan.duration}</span>
+                            <div className="h-6 mt-1">
+                                <span className="text-sm text-gray-500 line-through">原价 ¥{plan.originalPrice}</span>
+                                {plan.pricePerMonth && <span className="ml-2 text-sm text-accent"> (折合 ¥{plan.pricePerMonth.toFixed(1)}/月)</span>}
+                            </div>
+                        </div>
                     )}
-                </Button>
-             )}
+
+                    <ul className="space-y-4 text-sm mb-10">
+                        {plan.features.map((feature, i) => (
+                            <li key={i} className="flex items-center gap-3">
+                                <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                                <span className="text-gray-600">{feature}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                {/* 根据用户登录状态和订阅状态显示不同的按钮 */}
+                {!user ? (
+                    // 未登录用户：显示立即订阅按钮
+                    <Button
+                        onClick={() => {
+                            toast({
+                                title: "请先登录",
+                                description: "您需要登录后才能进行订阅。",
+                            });
+                            router.push('/login?redirect=/pricing');
+                        }}
+                        size="lg"
+                        variant={plan.isPopular ? "default" : "tonal"}
+                        className={cn(
+                            "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
+                            "transform hover:scale-[1.02] active:scale-[0.98]",
+                            "focus:ring-2 focus:ring-offset-2",
+                            plan.isPopular
+                                ? cn(
+                                    "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
+                                    "text-white shadow-md hover:shadow-lg active:shadow-sm",
+                                    "focus:ring-blue-500"
+                                )
+                                : cn(
+                                    "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
+                                    "text-slate-700 border border-slate-200 hover:border-slate-300",
+                                    "shadow-sm hover:shadow-md active:shadow-sm",
+                                    "focus:ring-slate-400"
+                                )
+                        )}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <span>立即订阅</span>
+                            <ChevronRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+                        </div>
+                    </Button>
+                ) : isSubscriptionValid ? (
+                    // 已登录且已订阅此套餐：显示已订阅按钮（不可点击）
+                    <Button
+                        size="lg"
+                        variant="outline"
+                        disabled={true}
+                        className={cn(
+                            "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
+                            "bg-emerald-50 border-emerald-200 text-emerald-700",
+                            "cursor-not-allowed opacity-75"
+                        )}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <CheckCircle className="w-5 h-5" />
+                            <span>已订阅</span>
+                        </div>
+                    </Button>
+                ) : isMonthlyTrial ? (
+                    // 试用用户的月度套餐：显示试用中状态
+                    <Button
+                        size="lg"
+                        variant="outline"
+                        disabled={true}
+                        className={cn(
+                            "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
+                            "bg-blue-50 border-blue-200 text-blue-700",
+                            "cursor-not-allowed opacity-75"
+                        )}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Gift className="w-5 h-5" />
+                            <span>试用中</span>
+                        </div>
+                    </Button>
+                ) : (
+                    // 已登录但未订阅此套餐：显示立即订阅按钮
+                    <Button
+                        onClick={() => handleSubscribe(plan)}
+                        size="lg"
+                        variant={plan.isPopular ? "default" : "tonal"}
+                        disabled={isLoading !== null}
+                        className={cn(
+                            "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
+                            "transform hover:scale-[1.02] active:scale-[0.98]",
+                            "focus:ring-2 focus:ring-offset-2",
+                            "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none",
+                            plan.isPopular
+                                ? cn(
+                                    "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
+                                    "text-white shadow-md hover:shadow-lg active:shadow-sm",
+                                    "focus:ring-blue-500"
+                                )
+                                : cn(
+                                    "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
+                                    "text-slate-700 border border-slate-200 hover:border-slate-300",
+                                    "shadow-sm hover:shadow-md active:shadow-sm",
+                                    "focus:ring-slate-400"
+                                )
+                        )}
+                    >
+                        {isLoading === plan.id ? (
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                                <span>处理中...</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-2">
+                                <span>立即订阅</span>
+                                <ChevronRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+                            </div>
+                        )}
+                    </Button>
+                )}
             </div>
         )
     }
 
-  return (
-    <>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-foreground overflow-hidden relative">
-      <FinancialParticlesBackground />
+    return (
+        <>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-foreground overflow-hidden relative">
+                <StockMarketBackground />
 
-      <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-            <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary">
-                <Sparkles className="w-6 h-6"/>
-                <span className="font-headline">复利复盘</span>
-            </Link>
-            <Button 
-                asChild 
-                variant="tonal" 
-                size="default"
-                className="h-10 px-4 font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-                <Link href={user ? '/' : '/login'}>{user ? '返回应用' : '登录'}</Link>
-            </Button>
-        </div>
-      </header>
-      
-      <main className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
-        <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-headline font-bold tracking-tight bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent md:text-5xl lg:text-6xl">
-                解锁您的全部投资交易潜能
-            </h1>
-            <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto leading-relaxed">
-                选择一个方案，即可获得由AI驱动的深度交易洞察、模式识别和个性化改进建议，让每一笔交易都成为您持续进步的阶梯。
-            </p>
-        </div>
-        
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {pricingPlans.map(renderPlan)}
-        </div>
-      </main>
+                <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
+                    <div className="w-full max-w-5xl flex h-16 items-center justify-between px-6 rounded-full border border-white/20 bg-background/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:bg-background/80 hover:shadow-xl">
+                        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary mr-8 group">
+                            <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition-colors">
+                                <Sparkles className="w-5 h-5 text-primary" />
+                            </div>
+                            <span className="font-headline tracking-tight">复利复盘</span>
+                        </Link>
 
-       <section className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
-        <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-headline font-bold text-foreground">常见问题解答</h2>
-            <p className="mt-4 text-lg text-gray-500">
-                还有其他疑问？您可以随时 <a href="mailto:support@example.com" className="text-primary underline">联系我们</a>。
-            </p>
-        </div>
+                        <div className="flex items-center gap-4">
+                            {user ? (
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        asChild
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-muted-foreground hover:text-foreground hidden sm:flex"
+                                    >
+                                        <Link href="/">控制台</Link>
+                                    </Button>
+                                    <Link href="/?view=profile" className="flex items-center gap-3 pl-2 border-l border-border/50">
+                                        <div className="text-right hidden sm:block">
+                                            <p className="text-sm font-medium leading-none">{user.displayName || '用户'}</p>
+                                            <p className="text-xs text-muted-foreground">{isTrialUser ? '试用会员' : (subscription?.status === 'active' ? 'Pro会员' : '免费用户')}</p>
+                                        </div>
+                                        <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+                                            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                                {(user.displayName || 'U').substring(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3">
+                                    <Button
+                                        asChild
+                                        variant="ghost"
+                                        size="sm"
+                                        className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
+                                    >
+                                        <Link href="/login">登录</Link>
+                                    </Button>
+                                    <Button
+                                        asChild
+                                        className="rounded-full px-6 shadow-md hover:shadow-lg transition-all"
+                                    >
+                                        <Link href="/login?mode=signup">免费开始</Link>
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </header>
 
-        <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto mt-12">
-            {faqs.map((faq, i) => (
-                <AccordionItem value={`item-${i}`} key={i} className="border-gray-100">
-                    <AccordionTrigger className="text-lg text-left hover:no-underline hover:text-blue-600 transition-colors">{faq.question}</AccordionTrigger>
-                    <AccordionContent className="text-base text-gray-600 pt-2">
-                    {faq.answer}
-                    </AccordionContent>
-                </AccordionItem>
-            ))}
-        </Accordion>
-      </section>
+                <main className="container mx-auto px-4 pt-32 pb-16 md:px-6 md:pt-40 md:pb-20 lg:pt-48 lg:pb-24 relative z-10">
+                    <div className="mx-auto max-w-3xl text-center">
+                        <h1 className="text-4xl font-headline font-bold tracking-tight bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent md:text-5xl lg:text-6xl">
+                            解锁您的全部投资交易潜能
+                        </h1>
+                        <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto leading-relaxed">
+                            选择一个方案，即可获得由AI驱动的深度交易洞察、模式识别和个性化改进建议，让每一笔交易都成为您持续进步的阶梯。
+                        </p>
+                    </div>
 
-      <footer className="container mx-auto px-4 py-8 md:px-6">
-        <div className="text-center text-sm text-gray-500">
-            <p>&copy; {new Date().getFullYear()} 复利复盘. All rights reserved.</p>
-            <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
-        </div>
-      </footer>
-    </div>
-    <QRCodeModal qrCodeUrl={qrCodeUrl} onCancel={cancelSubscriptionAttempt} />
-    </>
-  );
+                    <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {pricingPlans.map(renderPlan)}
+                    </div>
+                </main>
+
+                <section className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
+                    <div className="mx-auto max-w-3xl text-center">
+                        <h2 className="text-3xl font-headline font-bold text-foreground">常见问题解答</h2>
+                        <p className="mt-4 text-lg text-gray-500">
+                            还有其他疑问？您可以随时 <a href="mailto:support@example.com" className="text-primary underline">联系我们</a>。
+                        </p>
+                    </div>
+
+                    <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto mt-12">
+                        {faqs.map((faq, i) => (
+                            <AccordionItem value={`item-${i}`} key={i} className="border-gray-100">
+                                <AccordionTrigger className="text-lg text-left hover:no-underline hover:text-blue-600 transition-colors">{faq.question}</AccordionTrigger>
+                                <AccordionContent className="text-base text-gray-600 pt-2">
+                                    {faq.answer}
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                </section>
+
+                <footer className="container mx-auto px-4 py-8 md:px-6">
+                    <div className="text-center text-sm text-gray-500">
+                        <p>&copy; {new Date().getFullYear()} 复利复盘. All rights reserved.</p>
+                        <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
+                    </div>
+                </footer>
+            </div>
+            <QRCodeModal qrCodeUrl={qrCodeUrl} onCancel={cancelSubscriptionAttempt} />
+        </>
+    );
 }

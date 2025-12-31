@@ -45,7 +45,7 @@ export type DataFetcher<T> = (...args: any[]) => Promise<T>;
  * 通用Redis缓存API处理基类
  */
 export abstract class CachedApiHandler {
-  
+
   /**
    * 带缓存的GET请求处理
    * @param req NextRequest对象
@@ -68,16 +68,16 @@ export abstract class CachedApiHandler {
 
       // 生成缓存键
       const cacheKey = cacheOptions.keyGenerator(...fetcherArgs);
-      
+
       try {
         // 1. 首先尝试从Redis缓存中获取数据
         const cachedData = await cache.get(cacheKey);
-        
+
         if (cachedData !== null) {
           console.log(`从Redis缓存获取数据，缓存键: ${cacheKey}`);
           // 如果缓存数据是数组，直接返回数组，否则展开对象
           const responseData = Array.isArray(cachedData) ? cachedData : { ...cachedData };
-          
+
           return NextResponse.json({
             data: responseData,
             _cached: true,
@@ -113,11 +113,11 @@ export abstract class CachedApiHandler {
     try {
       // 检查数据库连接
       const isDbConnected = await checkDatabaseConnection();
-      
+
       if (!isDbConnected) {
         console.warn('数据库连接失败');
         return NextResponse.json(
-          { 
+          {
             error: 'Database connection failed',
             source: 'postgres_failed'
           },
@@ -126,10 +126,10 @@ export abstract class CachedApiHandler {
       }
 
       const data = await dataFetcher(...fetcherArgs);
-      
+
       // 如果数据是数组，直接返回数组，否则展开对象
       const responseData = Array.isArray(data) ? data : { ...data };
-      
+
       return NextResponse.json({
         data: responseData,
         _cached: false,
@@ -139,7 +139,7 @@ export abstract class CachedApiHandler {
     } catch (error) {
       console.error('直接数据获取失败:', error);
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to fetch data',
           source: 'postgres'
         },
@@ -160,11 +160,11 @@ export abstract class CachedApiHandler {
     try {
       // 检查数据库连接
       const isDbConnected = await checkDatabaseConnection();
-      
+
       if (!isDbConnected) {
         console.warn('数据库连接失败');
         return NextResponse.json(
-          { 
+          {
             error: 'Database connection failed',
             source: 'postgres_failed'
           },
@@ -187,7 +187,7 @@ export abstract class CachedApiHandler {
     } catch (error) {
       console.error('数据库数据获取失败:', error);
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to fetch data from database',
           source: 'postgres'
         },
@@ -260,7 +260,7 @@ export abstract class CachedApiHandler {
     const results = await Promise.allSettled(
       cacheKeys.map(key => this.clearCache(key))
     );
-    
+
     return results.map((result, index) => {
       if (result.status === 'fulfilled') {
         return result.value;
@@ -275,7 +275,7 @@ export abstract class CachedApiHandler {
    * 异步批量清除缓存（不阻塞响应）
    * @param cacheKeys 缓存键数组
    */
-  protected static clearMultipleCacheAsync(cacheKeys: string[]): void {
+  public static clearMultipleCacheAsync(cacheKeys: string[]): void {
     this.clearMultipleCache(cacheKeys)
       .then((results) => {
         const successCount = results.filter(Boolean).length;

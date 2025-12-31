@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { activateSubscriptionPostgres } from '@/lib/subscription-postgres';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
+import { CacheKeys } from '@/lib/redis';
+import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 /**
  * 激活订阅API端点
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // 确定用户标识符（按优先级）
     const userIdentifier = uid || firebaseUid || userId;
-    
+
     // 验证必需参数
     if (!userIdentifier || !planId || !paymentId || amount === undefined) {
       return NextResponse.json(
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // 获取内部用户ID
     let internalUserId = userIdentifier;
-    
+
     if (!isSystemUid) {
       // 如果不是系统UID，则通过Firebase UID获取用户信息
       try {
@@ -62,18 +64,45 @@ export async function POST(request: NextRequest) {
       amount
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    // CRITICAL: 激活订阅后，必须清除用户缓存，确保前端能立即感知到变化
+    try {
+      const cacheKeysToClear = [CacheKeys.userByUid(internalUserId)];
+
+      // 如果我们能获取到 firebaseUid，也应该清除对应的缓存
+      // 这里 userIdentifier 可能是 firebaseUid
+      if (!isSystemUid) {
+        cacheKeysToClear.push(CacheKeys.userByFirebaseUid(userIdentifier));
+      } else {
+        // 如果是 System UID，尝试获取 User 对象来清理 firebaseUid 缓存（可选，但为了健壮性建议做）
+        // 考虑到性能，如果只有 internalUserId，且客户端主要用 UID，也可以只清 UID。
+        // 但为了绝对的一致性，我们最好也清理 FirebaseUid
+        try {
+          const user = await UserAdapter.getUserByUid(internalUserId);
+          if (user && user.firebaseUid) {
+            cacheKeysToClear.push(CacheKeys.userByFirebaseUid(user.firebaseUid));
+          }
+        } catch (e) {
+          console.warn('获取用户信息以清理缓存失败', e);
+        }
+      }
+
+      CachedApiHandler.clearMultipleCacheAsync(cacheKeysToClear);
+    } catch (cacheError) {
+      console.warn('清理缓存失败:', cacheError);
+    }
+
+    return NextResponse.json({
+      success: true,
       message: '订阅激活成功',
-      data: result 
+      data: result
     });
 
   } catch (error) {
     console.error('激活订阅失败:', error);
     return NextResponse.json(
-      { 
-        error: '激活订阅失败', 
-        details: error instanceof Error ? error.message : '未知错误' 
+      {
+        error: '激活订阅失败',
+        details: error instanceof Error ? error.message : '未知错误'
       },
       { status: 500 }
     );

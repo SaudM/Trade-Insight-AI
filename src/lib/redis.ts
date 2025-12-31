@@ -59,7 +59,7 @@ class RedisClient {
 
     try {
       const config = this.getRedisConfig();
-      
+
       this.client = createClient({
         socket: {
           host: config.host,
@@ -101,7 +101,7 @@ class RedisClient {
       });
 
       await this.client.connect();
-      
+
     } catch (error) {
       console.error('Redis客户端初始化失败:', error);
       this.isConnected = false;
@@ -127,7 +127,7 @@ class RedisClient {
     }
 
     this.connectionPromise = this.initClient();
-    
+
     try {
       await this.connectionPromise;
       return this.isConnected;
@@ -159,13 +159,13 @@ class RedisClient {
 
       const cacheKey = this.generateKey(key, prefix);
       const value = await this.client.get(cacheKey);
-      
+
       if (value === null) {
         return null;
       }
 
       return JSON.parse(value) as T;
-      
+
     } catch (error) {
       console.error('Redis获取缓存失败:', error);
       return null;
@@ -176,9 +176,9 @@ class RedisClient {
    * 设置缓存数据
    */
   async set(
-    key: string, 
-    value: any, 
-    ttl?: number, 
+    key: string,
+    value: any,
+    ttl?: number,
     prefix?: string
   ): Promise<boolean> {
     try {
@@ -194,7 +194,7 @@ class RedisClient {
 
       await this.client.setEx(cacheKey, cacheTtl, serializedValue);
       return true;
-      
+
     } catch (error) {
       console.error('Redis设置缓存失败:', error);
       return false;
@@ -215,7 +215,7 @@ class RedisClient {
       const cacheKey = this.generateKey(key, prefix);
       await this.client.del(cacheKey);
       return true;
-      
+
     } catch (error) {
       console.error('Redis删除缓存失败:', error);
       return false;
@@ -235,7 +235,7 @@ class RedisClient {
       const cacheKey = this.generateKey(key, prefix);
       const result = await this.client.exists(cacheKey);
       return result === 1;
-      
+
     } catch (error) {
       console.error('Redis检查缓存存在性失败:', error);
       return false;
@@ -254,7 +254,7 @@ class RedisClient {
 
       const cacheKey = this.generateKey(key, prefix);
       return await this.client.ttl(cacheKey);
-      
+
     } catch (error) {
       console.error('Redis获取TTL失败:', error);
       return -1;
@@ -294,28 +294,28 @@ export const cache = {
    * 获取缓存
    */
   get: <T = any>(key: string, prefix?: string) => redisClient.get<T>(key, prefix),
-  
+
   /**
    * 设置缓存
    */
-  set: (key: string, value: any, ttl?: number, prefix?: string) => 
+  set: (key: string, value: any, ttl?: number, prefix?: string) =>
     redisClient.set(key, value, ttl, prefix),
-  
+
   /**
    * 删除缓存
    */
   del: (key: string, prefix?: string) => redisClient.del(key, prefix),
-  
+
   /**
    * 检查缓存是否存在
    */
   exists: (key: string, prefix?: string) => redisClient.exists(key, prefix),
-  
+
   /**
    * 获取缓存剩余时间
    */
   ttl: (key: string, prefix?: string) => redisClient.ttl(key, prefix),
-  
+
   /**
    * 检查连接状态
    */
@@ -330,26 +330,36 @@ export const CacheKeys = {
    * 用户日分析缓存键
    */
   userDailyAnalyses: (userId: string) => `daily-analyses:user:${userId}`,
-  
+
   /**
    * 用户周分析缓存键
    */
   userWeeklyAnalyses: (userId: string) => `weekly-analyses:user:${userId}`,
-  
+
   /**
    * 用户月分析缓存键
    */
   userMonthlySummaries: (userId: string) => `monthly-summaries:user:${userId}`,
-  
+
   /**
    * 用户交易日志缓存键
    */
   userTradeLogs: (userId: string) => `trade-logs:user:${userId}`,
-  
+
   /**
-   * 用户信息缓存键
+   * 用户信息缓存键 (System UID) - 业务逻辑专用
    */
-  userInfo: (firebaseUid: string) => `user:info:${firebaseUid}`,
+  userByUid: (uid: string) => `user:info:uid:${uid}`,
+
+  /**
+   * 用户信息缓存键 (Firebase UID) - 认证映射专用
+   */
+  userByFirebaseUid: (firebaseUid: string) => `user:info:firebase:${firebaseUid}`,
+
+  /**
+   * @deprecated 请使用 userByFirebaseUid
+   */
+  userInfo: (firebaseUid: string) => `user:info:firebase:${firebaseUid}`,
 };
 
 /**
@@ -358,13 +368,13 @@ export const CacheKeys = {
 export const CacheConfig = {
   /** 短期缓存 - 5分钟 */
   SHORT_TTL: 300,
-  
+
   /** 中期缓存 - 30分钟 */
   MEDIUM_TTL: 1800,
-  
+
   /** 长期缓存 - 2小时 */
   LONG_TTL: 7200,
-  
+
   /** 用户数据缓存 - 1小时 */
   USER_DATA_TTL: 3600,
 };

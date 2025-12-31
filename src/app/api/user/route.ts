@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       };
 
       const cacheOptions = CachedApiHandler.createCacheOptions(
-        CacheKeys.userInfo,         // 缓存键生成函数
+        CacheKeys.userByUid,        // 缓存键生成函数 (System UID)
         CacheConfig.USER_DATA_TTL,  // TTL
         true                        // 重新启用缓存
       );
@@ -71,9 +71,9 @@ export async function GET(req: NextRequest) {
       };
 
       const cacheOptions = CachedApiHandler.createCacheOptions(
-        CacheKeys.userInfo,         // 缓存键生成函数
-        CacheConfig.USER_DATA_TTL,  // TTL
-        true                        // 重新启用缓存
+        CacheKeys.userByFirebaseUid, // 缓存键生成函数 (Firebase UID)
+        CacheConfig.USER_DATA_TTL,   // TTL
+        true                         // 重新启用缓存
       );
 
       const response = await CachedApiHandler.handleCachedGet(
@@ -156,7 +156,12 @@ export async function POST(req: NextRequest) {
       }
 
       // 清除该用户的缓存，确保下一次查询能获取到最新数据
-      CachedApiHandler.clearCacheAsync(CacheKeys.userInfo(firebaseUid));
+      // CRITICAL: 同时清除 System UID 和 Firebase UID 两种缓存，确保一致性
+      const cacheKeysToClear = [CacheKeys.userByUid(user.id)];
+      if (user.firebaseUid) {
+        cacheKeysToClear.push(CacheKeys.userByFirebaseUid(user.firebaseUid));
+      }
+      CachedApiHandler.clearMultipleCacheAsync(cacheKeysToClear);
 
       return Response.json({
         user: {

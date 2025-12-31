@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPayment } from '@/lib/wxpay';
 import { activateSubscriptionPostgres } from '@/lib/subscription-postgres';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
+import { CacheKeys } from '@/lib/redis';
+import { CachedApiHandler } from '@/lib/cached-api-handler';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +14,7 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
     try {
         console.log('收到微信支付通知');
-        
+
         // 获取请求体
         const body = await request.text();
         const signature = request.headers.get('wechatpay-signature');
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
         // 从商户订单号中提取用户信息和套餐信息
         const outTradeNo = paymentData.out_trade_no;
         const parts = outTradeNo.split('_');
-        
+
         if (parts.length < 4) {
             console.error('商户订单号格式错误:', outTradeNo);
             return NextResponse.json({ code: 'FAIL', message: '订单号格式错误' }, { status: 400 });
@@ -123,14 +125,18 @@ export async function POST(request: NextRequest) {
             console.log('订阅激活成功:', result);
 
             // 清理用户缓存
+            // CRITICAL: 无论客户端后续使用 System UID 还是 Firebase UID 查询，都必须能获取到最新订阅状态
             try {
-                await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/api/cache/clear`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        cacheKeys: [`user:info:${firebaseUid}`, `subscription:${firebaseUid}`] 
-                    })
-                });
+                const cacheKeysToClear = [CacheKeys.userByUid(userId)];
+
+                // 注意：firebaseUid 从 webhook 数据中解析得到，一定是存在的字符串
+                if (firebaseUid) {
+                    cacheKeysToClear.push(CacheKeys.userByFirebaseUid(firebaseUid));
+                    cacheKeysToClear.push(`subscription:${firebaseUid}`); // 保留原有的 subscription key 清理，防止有遗漏的旧逻辑依赖
+                }
+
+                CachedApiHandler.clearMultipleCacheAsync(cacheKeysToClear);
+                console.log(`已清理用户缓存: ${userId}, ${firebaseUid}`);
             } catch (cacheError) {
                 console.warn('清理缓存失败:', cacheError);
             }

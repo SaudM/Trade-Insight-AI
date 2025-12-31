@@ -3,6 +3,7 @@
 "use client";
 
 import { useState, useMemo, createContext, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app/sidebar';
 import { Dashboard } from '@/components/app/dashboard';
@@ -31,7 +32,11 @@ import { SubscriptionModal } from './subscription-modal';
 
 
 export function TradeInsightsApp() {
-  const [activeView, setActiveView] = useState<View>('dashboard');
+  const searchParams = useSearchParams();
+  // 从URL参数初始化视图，如果参数无效或不存在则默认为 'dashboard'
+  const initialView = (searchParams.get('view') as View) || 'dashboard';
+
+  const [activeView, setActiveView] = useState<View>(initialView);
   const { user } = useFirebase();
   const { toast } = useToast();
 
