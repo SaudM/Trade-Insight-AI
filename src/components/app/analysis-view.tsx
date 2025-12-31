@@ -9,9 +9,15 @@ import { analyzeDailyTrades } from '@/ai/flows/daily-ai-analysis';
 import { weeklyPatternDiscovery } from '@/ai/flows/weekly-pattern-discovery';
 import { monthlyPerformanceReview } from '@/ai/flows/monthly-performance-review';
 import { BrainCircuit, Zap, HeartPulse, Lightbulb, Repeat, Trophy, Scaling, ListChecks, GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
-import { startOfWeek, startOfMonth, subMonths } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { startOfWeek, startOfMonth, subMonths, format } from 'date-fns';
+import { useEffect, useState, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { WandSparkles, History } from 'lucide-react';
+import { FloatingLabelSelect } from "@/components/ui/floating-label-select";
+import { SelectContent, SelectItem } from "@/components/ui/select";
+import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 /**
@@ -21,10 +27,10 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
  * - 报告生成成功后仅更新本地对应列表，避免整页刷新导致当前 Tab 重置。
  * - 保障切换流畅，减少不必要的重渲染与布局跳动。
  */
-export function AnalysisView({ 
+export function AnalysisView({
     tradeLogs,
     filteredTradeLogs,
-    dailyAnalyses, 
+    dailyAnalyses,
     weeklyReviews,
     monthlySummaries,
     addDailyAnalysis,
@@ -32,8 +38,8 @@ export function AnalysisView({
     addMonthlySummary,
     isProUser,
     onOpenSubscriptionModal,
-}: { 
-    tradeLogs: any[], 
+}: {
+    tradeLogs: any[],
     filteredTradeLogs: any[],
     dailyAnalyses: DailyAnalysis[],
     weeklyReviews: WeeklyReview[],
@@ -79,58 +85,118 @@ export function AnalysisView({
     useEffect(() => setLocalWeeklyReviews(weeklyReviews), [weeklyReviews]);
     useEffect(() => setLocalMonthlySummaries(monthlySummaries), [monthlySummaries]);
 
+    // -------------------------------------------------------------------------
+    // 新增状态管理：控制 Header 中的报告选择与生成 loading
+    // -------------------------------------------------------------------------
+    const [selectedReportId, setSelectedReportId] = useState<string | undefined>(undefined);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const { toast } = useToast();
+
+    // 根据当前 Tab 获取对应的报告列表
+    const currentReports = useMemo(() => {
+        switch (activeTab) {
+            case 'daily': return localDailyAnalyses;
+            case 'weekly': return localWeeklyReviews;
+            case 'monthly': return localMonthlySummaries;
+            default: return [];
+        }
+    }, [activeTab, localDailyAnalyses, localWeeklyReviews, localMonthlySummaries]);
+
+    // 辅助函数：获取报告日期（用于排序和显示）
+    const getReportDate = (report: any) => report?.createdAt;
+
+    // 当报告列表或 Tab 变化时，自动选中最新报告
+    useEffect(() => {
+        const reportsArray = Array.isArray(currentReports) ? currentReports : [];
+        if (reportsArray.length > 0) {
+            // 如果切 Tab 或者列表更新，且当前没有选中或者选中ID不在列表里（简单起见每次都重置为最新）
+            const latestReport = [...reportsArray].sort((a, b) => {
+                const dateA = getReportDate(a);
+                const dateB = getReportDate(b);
+                return new Date(dateB instanceof Date ? dateB : dateB).getTime() - new Date(dateA instanceof Date ? dateA : dateA).getTime();
+            })[0];
+            setSelectedReportId(latestReport.id);
+        } else {
+            setSelectedReportId(undefined);
+        }
+    }, [currentReports]); // 依赖 currentReports 即可，因为它已经依赖了 activeTab
+
+    // 排序后的报告列表供下拉框使用
+    const sortedReports = useMemo(() => {
+        return Array.isArray(currentReports) ? [...currentReports].sort((a, b) => {
+            const dateA = getReportDate(a);
+            const dateB = getReportDate(b);
+            return new Date(dateB instanceof Date ? dateB : dateB).getTime() - new Date(dateA instanceof Date ? dateA : dateA).getTime()
+        }) : [];
+    }, [currentReports]);
+
     const handleAnalysisRequest = async (analysisFn: () => Promise<any>) => {
         if (!isProUser) {
             onOpenSubscriptionModal();
             return null;
         }
-        return analysisFn();
+
+        setIsGenerating(true);
+        try {
+            const result = await analysisFn();
+            if (result) {
+                // 自动选中新生成的报告
+                setSelectedReportId(result.id);
+                toast({ title: "分析报告已生成" });
+            }
+            return result;
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: "分析生成失败", description: "请稍后重试" });
+        } finally {
+            setIsGenerating(false);
+        }
     }
 
     const handleDailyAnalysis = async () => {
         return handleAnalysisRequest(async () => {
             try {
                 console.log('开始每日分析处理，交易记录总数:', tradeLogs.length);
-                
+
                 // 获取最近一个完整交易日的数据
                 const sortedLogs = tradeLogs
                     .filter(log => log.tradeTime)
                     .sort((a, b) => new Date(b.tradeTime as string).getTime() - new Date(a.tradeTime as string).getTime());
-                
+
                 console.log('过滤后的交易记录数:', sortedLogs.length);
-                
+
                 if (sortedLogs.length === 0) {
                     console.error('没有可用的交易记录');
                     throw new Error('没有可用的交易记录');
                 }
-                
+
                 // 获取最新交易日期
                 const latestTradeDate = new Date(sortedLogs[0].tradeTime as string);
                 const latestTradeDateStr = latestTradeDate.toDateString();
-                
+
                 console.log('最新交易日期:', latestTradeDateStr);
-                
+
                 // 筛选出最近一个完整交易日的所有交易记录
                 const dailyLogs = sortedLogs.filter(log => {
                     const logDate = new Date(log.tradeTime as string);
                     return logDate.toDateString() === latestTradeDateStr;
                 });
-                
+
                 console.log('当日交易记录数:', dailyLogs.length);
-                
-                const logsString = dailyLogs.map(log => 
-                  `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
+
+                const logsString = dailyLogs.map(log =>
+                    `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
                 ).join('\n');
-                
+
                 console.log('准备调用AI分析，日志字符串长度:', logsString.length);
-                
-                const result = await analyzeDailyTrades({ 
+
+                const result = await analyzeDailyTrades({
                     tradeLogs: logsString,
                     analysisDate: latestTradeDate.toLocaleDateString('zh-CN')
                 });
-                
+
                 console.log('AI分析完成，结果:', result);
-                
+
                 // 辅助函数：确保字段为字符串类型
                 const ensureString = (value: any): string => {
                     if (Array.isArray(value)) {
@@ -138,7 +204,7 @@ export function AnalysisView({
                     }
                     return String(value || '');
                 };
-                
+
                 const newAnalysis: Omit<DailyAnalysis, 'id' | 'userId'> = {
                     date: latestTradeDate.toISOString(),
                     summary: ensureString(result.summary),
@@ -148,9 +214,9 @@ export function AnalysisView({
                     improvementSuggestions: ensureString(result.improvementSuggestions),
                     createdAt: new Date(),
                 };
-                
+
                 console.log('准备保存分析结果:', newAnalysis);
-        
+
                 const savedAnalysis = await addDailyAnalysis(newAnalysis as any);
                 console.log('分析结果保存成功:', savedAnalysis);
                 // 仅更新每日分析区域，避免整页刷新引发 Tab 重置
@@ -176,15 +242,15 @@ export function AnalysisView({
             const endOfCurrentWeek = new Date(startOfCurrentWeek);
             endOfCurrentWeek.setDate(startOfCurrentWeek.getDate() + 6); // 周日结束
             endOfCurrentWeek.setHours(23, 59, 59, 999);
-            
+
             const weeklyLogs = tradeLogs.filter(log => {
                 if (!log.tradeTime) return false;
                 const logDate = new Date(log.tradeTime as string);
                 return logDate >= startOfCurrentWeek && logDate <= endOfCurrentWeek;
             });
-            
+
             const logsString = JSON.stringify(weeklyLogs, null, 2);
-            const result = await weeklyPatternDiscovery({ 
+            const result = await weeklyPatternDiscovery({
                 tradingLogs: logsString,
                 weekStartDate: startOfCurrentWeek.toLocaleDateString('zh-CN'),
                 weekEndDate: endOfCurrentWeek.toLocaleDateString('zh-CN')
@@ -231,7 +297,7 @@ export function AnalysisView({
                 const logDate = new Date(log.tradeTime as string);
                 return logDate >= startOfCurrentMonth && logDate <= endOfCurrentMonth;
             });
-            
+
             // 获取上月完整的交易数据（1日至月末）
             const previousMonthLogs = tradeLogs.filter(log => {
                 if (!log.tradeTime) return false;
@@ -240,18 +306,18 @@ export function AnalysisView({
             });
 
             const toPlainObject = (log: TradeLog) => {
-              const plainLog: any = { ...log };
-              if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
-                plainLog.tradeTime = (plainLog.tradeTime as Date).toISOString();
-              }
-               if (plainLog.createdAt && typeof plainLog.createdAt !== 'string') {
-                 plainLog.createdAt = (plainLog.createdAt as Date).toISOString();
-              }
-              return plainLog;
+                const plainLog: any = { ...log };
+                if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
+                    plainLog.tradeTime = (plainLog.tradeTime as Date).toISOString();
+                }
+                if (plainLog.createdAt && typeof plainLog.createdAt !== 'string') {
+                    plainLog.createdAt = (plainLog.createdAt as Date).toISOString();
+                }
+                return plainLog;
             };
 
-            const result = await monthlyPerformanceReview({ 
-                currentMonthLogs: currentMonthLogs.map(toPlainObject), 
+            const result = await monthlyPerformanceReview({
+                currentMonthLogs: currentMonthLogs.map(toPlainObject),
                 previousMonthLogs: previousMonthLogs.map(toPlainObject),
                 currentMonthPeriod: `${startOfCurrentMonth.getFullYear()}年${startOfCurrentMonth.getMonth() + 1}月`,
                 previousMonthPeriod: `${startOfPreviousMonth.getFullYear()}年${startOfPreviousMonth.getMonth() + 1}月`
@@ -275,7 +341,7 @@ export function AnalysisView({
                 iterationSuggestions: ensureString(result.iterationSuggestions),
                 createdAt: new Date() as any,
             };
-            
+
             const savedSummary = await addMonthlySummary(newSummary as any);
             // 仅更新月度总结区域
             setLocalMonthlySummaries(prev => [savedSummary as MonthlySummary, ...prev]);
@@ -283,9 +349,95 @@ export function AnalysisView({
         });
     };
 
+    // 根据当前 Tab 决定调用哪个生成函数
+    const handleGenerateClick = () => {
+        if (activeTab === 'daily') handleDailyAnalysis();
+        else if (activeTab === 'weekly') handleWeeklyAnalysis();
+        else if (activeTab === 'monthly') handleMonthlyAnalysis();
+    };
+
+    const reportNameMap = {
+        'daily': '每日分析',
+        'weekly': '每周回顾',
+        'monthly': '月度总结'
+    };
+
     return (
         <div className="flex flex-col h-full" style={{ ['--report-button-gap-top' as any]: '24px' }}>
-            <AppHeader title="分析报告" />
+            <AppHeader title="分析报告">
+                {/* Header Controls */}
+                <div className="flex items-center gap-2">
+                    {/* 历史报告选择 */}
+                    {sortedReports && sortedReports.length > 0 && (
+                        <>
+                            {/* Desktop: Floating Label Select */}
+                            <div className="hidden md:block w-48">
+                                <FloatingLabelSelect
+                                    label="历史报告..."
+                                    onValueChange={setSelectedReportId}
+                                    value={selectedReportId}
+                                >
+                                    <SelectContent>
+                                        {sortedReports.map((r: any) => {
+                                            const createdAt = getReportDate(r);
+                                            let formattedDate = '未知日期';
+                                            try {
+                                                if (createdAt) {
+                                                    const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
+                                                    if (!isNaN(date.getTime())) {
+                                                        formattedDate = format(date, 'MM-dd HH:mm');
+                                                    }
+                                                }
+                                            } catch (error) { console.warn(error); }
+                                            return <SelectItem key={r.id} value={r.id}>{formattedDate}</SelectItem>;
+                                        })}
+                                    </SelectContent>
+                                </FloatingLabelSelect>
+                            </div>
+
+                            {/* Mobile: History Icon Menu */}
+                            <div className="md:hidden">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-9 w-9">
+                                            <History className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {sortedReports.map((r: any) => {
+                                            const createdAt = getReportDate(r);
+                                            let formattedDate = '未知日期';
+                                            try {
+                                                if (createdAt) {
+                                                    const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
+                                                    if (!isNaN(date.getTime())) {
+                                                        formattedDate = format(date, 'MM-dd HH:mm');
+                                                    }
+                                                }
+                                            } catch (error) { }
+                                            return (
+                                                <DropdownMenuItem key={r.id} onClick={() => setSelectedReportId(r.id)}>
+                                                    {formattedDate}
+                                                </DropdownMenuItem>
+                                            );
+                                        })}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </>
+                    )}
+
+                    {/* 生成按钮 */}
+                    <Button onClick={handleGenerateClick} disabled={isGenerating} className="hidden md:flex transition-all duration-300 ease-in-out">
+                        <WandSparkles className="mr-2 h-4 w-4" />
+                        {isGenerating ? '分析中...' : `生成${reportNameMap[activeTab]}`}
+                    </Button>
+                    {/* Mobile Generate Button */}
+                    <Button onClick={handleGenerateClick} disabled={isGenerating} size="icon" className="md:hidden h-9 w-9">
+                        <WandSparkles className="h-4 w-4" />
+                    </Button>
+                </div>
+            </AppHeader>
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col flex-1">
                 <div className="px-4 md:px-6 lg:px-8 bg-white border-t-0">
                     <TabsList>
@@ -300,7 +452,8 @@ export function AnalysisView({
                         reportType="每日"
                         reportName="分析"
                         reports={localDailyAnalyses}
-                        onGenerate={handleDailyAnalysis}
+                        selectedReportId={selectedReportId}
+                        isLoading={isGenerating}
                         tradeLogs={filteredTradeLogs}
                         getReportDate={(r) => (r as DailyAnalysis).createdAt}
                         isProUser={isProUser}
@@ -315,11 +468,12 @@ export function AnalysisView({
                 </TabsContent>
                 {/* 每周回顾标签页 - 添加平滑过渡效果 */}
                 <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col transition-all duration-300 ease-in-out">
-                     <ReportView
+                    <ReportView
                         reportType="每周"
                         reportName="回顾"
                         reports={localWeeklyReviews}
-                        onGenerate={handleWeeklyAnalysis}
+                        selectedReportId={selectedReportId}
+                        isLoading={isGenerating}
                         tradeLogs={filteredTradeLogs}
                         getReportDate={(r) => (r as WeeklyReview).createdAt}
                         isProUser={isProUser}
@@ -338,7 +492,8 @@ export function AnalysisView({
                         reportType="月度"
                         reportName="总结"
                         reports={localMonthlySummaries}
-                        onGenerate={handleMonthlyAnalysis}
+                        selectedReportId={selectedReportId}
+                        isLoading={isGenerating}
                         tradeLogs={tradeLogs} // Monthly view uses all logs
                         getReportDate={(r) => (r as MonthlySummary).createdAt}
                         isProUser={isProUser}

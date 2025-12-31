@@ -20,7 +20,8 @@
     --on-error: 0 0% 100%;
     --error-container: 0 100% 91.37%;
     --on-error-container: 0 100% 12.75%;
-    --background: 0 0% 96.1%; /* #F5F5F5 */
+    --background: 0 0% 96.1%;
+    /* #F5F5F5 */
     --foreground: 240 10% 3.9%;
     --on-background: 270 5.88% 10.78%;
     --surface: 300 100% 99.02%;
@@ -50,8 +51,22 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 244 100% 93.92%;
     --sidebar-accent-foreground: 243.6 100% 17.84%;
-    --card: 0 0% 100%; /* 白色背景 */
+    --card: 0 0% 100%;
+    /* 白色背景 */
     --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary-foreground: 0 0% 100%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
   }
 
   .dark {
@@ -92,8 +107,22 @@
     --surface-container-lowest: 270 5.26% 4.12%;
     --surface-bright: 270 7.69% 34.31%;
     --surface-dim: 270 5.56% 6.86%;
-    --card: 0 0% 100%; /* 暗色主题下也使用白色背景 */
+    --card: 0 0% 100%;
+    /* 暗色主题下也使用白色背景 */
     --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
 
   body {

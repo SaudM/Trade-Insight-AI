@@ -140,6 +140,7 @@ export function RecommendationsView() {
     };
 
     const performanceDates = data ? getPerformanceDates(data.data) : [];
+    const maxDays = data?.max_track_days || 7;
 
     return (
         <div className="flex flex-col h-full bg-slate-50/50">
@@ -209,15 +210,15 @@ export function RecommendationsView() {
                 </div>
 
                 {/* Content Section */}
-                <Card className="flex-1 overflow-hidden border-slate-200/60 shadow-sm rounded-xl bg-white flex flex-col">
+                <Card className="flex-1 overflow-hidden border-slate-200/60 shadow-sm rounded-xl bg-white flex flex-col min-w-0 w-full">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center flex-1 space-y-4">
                             <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
                             <p className="text-slate-400 text-sm font-medium animate-pulse">正在同步市场数据...</p>
                         </div>
                     ) : data && data.data.length > 0 ? (
-                        <div className="flex-1 overflow-auto">
-                            <Table className="relative">
+                        <div className="flex-1 overflow-auto min-w-0 max-w-full">
+                            <Table className="relative min-w-full">
                                 <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-md">
                                     <TableRow className="hover:bg-transparent border-slate-200">
                                         <TableHead className="w-[150px] font-bold text-slate-700 text-xs text-left">证券/代码</TableHead>
@@ -232,8 +233,8 @@ export function RecommendationsView() {
                                         </TableHead>
                                         <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">推荐时</TableHead>
                                         <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">止损价</TableHead>
-                                        {/* Performance Columns - Always render 7 columns */}
-                                        {Array.from({ length: 7 }, (_, i) => {
+                                        {/* Performance Columns - Always render maxDays columns */}
+                                        {Array.from({ length: maxDays }, (_, i) => {
                                             const tDay = i + 1;
                                             const dateObj = data?.data.flatMap(r => r.performance).find(p => p.t_day === tDay);
                                             const displayHeader = dateObj?.date ? dateObj.date.split('T')[0].substring(5) : `T+${tDay}`;
@@ -280,8 +281,8 @@ export function RecommendationsView() {
                                                 {rec.stop_loss_ref ? `¥${rec.stop_loss_ref}` : '-'}
                                             </TableCell>
 
-                                            {/* Heatmap Cells - Always render 7 cells */}
-                                            {Array.from({ length: 7 }, (_, i) => {
+                                            {/* Heatmap Cells - Always render maxDays cells */}
+                                            {Array.from({ length: maxDays }, (_, i) => {
                                                 const tDay = i + 1;
                                                 const perf = rec.performance.find(p => p.t_day === tDay);
                                                 return (

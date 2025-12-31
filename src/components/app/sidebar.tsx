@@ -97,7 +97,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
             isActive={activeView === 'recommendations'}
             tooltip={{ children: '精选推荐' }}
           >
-            <Sparkles className="text-accent" />
+            <Sparkles />
             <span className="text-base font-medium">精选推荐</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
