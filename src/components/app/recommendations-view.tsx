@@ -286,19 +286,29 @@ export function RecommendationsView() {
                                                 const perf = rec.performance.find(p => p.t_day === tDay);
                                                 return (
                                                     <TableCell key={tDay} className="p-1 w-[85px]">
-                                                        <div className={cn(
-                                                            "h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-300 border border-white",
-                                                            getColorClass(perf?.daily),
-                                                            !perf && "bg-slate-50/50"
-                                                        )}>
-                                                            <span className="text-xs font-black">
-                                                                {perf ? `${perf.daily > 0 ? '+' : ''}${perf.daily}%` : '-'}
-                                                            </span>
-                                                            {perf && (
-                                                                <span className="text-[9px] font-bold opacity-50">
-                                                                    {perf.cum}%
+                                                        <div className="flex flex-col rounded-lg overflow-hidden shadow-sm border border-slate-100">
+                                                            {/* Daily Change Card */}
+                                                            <div className={cn(
+                                                                "h-6 flex items-center justify-center transition-all duration-300 border-b border-white/20",
+                                                                getColorClass(perf?.daily),
+                                                                !perf && "bg-slate-50/50"
+                                                            )}>
+                                                                <span className="text-xs font-black">
+                                                                    {perf ? `${perf.daily > 0 ? '+' : ''}${perf.daily}%` : '-'}
                                                                 </span>
-                                                            )}
+                                                            </div>
+                                                            {/* Cumulative Change Card */}
+                                                            <div className={cn(
+                                                                "h-4 flex items-center justify-center transition-all duration-300",
+                                                                getColorClass(perf?.cum),
+                                                                !perf && "bg-slate-50/50"
+                                                            )}>
+                                                                {perf && (
+                                                                    <span className="text-[9px] font-bold opacity-90">
+                                                                        {perf.cum > 0 ? '+' : ''}{perf.cum}%
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </TableCell>
                                                 );
