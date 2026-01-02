@@ -14,6 +14,7 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion"
 import { useUser, useMemoFirebase } from "@/firebase";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeModal } from '@/components/app/qrcode-modal';
@@ -85,7 +86,16 @@ const faqs = [
 ]
 
 export default function PricingPage() {
-    const { user } = useUser();
+    const { user: firebaseUser } = useUser();
+    const { data: session } = useSession();
+    // Unify user object. NextAuth session user maps 'id' to 'uid' for compatibility if needed, or we handle both.
+    // user.uid is used in handleSubscribe.
+    const user = useMemo(() => {
+        if (firebaseUser) return firebaseUser;
+        if (session?.user) return { ...session.user, uid: session.user.id, displayName: session.user.name, photoURL: session.user.image };
+        return null;
+    }, [firebaseUser, session]);
+
     const router = useRouter();
     const { toast } = useToast();
     const isMobile = useIsMobile();
