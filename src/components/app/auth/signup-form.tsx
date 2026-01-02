@@ -16,19 +16,18 @@ import {
 } from "@/components/ui/form";
 import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { User, Mail } from "lucide-react";
+import { User, Mail, Loader2 } from "lucide-react";
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
   updateProfile,
 } from 'firebase/auth';
 
-import { Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
+import { registerUser } from '@/lib/actions/auth-actions';
 
 const signupSchema = z.object({
   name: z.string().min(1, { message: "请输入您的姓名" }),
@@ -76,24 +75,42 @@ export function SignupForm() {
     return response.json();
   };
 
+
   async function onSubmit(values: SignupFormValues) {
     setIsLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      await updateProfile(userCredential.user, { displayName: values.name });
-      await createUserInDatabase(userCredential.user, values.name);
-      router.push('/');
+      // Use Server Action for Email/Password registration
+      const formData = new FormData();
+      formData.append('name', values.name);
+      formData.append('email', values.email);
+      formData.append('password', values.password);
+
+      const result = await registerUser(undefined, formData);
+
+      if (result?.errors) {
+        // Handle validation errors if any
+        toast({
+          variant: 'destructive',
+          title: '注册不完整',
+          description: '请检查输入项',
+        });
+        return;
+      }
+
+      if (result?.message && result.message !== 'Success') {
+        throw new Error(result.message);
+      }
+
+      console.log('Registration success, redirecting to home...');
+      // Force a hard navigation to ensure auth state is picked up
+      window.location.href = '/';
+      // router.push('/'); // router.push might be soft navigation retaining old state?
     } catch (error: any) {
       console.error(error);
-      const errorCode = error.code;
-      let message = '注册失败，请重试。';
-      if (errorCode === 'auth/email-already-in-use') {
-        message = '该邮箱地址已被注册。';
-      }
       toast({
         variant: 'destructive',
         title: '注册出错',
-        description: message,
+        description: error.message || '注册失败，请重试。',
       });
     } finally {
       setIsLoading(false);

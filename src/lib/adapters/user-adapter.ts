@@ -83,6 +83,7 @@ export class UserAdapter {
     name: string;
     firebaseUid?: string;
     googleId?: string;
+    password?: string;
   }): Promise<User> {
     try {
       const user = await prisma.user.create({
@@ -91,6 +92,7 @@ export class UserAdapter {
           name: userData.name,
           firebaseUid: userData.firebaseUid,
           googleId: userData.googleId,
+          password: userData.password,
         },
       });
 

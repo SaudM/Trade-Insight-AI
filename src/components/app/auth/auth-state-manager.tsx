@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import { useUser } from '@/firebase/provider';
+import { useSession } from 'next-auth/react';
 import { useUserData } from '@/hooks/use-user-data';
 import { DatabaseErrorFallback } from './database-error-fallback';
 import { Loader2 } from 'lucide-react';
@@ -36,6 +37,7 @@ export function AuthStateManager({
   unauthenticatedComponent,
 }: AuthStateManagerProps) {
   const { user: firebaseUser, isUserLoading: isFirebaseLoading } = useUser();
+  const { data: session, status: sessionStatus } = useSession();
   const { userData, isLoading: isUserDataLoading, error: userDataError, refetch } = useUserData();
 
   // 默认加载组件
@@ -53,8 +55,8 @@ export function AuthStateManager({
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <p className="text-gray-600 mb-4">请先登录以访问此页面</p>
-        <a 
-          href="/login" 
+        <a
+          href="/login"
           className="text-blue-600 hover:text-blue-800 underline"
         >
           前往登录
@@ -63,13 +65,13 @@ export function AuthStateManager({
     </div>
   );
 
-  // Firebase认证加载中
-  if (isFirebaseLoading) {
+  // 认证加载中
+  if (isFirebaseLoading || sessionStatus === 'loading') {
     return loadingComponent || defaultLoadingComponent;
   }
 
   // 需要认证但用户未登录
-  if (requireAuth && !firebaseUser) {
+  if (requireAuth && !firebaseUser && !session?.user) {
     return unauthenticatedComponent || defaultUnauthenticatedComponent;
   }
 
@@ -109,6 +111,7 @@ export function AuthStateManager({
  */
 export function useAuthState() {
   const { user: firebaseUser, isUserLoading: isFirebaseLoading, userError } = useUser();
+  const { data: session, status: sessionStatus } = useSession();
   const { userData, isLoading: isUserDataLoading, error: userDataError, refetch } = useUserData();
 
   return {
@@ -116,17 +119,21 @@ export function useAuthState() {
     firebaseUser,
     isFirebaseLoading,
     firebaseError: userError,
-    
+
+    // NextAuth状态
+    sessionUser: session?.user,
+    isSessionLoading: sessionStatus === 'loading',
+
     // 用户数据状态
     userData,
     isUserDataLoading,
     userDataError,
     refetchUserData: refetch,
-    
+
     // 综合状态
-    isAuthenticated: !!firebaseUser,
+    isAuthenticated: !!firebaseUser || !!session?.user,
     hasUserData: !!userData?.user,
-    isLoading: isFirebaseLoading || isUserDataLoading,
+    isLoading: isFirebaseLoading || sessionStatus === 'loading' || isUserDataLoading,
     isDatabaseConnected: userData?.source === 'postgres',
   };
 }

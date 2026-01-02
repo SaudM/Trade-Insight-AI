@@ -22,7 +22,6 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import {
   getAuth,
-  signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
@@ -30,6 +29,7 @@ import { Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import Link from 'next/link';
 import { useUser } from '@/firebase';
+import { authenticate } from '@/lib/actions/auth-actions';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "请输入有效的邮箱地址" }),
@@ -51,7 +51,7 @@ export function LoginForm() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-        router.push(redirectUrl);
+      router.push(redirectUrl);
     }
   }, [user, isUserLoading, router, redirectUrl]);
 
@@ -64,22 +64,41 @@ export function LoginForm() {
     },
   });
 
+  // ... (inside component)
+  // ... (keep other imports)
+
+  // ... (inside component)
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      // Let the useEffect handle the redirect
-    } catch (error: any) {
-      console.error(error);
-      const errorCode = error.code;
-      let message = '登录失败，请重试。';
-      if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
-        message = '邮箱或密码不正确。';
+      const formData = new FormData();
+      formData.append('email', values.email);
+      formData.append('password', values.password);
+
+      const errorMessage = await authenticate(undefined, formData);
+
+      if (errorMessage) {
+        toast({
+          variant: 'destructive',
+          title: '登录出错',
+          description: errorMessage,
+        });
+      } else {
+        // Success case
+        console.log('Login success, redirecting...');
+        toast({
+          title: '登录成功',
+          description: '正在跳转...',
+        });
+        // Force hard navigation to ensure cookies are applied and state is fresh
+        window.location.href = redirectUrl;
       }
+    } catch (error) {
+      console.error(error);
       toast({
         variant: 'destructive',
         title: '登录出错',
-        description: message,
+        description: '登录发生未知错误',
       });
     } finally {
       setIsLoading(false);
@@ -122,10 +141,10 @@ export function LoginForm() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
+
       // 确保用户数据存储到PostgreSQL数据库
       await createUserInDatabase(result.user, result.user.displayName || 'Google User');
-      
+
       // Let the useEffect handle the redirect
     } catch (error) {
       console.error(error);

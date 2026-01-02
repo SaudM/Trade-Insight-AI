@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@/firebase/provider';
+import { useSession } from 'next-auth/react';
 import type { Subscription } from '@/lib/types';
 
 /**
@@ -52,13 +53,16 @@ interface UseUserDataReturn {
  * 当数据库连接失败时，不提供备用数据，避免业务逻辑混乱
  */
 export function useUserData(): UseUserDataReturn {
-  const { user: firebaseUser, isUserLoading } = useUser();
+  const { user: firebaseUser, isUserLoading: isFirebaseLoading } = useUser();
+  const { data: session, status: sessionStatus } = useSession();
   const [userData, setUserData] = useState<UserDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchUserData = useCallback(async () => {
-    if (!firebaseUser) {
+    // Check if either Firebase user OR NextAuth session user exists
+    const sessionUser = session?.user;
+    if (!firebaseUser && !sessionUser) {
       setUserData(null);
       setIsLoading(false);
       return;
@@ -68,9 +72,16 @@ export function useUserData(): UseUserDataReturn {
     setError(null);
 
     try {
-      // 从PostgreSQL获取用户数据
-      const response = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
-      
+      let response;
+      // Prioritize Session User ID (System ID) if available
+      if (sessionUser?.id) {
+        response = await fetch(`/api/user?uid=${sessionUser.id}`);
+      } else if (firebaseUser) {
+        response = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
+      } else {
+        throw new Error("No user identifier found");
+      }
+
       if (response.ok) {
         const result = await response.json();
         const data = result.data;
@@ -79,31 +90,36 @@ export function useUserData(): UseUserDataReturn {
         return;
       }
 
-      // 如果用户不存在，尝试创建用户
+      // 如果用户不存在，尝试创建用户 (Only for Firebase users, NextAuth users are created on registration)
       if (response.status === 404) {
-        const createResponse = await fetch('/api/user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            firebaseUid: firebaseUser.uid,
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
-            googleId: firebaseUser.providerData.find(p => p.providerId === 'google.com')?.uid,
-          }),
-        });
+        if (firebaseUser) {
+          const createResponse = await fetch('/api/user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              firebaseUid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
+              googleId: firebaseUser.providerData.find(p => p.providerId === 'google.com')?.uid,
+            }),
+          });
 
-        if (createResponse.ok) {
-          // 创建成功后重新获取用户数据
-          const retryResponse = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
-          if (retryResponse.ok) {
-            const result = await retryResponse.json();
-            const data = result.data;
-            setUserData(data);
-            setIsLoading(false);
-            return;
+          if (createResponse.ok) {
+            // 创建成功后重新获取用户数据
+            const retryResponse = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
+            if (retryResponse.ok) {
+              const result = await retryResponse.json();
+              const data = result.data;
+              setUserData(data);
+              setIsLoading(false);
+              return;
+            }
           }
+        } else {
+          // Session user should usually exist in DB if they have a session, unless deleted.
+          console.warn("NextAuth user not found in DB but has session.");
         }
       }
 
@@ -121,7 +137,7 @@ export function useUserData(): UseUserDataReturn {
     } catch (error) {
       console.error('获取用户数据失败:', error);
       setError(error instanceof Error ? error.message : '数据库连接失败');
-      
+
       // 发生错误时不提供备用数据，确保业务逻辑一致性
       setUserData({
         user: null,
@@ -133,17 +149,20 @@ export function useUserData(): UseUserDataReturn {
     }
 
     setIsLoading(false);
-  }, [firebaseUser]);
+  }, [firebaseUser, session]); // Add session to dependency
 
   useEffect(() => {
-    if (!isUserLoading) {
+    // Wait for both to stop loading (or at least one to be ready?)
+    // Actually sessionStatus 'loading' is important.
+    const isSessionLoading = sessionStatus === 'loading';
+    if (!isFirebaseLoading && !isSessionLoading) {
       fetchUserData();
     }
-  }, [fetchUserData, isUserLoading]);
+  }, [fetchUserData, isFirebaseLoading, sessionStatus]);
 
   return {
     userData,
-    isLoading: isLoading || isUserLoading,
+    isLoading: isLoading || isFirebaseLoading || sessionStatus === 'loading',
     error,
     refetch: fetchUserData,
   };
