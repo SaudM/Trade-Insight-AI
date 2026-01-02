@@ -1,4 +1,4 @@
-'use client';
+
 
 import { BarChart, Brain, Shield, TrendingUp, Users, Star, ArrowRight, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -24,7 +24,7 @@ export function LandingPage() {
           </div>
           <span className="font-headline text-xl font-bold text-primary">交易笔记AI</span>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             登录
@@ -47,7 +47,7 @@ export function LandingPage() {
             基于AI的交易笔记平台，帮助您记录、分析并从每一笔交易中学习，
             通过深度数据洞察和智能建议提升交易表现
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
             <Link href="/signup">
               <Button size="lg" className="gap-2">
@@ -82,7 +82,7 @@ export function LandingPage() {
         {/* 核心功能亮点 */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-center mb-12">为什么选择交易笔记AI</h2>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {/* 功能卡片 1 */}
             <Card className="text-center">
@@ -182,7 +182,7 @@ export function LandingPage() {
         {/* 用户评价 */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-center mb-12">交易者的选择</h2>
-          
+
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <Card>
               <CardContent className="pt-6">
@@ -234,7 +234,7 @@ export function LandingPage() {
               <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
                 加入1000+交易者的行列，体验AI驱动的交易分析带来的改变
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/signup">
                   <Button size="lg" className="gap-2">
@@ -263,7 +263,7 @@ export function LandingPage() {
               </div>
               <span className="font-headline text-lg font-bold">交易笔记AI</span>
             </div>
-            
+
             <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
               <Link href="/privacy" className="hover:text-foreground transition-colors">
                 隐私政策
@@ -276,7 +276,7 @@ export function LandingPage() {
               </Link>
             </div>
           </div>
-          
+
           <div className="text-center mt-6 text-sm text-muted-foreground">
             <p>© 2024 交易笔记AI. 保留所有权利.</p>
           </div>
