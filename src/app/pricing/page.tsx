@@ -655,6 +655,11 @@ export default function PricingPage() {
                     <div className="text-center text-sm text-gray-500">
                         <p>&copy; {new Date().getFullYear()} 复利复盘. All rights reserved.</p>
                         <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
+                        <p className="mt-2 text-xs text-gray-400">
+                            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">
+                                京ICP备2020034311号-3
+                            </a>
+                        </p>
                     </div>
                 </footer>
             </div>

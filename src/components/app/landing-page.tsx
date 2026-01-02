@@ -279,6 +279,11 @@ export function LandingPage() {
 
           <div className="text-center mt-6 text-sm text-muted-foreground">
             <p>© 2024 交易笔记AI. 保留所有权利.</p>
+            <p className="mt-2 text-xs text-muted-foreground/60">
+              <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                京ICP备2020034311号-3
+              </a>
+            </p>
           </div>
         </div>
       </footer>

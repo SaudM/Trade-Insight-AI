@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -22,55 +24,55 @@ const buttonVariants = cva(
          * Use for the most important actions.
          * It has a solid background color and provides a strong visual cue.
          */
-        default: "bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg active:shadow-sm focus:ring-blue-500",
+        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:shadow-lg active:shadow-sm focus:ring-ring",
         /**
          * **Tonal Button**
          * A medium-emphasis button that's a lighter alternative to Filled buttons.
          * Use for secondary actions that still need some emphasis.
          */
-        tonal: "bg-blue-100 text-blue-700 shadow-sm hover:bg-blue-200 hover:shadow-md active:shadow-sm focus:ring-blue-400",
+        tonal: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-md active:shadow-sm focus:ring-ring",
         /**
          * **Destructive Button**
          * A Filled button styled with error colors for actions that delete data or are otherwise destructive.
          */
         destructive:
-          "bg-red-600 text-white shadow-md hover:bg-red-700 hover:shadow-lg active:shadow-sm focus:ring-red-500",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-lg active:shadow-sm focus:ring-destructive",
         /**
          * **Elevated Button**
          * A button with a shadow that appears to "float" above the surface.
          * Use for actions that need to stand out from a complex background.
          */
         elevated:
-          "bg-white text-blue-600 shadow-lg hover:shadow-xl active:shadow-md border border-gray-100 focus:ring-blue-500",
+          "bg-background text-primary shadow-lg hover:shadow-xl active:shadow-md border border-input focus:ring-ring",
         /**
          * **Outlined Button**
          * A medium-emphasis button with a border and no fill.
          * Use for important actions that aren't the primary call to action.
          */
         outline:
-          "border border-blue-300 text-blue-600 hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-400",
+          "border border-input bg-background text-primary hover:bg-accent hover:text-accent-foreground active:bg-accent/80 focus:ring-ring",
         /**
          * **Secondary Filled Button**
          * A Filled button that uses the secondary color scheme.
          */
         secondary:
-          "bg-slate-600 text-white shadow-md hover:bg-slate-700 hover:shadow-lg active:shadow-sm focus:ring-slate-500",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-lg active:shadow-sm focus:ring-ring",
         /**
          * **Ghost Button**
          * A low-emphasis button, similar to a Text button but can be used for less prominent actions.
          */
-        ghost: "text-slate-600 hover:bg-slate-100 active:bg-slate-200 focus:ring-slate-400",
+        ghost: "hover:bg-accent hover:text-accent-foreground active:bg-accent/80 focus:ring-ring",
         /**
          * **Text Button**
          * The lowest-emphasis button, used for less important actions.
          * It's typically used in dialogs, cards, and other containers.
          */
-        text: "text-blue-600 hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-400",
+        text: "text-primary hover:bg-primary/10 active:bg-primary/20 focus:ring-ring",
         /**
          * **Link Button**
          * A button styled to look like a hyperlink.
          */
-        link: "text-blue-600 underline-offset-4 hover:underline focus:ring-blue-400",
+        link: "text-primary underline-offset-4 hover:underline focus:ring-ring",
       },
       size: {
         default: "h-10 px-6 py-2",
@@ -88,7 +90,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
@@ -101,12 +103,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, children, ...props }, ref) => {
     const rippleRef = React.useRef<RippleRef>(null);
     const Comp = asChild ? Slot : "button"
-    
+
     const handleMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
       rippleRef.current?.addRipple(event);
       props.onMouseDown?.(event);
     };
-    
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
