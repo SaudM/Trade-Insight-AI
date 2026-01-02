@@ -3,13 +3,14 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { signOut as nextSignOut } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppHeader } from "./header";
 import { useAuthState } from "@/components/app/auth/auth-state-manager";
 import { Badge } from "@/components/ui/badge";
 import { Crown, ExternalLink, LogOut, ShoppingBag, Key, Settings, Sparkles, Clock, Gift } from "lucide-react";
 import { format } from "date-fns";
-import { getAuth, sendPasswordResetEmail, signOut } from "firebase/auth";
+import { getAuth, sendPasswordResetEmail, signOut as firebaseSignOut } from "firebase/auth";
 
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -50,7 +51,8 @@ export function ProfileView() {
     const handleSignOut = async () => {
         try {
             const auth = getAuth();
-            await signOut(auth);
+            await firebaseSignOut(auth);
+            await nextSignOut({ redirect: false });
             toast({ title: "已成功登出" });
             router.push('/login');
         } catch (error) {
@@ -162,8 +164,8 @@ export function ProfileView() {
                             <div
                                 onClick={handlePricingClick}
                                 className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-lg group cursor-pointer active:scale-[0.99] touch-manipulation ${isProUser
-                                        ? 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-yellow-200/50'
-                                        : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/50'
+                                    ? 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-yellow-200/50'
+                                    : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/50'
                                     }`}>
                                 {/* 背景装饰元素 */}
                                 <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
@@ -178,8 +180,8 @@ export function ProfileView() {
                                     <div className="flex items-center gap-4 sm:gap-5">
                                         {/* 图标容器 - 移动端隐藏 */}
                                         <div className={`hidden sm:block relative p-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-105 ${isProUser
-                                                ? 'bg-gradient-to-br from-yellow-400 to-amber-500'
-                                                : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                                            ? 'bg-gradient-to-br from-yellow-400 to-amber-500'
+                                            : 'bg-gradient-to-br from-blue-500 to-indigo-600'
                                             }`}>
                                             {isProUser ? (
                                                 <Crown className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-sm" />
@@ -256,8 +258,8 @@ export function ProfileView() {
                                 variant="default"
                                 onClick={handlePricingClick}
                                 className={`relative w-full h-12 sm:h-14 text-sm sm:text-base font-bold rounded-2xl shadow-lg hover:shadow-xl active:shadow-md active:scale-[0.98] transition-all duration-300 touch-manipulation overflow-hidden group ${isProUser
-                                        ? 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
-                                        : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700'
+                                    ? 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
+                                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700'
                                     }`}
                             >
                                 {/* 背景光效 */}
