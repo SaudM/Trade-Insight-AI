@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Calendar as CalendarIcon, Filter, Info, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 import { format, subDays } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, getXueqiuUrl } from '@/lib/utils';
 import type { Recommendation, HeatmapData } from '@/lib/types';
 import {
     Popover,
@@ -259,8 +259,25 @@ export function RecommendationsView() {
                                         <TableRow key={`${rec.symbol}-${rec.signal_date}`} className="group hover:bg-slate-50/50 transition-colors border-slate-100">
                                             <TableCell className="py-3 w-[150px]">
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-slate-900 group-hover:text-primary transition-colors text-sm">{rec.name}</span>
-                                                    <span className="text-[10px] font-mono text-slate-400 uppercase">{rec.symbol}</span>
+                                                    <a
+                                                        href={getXueqiuUrl(rec.symbol)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="font-bold text-slate-900 hover:text-primary hover:underline transition-all text-sm block"
+                                                        title="点击查看雪球行情"
+                                                        onClick={(e) => e.stopPropagation()} // Prevent row click in case row is clickable
+                                                    >
+                                                        {rec.name}
+                                                    </a>
+                                                    <a
+                                                        href={getXueqiuUrl(rec.symbol)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-[10px] font-mono text-slate-400 uppercase hover:text-primary transition-colors cursor-pointer block"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {rec.symbol}
+                                                    </a>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-center w-[80px]">
