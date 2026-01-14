@@ -95,10 +95,10 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
           <SidebarMenuButton
             onClick={() => setActiveView('recommendations')}
             isActive={activeView === 'recommendations'}
-            tooltip={{ children: '精选推荐' }}
+            tooltip={{ children: '量化中心' }}
           >
             <Sparkles />
-            <span className="text-base font-medium">精选推荐</span>
+            <span className="text-base font-medium">量化中心</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <SidebarMenuItem>
