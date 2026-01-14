@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       const cacheOptions = CachedApiHandler.createCacheOptions(
         CacheKeys.userByUid,        // 缓存键生成函数 (System UID)
         CacheConfig.USER_DATA_TTL,  // TTL
-        true                        // 重新启用缓存
+        false                       // 禁用缓存，确保订阅状态实时更新
       );
 
       const response = await CachedApiHandler.handleCachedGet(
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       const cacheOptions = CachedApiHandler.createCacheOptions(
         CacheKeys.userByFirebaseUid, // 缓存键生成函数 (Firebase UID)
         CacheConfig.USER_DATA_TTL,   // TTL
-        true                         // 重新启用缓存
+        false                        // 禁用缓存，确保订阅状态实时更新
       );
 
       const response = await CachedApiHandler.handleCachedGet(

@@ -24,10 +24,10 @@ export async function GET(req: NextRequest) {
     const firebaseUid = searchParams.get('firebaseUid');
 
     if (!uid && !firebaseUid) {
-      return new Response(JSON.stringify({ 
-        error: 'Missing required parameter: uid or firebaseUid' 
-      }), { 
-        status: 400 
+      return new Response(JSON.stringify({
+        error: 'Missing required parameter: uid or firebaseUid'
+      }), {
+        status: 400
       });
     }
 
@@ -70,8 +70,8 @@ export async function GET(req: NextRequest) {
 
   } catch (err: any) {
     console.error('trade-logs API error:', err);
-    return new Response(JSON.stringify({ error: err.message || 'Internal error' }), { 
-      status: 500 
+    return new Response(JSON.stringify({ error: err.message || 'Internal error' }), {
+      status: 500
     });
   }
 }
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
      * 公共必填校验：不包含 positionSize（由方向校验决定）
      * 说明：Buy/开仓不需要传入 tradeResult；Sell/Close/平仓可携带数值型 tradeResult 以提升体验。
      */
-    if (!userId || !tradeTime || !symbol || !direction || !mindsetState) {
+    if (!userId || !tradeTime || !symbol || !direction) {
       console.error('400 Error - Missing required fields', {
         requestInfo: {
           method: req.method,
@@ -110,11 +110,11 @@ export async function POST(req: NextRequest) {
         },
         errorMessage: 'Missing required fields'
       });
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
-        status: 400 
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400
       });
     }
-    
+
     // 方向动态必填与数值校验
     const dir = String(direction);
     const isOpening = ['Buy', 'Long', 'Short'].includes(dir);
@@ -200,14 +200,14 @@ export async function POST(req: NextRequest) {
 
     // 检查数据库连接
     const isDbConnected = await checkDatabaseConnection();
-    
+
     if (!isDbConnected) {
       console.warn('数据库连接失败');
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'Database connection failed',
         source: 'postgres_failed'
-      }), { 
-        status: 503 
+      }), {
+        status: 503
       });
     }
 
@@ -271,11 +271,11 @@ export async function POST(req: NextRequest) {
         errorMessage: error.message,
         errorStack: error.stack
       });
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'Failed to create trade log',
         source: 'postgres'
-      }), { 
-        status: 500 
+      }), {
+        status: 500
       });
     }
 
@@ -295,8 +295,8 @@ export async function POST(req: NextRequest) {
       errorMessage: err.message,
       errorStack: err.stack
     });
-    return new Response(JSON.stringify({ error: err.message || 'Internal error' }), { 
-      status: 500 
+    return new Response(JSON.stringify({ error: err.message || 'Internal error' }), {
+      status: 500
     });
   }
 }

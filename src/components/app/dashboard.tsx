@@ -258,17 +258,14 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                                 <p className="text-xs text-gray-500">自动跳过周末休市日</p>
                             </CardContent>
                         </Card>
+                        <Card className="col-span-2 sm:col-span-1 flex flex-col">
+                            <WinLossRatioChart profitableTrades={profitableTrades.length} lossTrades={losingTrades.length} />
+                        </Card>
                     </div>
 
 
 
-                    <div className="grid gap-3 sm:gap-4 grid-cols-1">
-                        <div className="min-w-0">
-                            <Card className="flex flex-col">
-                                <WinLossRatioChart profitableTrades={profitableTrades.length} lossTrades={losingTrades.length} />
-                            </Card>
-                        </div>
-                    </div>
+
 
                     <div className="grid gap-3 sm:gap-4">
                         <div className="min-w-0 flex flex-col">

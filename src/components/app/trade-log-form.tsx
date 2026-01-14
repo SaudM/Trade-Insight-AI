@@ -77,77 +77,77 @@ const tradeLogSchema = z.object({
   // 卖出界面用于盈亏估算的参考买入价（历史数据可能缺少买入价）
   referenceEntryPrice: z.string().optional(),
   tradeResult: z.string().optional(),
-  mindsetState: z.string().min(1, '心态状态是必填项'),
+  mindsetState: z.string().optional(),
   entryReason: z.string().optional(),
   exitReason: z.string().optional(),
   lessonsLearned: z.string().optional(),
 }).refine(data => {
-    // Entry reason is required for entry trades
-    if (['Buy', 'Long', 'Short'].includes(data.direction)) {
-        return !!data.entryReason && data.entryReason.length > 0;
-    }
-    return true;
+  // Entry reason is required for entry trades
+  if (['Buy', 'Long', 'Short'].includes(data.direction)) {
+    return !!data.entryReason && data.entryReason.length > 0;
+  }
+  return true;
 }, {
-    message: '入场理由是必填项',
-    path: ['entryReason'],
+  message: '分析与计划是必填项',
+  path: ['entryReason'],
 }).refine(data => {
-    // Exit reason is required for exit trades
-    if (['Sell', 'Close'].includes(data.direction)) {
-        return !!data.exitReason && data.exitReason.length > 0;
-    }
-    return true;
+  // Exit reason is required for exit trades, optional for entry trades
+  if (['Sell', 'Close'].includes(data.direction)) {
+    return !!data.exitReason && data.exitReason.length > 0;
+  }
+  return true;
 }, {
-    message: '出场理由是必填项',
-    path: ['exitReason'],
-  }).superRefine((data, ctx) => {
-    const isEntry = ['Buy', 'Long', 'Short'].includes(data.direction);
-    const isExit = ['Sell', 'Close'].includes(data.direction);
+  message: '复盘与心得是必填项',
+  path: ['exitReason'],
+}).superRefine((data, ctx) => {
+  const isEntry = ['Buy', 'Long', 'Short'].includes(data.direction);
+  const isExit = ['Sell', 'Close'].includes(data.direction);
 
-    const isValidPrice = (v: string) => {
-      const n = Number(v);
-      // 放宽到最多 4 位小数，兼容后端 Decimal(12,4)
-      return Number.isFinite(n) && n > 0 && /^\d+(\.\d{1,4})?$/.test(v);
-    };
-    const isValidQuantity = (v: string) => {
-      const n = Number(v);
-      return Number.isInteger(n) && n > 0;
-    };
+  const isValidPrice = (v: string) => {
+    const n = Number(v);
+    // 放宽到最多 4 位小数，兼容后端 Decimal(12,4)
+    return Number.isFinite(n) && n > 0 && /^\d+(\.\d{1,4})?$/.test(v);
+  };
+  const isValidQuantity = (v: string) => {
+    const n = Number(v);
+    return Number.isInteger(n) && n > 0;
+  };
 
-    if (isEntry) {
-      if (!data.buyPrice) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['buyPrice'], message: '买入价格是必填项' });
-      } else if (!isValidPrice(data.buyPrice)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['buyPrice'], message: '买入价格必须为正数，且最多保留2位小数' });
-      }
-      // 用“仓位大小”统一表示开仓股数，并进行数值校验
-      if (!data.positionSize) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['positionSize'], message: '仓位大小是必填项' });
-      } else if (!isValidQuantity(data.positionSize)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['positionSize'], message: '仓位大小必须为正整数（股）' });
-      }
-      // 防混淆：禁止同时传入 buyQuantity 与 positionSize（仅保留仓位大小）
-      if (data.buyQuantity && data.positionSize) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['buyQuantity'], message: '请仅填写“仓位大小”，不要同时填写“买入股数”。' });
-      }
+  if (isEntry) {
+    if (!data.buyPrice) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['buyPrice'], message: '买入价格是必填项' });
+    } else if (!isValidPrice(data.buyPrice)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['buyPrice'], message: '买入价格必须为正数，且最多保留2位小数' });
     }
-
-    if (isExit) {
-      if (!data.sellPrice) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellPrice'], message: '卖出价格是必填项' });
-      } else if (!isValidPrice(data.sellPrice)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellPrice'], message: '卖出价格必须为正数，且最多保留2位小数' });
-      }
-      if (!data.sellQuantity) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellQuantity'], message: '卖出股数是必填项' });
-      } else if (!isValidQuantity(data.sellQuantity)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellQuantity'], message: '卖出股数必须为正整数' });
-      }
-      // 放宽：不强制要求参考买入价
-      if (data.referenceEntryPrice && !isValidPrice(data.referenceEntryPrice)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['referenceEntryPrice'], message: '参考买入价必须为正数且最多保留4位小数' });
-      }
+    // 用“仓位大小”统一表示开仓股数，并进行数值校验
+    if (!data.positionSize) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['positionSize'], message: '仓位大小是必填项' });
+    } else if (!isValidQuantity(data.positionSize)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['positionSize'], message: '仓位大小必须为正整数（股）' });
     }
-  });
+    // 防混淆：禁止同时传入 buyQuantity 与 positionSize（仅保留仓位大小）
+    if (data.buyQuantity && data.positionSize) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['buyQuantity'], message: '请仅填写“仓位大小”，不要同时填写“买入股数”。' });
+    }
+  }
+
+  if (isExit) {
+    if (!data.sellPrice) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellPrice'], message: '卖出价格是必填项' });
+    } else if (!isValidPrice(data.sellPrice)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellPrice'], message: '卖出价格必须为正数，且最多保留2位小数' });
+    }
+    if (!data.sellQuantity) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellQuantity'], message: '卖出股数是必填项' });
+    } else if (!isValidQuantity(data.sellQuantity)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['sellQuantity'], message: '卖出股数必须为正整数' });
+    }
+    // 放宽：不强制要求参考买入价
+    if (data.referenceEntryPrice && !isValidPrice(data.referenceEntryPrice)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['referenceEntryPrice'], message: '参考买入价必须为正数且最多保留4位小数' });
+    }
+  }
+});
 
 
 export type TradeLogFormValues = z.infer<typeof tradeLogSchema>;
@@ -279,7 +279,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
   useEffect(() => {
     fetchPositionSummary();
   }, [fetchPositionSummary]);
-  
+
   const isEntry = ['Buy', 'Long', 'Short'].includes(direction);
   const isExit = ['Sell', 'Close'].includes(direction);
 
@@ -456,6 +456,31 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 py-2 min-w-0">
           <FormField
             control={form.control}
+            name="direction"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormControl>
+                  <FloatingLabelSelect
+                    label="方向"
+                    helperText="选择交易方向"
+                    required
+                    error={fieldState.error?.message}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FloatingLabelSelectItem value="Buy">买入</FloatingLabelSelectItem>
+                    <FloatingLabelSelectItem value="Sell">卖出</FloatingLabelSelectItem>
+                    <FloatingLabelSelectItem value="Long">做多</FloatingLabelSelectItem>
+                    <FloatingLabelSelectItem value="Short">做空</FloatingLabelSelectItem>
+                    <FloatingLabelSelectItem value="Close">平仓</FloatingLabelSelectItem>
+                  </FloatingLabelSelect>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="tradeTime"
             render={({ field, fieldState }) => (
               <FormItem>
@@ -499,14 +524,14 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                   <FormControl>
                     <FloatingLabelSelect
                       label="卖出股票"
-                      helperText={positionsLoading ? '加载持仓中…' : positions.length ? '选择当前持仓中的标的进行卖出' : '暂无可卖出持仓'}
+                      helperText={positionsLoading ? '加载持仓中…' : positions.filter(p => p.currentQty > 0).length ? '选择当前持仓中的标的进行卖出' : '暂无可卖出持仓'}
                       required
                       error={fieldState.error?.message}
                       value={field.value}
                       onValueChange={field.onChange}
-                      disabled={positionsLoading || positions.length === 0}
+                      disabled={positionsLoading || positions.filter(p => p.currentQty > 0).length === 0}
                     >
-                      {positions.map(p => (
+                      {positions.filter(p => p.currentQty > 0).map(p => (
                         <FloatingLabelSelectItem key={p.symbol} value={p.symbol}>
                           {p.symbol}（{p.currentQty} 股）
                         </FloatingLabelSelectItem>
@@ -517,30 +542,6 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
               )}
             />
           )}
-          <FormField
-            control={form.control}
-            name="direction"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <FormControl>
-                  <FloatingLabelSelect
-                    label="方向"
-                    helperText="选择交易方向"
-                    required
-                    error={fieldState.error?.message}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FloatingLabelSelectItem value="Buy">买入</FloatingLabelSelectItem>
-                    <FloatingLabelSelectItem value="Sell">卖出</FloatingLabelSelectItem>
-                    <FloatingLabelSelectItem value="Long">做多</FloatingLabelSelectItem>
-                    <FloatingLabelSelectItem value="Short">做空</FloatingLabelSelectItem>
-                    <FloatingLabelSelectItem value="Close">平仓</FloatingLabelSelectItem>
-                  </FloatingLabelSelect>
-                </FormControl>
-              </FormItem>
-            )}
-          />
           {isEntry && (
             <FormField
               control={form.control}
@@ -563,144 +564,144 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
 
           {/* 买入价格（每股） — 仅在开仓方向显示 */}
           {isEntry && (
-          <FormField
-            control={form.control}
-            name="buyPrice"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <FormControl>
-                      <FloatingLabelInput
-                        type="number"
-                        label="买入价格（每股）"
-                        helperText="示例：10.00"
-                        required
-                        error={fieldState.error?.message}
-                        step="0.01"
-                        min="0"
-                        {...field}
-                      />
-                    </FormControl>
+            <FormField
+              control={form.control}
+              name="buyPrice"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <FormControl>
+                        <FloatingLabelInput
+                          type="number"
+                          label="买入价格（每股）"
+                          helperText="示例：10.00"
+                          required
+                          error={fieldState.error?.message}
+                          step="0.01"
+                          min="0"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="买入价格说明">
+                            <HelpCircle className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          从券商交易记录或成交回执获取，支持两位小数。
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="买入价格说明">
-                          <HelpCircle className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        从券商交易记录或成交回执获取，支持两位小数。
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </FormItem>
-            )}
-          />
+                </FormItem>
+              )}
+            />
           )}
 
           {/* 卖出价格（每股） — 仅在平仓方向显示 */}
           {isExit && (
-          <FormField
-            control={form.control}
-            name="sellPrice"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <FormControl>
-                      <FloatingLabelInput
-                        type="number"
-                        label="卖出价格（每股）"
-                        helperText="示例：12.50"
-                        required
-                        error={fieldState.error?.message}
-                        step="0.01"
-                        min="0"
-                        {...field}
-                      />
-                    </FormControl>
+            <FormField
+              control={form.control}
+              name="sellPrice"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <FormControl>
+                        <FloatingLabelInput
+                          type="number"
+                          label="卖出价格（每股）"
+                          helperText="示例：12.50"
+                          required
+                          error={fieldState.error?.message}
+                          step="0.01"
+                          min="0"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="卖出价格说明">
+                            <HelpCircle className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          来自卖出成交价，支持两位小数。
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="卖出价格说明">
-                          <HelpCircle className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        来自卖出成交价，支持两位小数。
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </FormItem>
-            )}
-          />
+                </FormItem>
+              )}
+            />
           )}
 
           {/* 卖出界面：历史买入均价（每股） — 自动填充，只读，加载/错误态处理 */}
           {isExit && (
-          <FormField
-            control={form.control}
-            name={"referenceEntryPrice" as any}
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <FormControl>
-                      <FloatingLabelInput
-                        type="number"
-                        label="历史买入均价（每股）"
-                        helperText={autoError
-                          ? autoError
-                          : (autoLoading
+            <FormField
+              control={form.control}
+              name={"referenceEntryPrice" as any}
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <FormControl>
+                        <FloatingLabelInput
+                          type="number"
+                          label="历史买入均价（每股）"
+                          helperText={autoError
+                            ? autoError
+                            : (autoLoading
                               ? '正在加载...'
                               : (referenceBuyPriceAuto != null
-                                  ? '已回显买入价格，示例：10.00'
-                                  : '用于盈亏估算，示例：10.00'))}
-                        readOnly
-                        className={"bg-gray-50 text-gray-700 cursor-not-allowed"}
-                        error={fieldState.error?.message}
-                        step="0.01"
-                        min="0"
-                        value={(referenceBuyPriceAuto != null
-                                  ? String(referenceBuyPriceAuto)
-                                  : (avgEntryPriceAuto != null
-                                      ? String(avgEntryPriceAuto)
-                                      : (field.value || '')))}
-                        onChange={() => { /* 只读：禁止手动修改 */ }}
-                      />
-                    </FormControl>
-                  </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="参考买入价说明">
-                          {autoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <HelpCircle className="h-4 w-4" />}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {referenceBuyPriceAuto != null
-                          ? '数据来源：持仓买入价格（数据库）；用于盈亏计算。'
-                          : (avgEntryPriceAuto != null
+                                ? '已回显买入价格，示例：10.00'
+                                : '用于盈亏估算，示例：10.00'))}
+                          readOnly
+                          className={"bg-gray-50 text-gray-700 cursor-not-allowed"}
+                          error={fieldState.error?.message}
+                          step="0.01"
+                          min="0"
+                          value={(referenceBuyPriceAuto != null
+                            ? String(referenceBuyPriceAuto)
+                            : (avgEntryPriceAuto != null
+                              ? String(avgEntryPriceAuto)
+                              : (field.value || '')))}
+                          onChange={() => { /* 只读：禁止手动修改 */ }}
+                        />
+                      </FormControl>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="参考买入价说明">
+                            {autoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <HelpCircle className="h-4 w-4" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          {referenceBuyPriceAuto != null
+                            ? '数据来源：持仓买入价格（数据库）；用于盈亏计算。'
+                            : (avgEntryPriceAuto != null
                               ? `数据来源：${dataSource || 'trade-logs 聚合'}。用于盈亏计算。`
                               : '后端未存储历史买入价格，均价暂不可用。')}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                {autoError && (
-                  <div className="mt-2 flex items-center gap-2 text-destructive text-sm">
-                    <span>{autoError}</span>
-                    <Button type="button" variant="outline" size="sm" onClick={fetchPositionSummary}>重试</Button>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-                )}
-              </FormItem>
-            )}
-          />
+                  {autoError && (
+                    <div className="mt-2 flex items-center gap-2 text-destructive text-sm">
+                      <span>{autoError}</span>
+                      <Button type="button" variant="outline" size="sm" onClick={fetchPositionSummary}>重试</Button>
+                    </div>
+                  )}
+                </FormItem>
+              )}
+            />
           )}
 
           {/* 卖出界面：将“可卖出股数”与“卖出股数”合并，默认填入最大可卖数量 */}
@@ -709,104 +710,86 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
 
           {/* 卖出股数 — 仅在平仓方向显示 */}
           {isExit && (
-          <FormField
-            control={form.control}
-            name="sellQuantity"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <FormControl>
-                      <FloatingLabelInput
-                        type="number"
-                        label="卖出股数"
-                        helperText={(maxSellableAuto != null)
-                          ? `默认填入最多 ${maxSellableAuto} 股，可修改但不得超过该值`
-                          : ((form.getValues('symbol') && positionsBySymbol[form.getValues('symbol')])
+            <FormField
+              control={form.control}
+              name="sellQuantity"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <FormControl>
+                        <FloatingLabelInput
+                          type="number"
+                          label="卖出股数"
+                          helperText={(maxSellableAuto != null)
+                            ? `默认填入最多 ${maxSellableAuto} 股，可修改但不得超过该值`
+                            : ((form.getValues('symbol') && positionsBySymbol[form.getValues('symbol')])
                               ? `可卖出最多 ${positionsBySymbol[form.getValues('symbol')].currentQty} 股`
                               : '示例：100')}
-                        required
-                        error={fieldState.error?.message}
-                        step="1"
-                        min="1"
-                        max={(maxSellableAuto ?? positionsBySymbol[form.getValues('symbol')]?.currentQty) ?? undefined}
-                        {...field}
-                      />
-                    </FormControl>
+                          required
+                          error={fieldState.error?.message}
+                          step="1"
+                          min="1"
+                          max={(maxSellableAuto ?? positionsBySymbol[form.getValues('symbol')]?.currentQty) ?? undefined}
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="卖出股数说明">
+                            <HelpCircle className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          使用卖出成交股数，需为正整数且不得超过当前持仓。
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="卖出股数说明">
-                          <HelpCircle className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        使用卖出成交股数，需为正整数且不得超过当前持仓。
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </FormItem>
-            )}
-          />
+                </FormItem>
+              )}
+            />
           )}
 
           {/* 实时盈亏区块仅在卖出方向显示，买入界面保持简洁 */}
           {isExit && (
-          <div className="md:col-span-2">
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-gray-50">
-              {canShowProfit ? (
-                <div>
-                  <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">实时盈亏 (¥)</p>
-                  <p className={`text-xl font-bold ${computedProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{computedProfit.toFixed(2)}</p>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-600">请填写参考买入价、卖出价格与卖出股数后，系统将自动展示盈亏计算。</div>
-              )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="查看计算明细">
-                      <HelpCircle className="h-5 w-5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">
-                    <div className="space-y-1">
-                      <div>差额：{Number(sellPrice||0).toFixed(2)} - {Number((referenceEntryPrice||buyPrice)||0).toFixed(2)} = {(Number(sellPrice||0) - Number((referenceEntryPrice||buyPrice)||0)).toFixed(2)}</div>
-                      <div>本次盈亏：差额 × 卖出股数 = {((Number(sellPrice||0) - Number((referenceEntryPrice||buyPrice)||0)) * Number(sellQuantity||0)).toFixed(2)} 元</div>
-                      {form.getValues('symbol') && positionsBySymbol[form.getValues('symbol')] ? (
-                        <div>累计盈亏（含历史）：{(positionsBySymbol[form.getValues('symbol')].cumulativePnL + computedProfit).toFixed(2)} 元</div>
-                      ) : (
-                        <div>累计盈亏统计：待选择持仓后显示</div>
-                      )}
-                      <div className="text-muted-foreground">注：暂未包含手续费/印花税等费用。</div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-gray-50">
+                {canShowProfit ? (
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">实时盈亏 (¥)</p>
+                    <p className={`text-xl font-bold ${computedProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{computedProfit.toFixed(2)}</p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-600">请填写参考买入价、卖出价格与卖出股数后，系统将自动展示盈亏计算。</div>
+                )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="查看计算明细">
+                        <HelpCircle className="h-5 w-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <div className="space-y-1">
+                        <div>差额：{Number(sellPrice || 0).toFixed(2)} - {Number((referenceEntryPrice || buyPrice) || 0).toFixed(2)} = {(Number(sellPrice || 0) - Number((referenceEntryPrice || buyPrice) || 0)).toFixed(2)}</div>
+                        <div>本次盈亏：差额 × 卖出股数 = {((Number(sellPrice || 0) - Number((referenceEntryPrice || buyPrice) || 0)) * Number(sellQuantity || 0)).toFixed(2)} 元</div>
+                        {form.getValues('symbol') && positionsBySymbol[form.getValues('symbol')] ? (
+                          <div>累计盈亏（含历史）：{(positionsBySymbol[form.getValues('symbol')].cumulativePnL + computedProfit).toFixed(2)} 元</div>
+                        ) : (
+                          <div>累计盈亏统计：待选择持仓后显示</div>
+                        )}
+                        <div className="text-muted-foreground">注：暂未包含手续费/印花税等费用。</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-          </div>
           )}
 
-          <FormField
-            control={form.control}
-            name="mindsetState"
-            render={({ field, fieldState }) => (
-              <FormItem className="md:col-span-2">
-                <FormControl>
-                  <FloatingLabelInput
-                    label="心态/情绪状态"
-                    helperText="例如, 冷静、紧张、兴奋"
-                    required
-                    error={fieldState.error?.message}
-                    {...field}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-          
           {isEntry && (
             <FormField
               control={form.control}
@@ -815,19 +798,19 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                 <FormItem className="md:col-span-2">
                   <FormControl>
                     <FloatingLabelTextarea
-                    label="入场理由"
-                    helperText="您为什么进行这笔交易？"
-                    required
-                    error={fieldState.error?.message}
-                    className="min-h-[56px] h-14"
-                    {...field}
-                  />
+                      label="分析与计划 (Analysis & Plan)"
+                      helperText="记录您的核心逻辑：为什么买入？现在心情如何？计划在什么位置止盈或止损？"
+                      required
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
           )}
-          
+
+          {/* 出场理由：Sell/Close时必填；记录复盘与心得 */}
           {isExit && (
             <FormField
               control={form.control}
@@ -836,62 +819,43 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                 <FormItem className="md:col-span-2">
                   <FormControl>
                     <FloatingLabelTextarea
-                    label="出场理由"
-                    helperText="您为什么结束这笔交易？"
-                    required
-                    error={fieldState.error?.message}
-                    className="min-h-[56px] h-14"
-                    {...field}
-                  />
+                      label="复盘与心得 (Review & Lessons)"
+                      helperText="记录交易总结：为什么卖出？执行是否合一？这类交易有什么经验教训？"
+                      required
+                      error={fieldState.error?.message}
+                      {...field}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
           )}
-
-          <FormField
-            control={form.control}
-            name="lessonsLearned"
-            render={({ field, fieldState }) => (
-              <FormItem className="md:col-span-2">
-                <FormControl>
-                  <FloatingLabelTextarea
-                    label="心得体会"
-                    helperText="您从这笔交易中学到了什么？"
-                    error={fieldState.error?.message}
-                    className="min-h-[56px] h-14"
-                    {...field}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
         </form>
       </Form>
       <DialogFooter className="pt-6 sm:pt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4">
-          <MaterialButton 
-            type="button" 
-            variant="outlined" 
-            size="medium"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleCancel();
-            }}
-            className="w-full sm:w-auto"
-          >
-            取消
-          </MaterialButton>
-          <MaterialButton 
-            type="submit" 
-            variant="filled" 
-            size="medium"
-            onClick={form.handleSubmit(handleFormSubmit)}
-            className="w-full sm:w-auto"
-          >
-            {isEditing ? '更新交易' : '保存交易'}
-          </MaterialButton>
-        </DialogFooter>
+        <MaterialButton
+          type="button"
+          variant="outlined"
+          size="medium"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleCancel();
+          }}
+          className="w-full sm:w-auto"
+        >
+          取消
+        </MaterialButton>
+        <MaterialButton
+          type="submit"
+          variant="filled"
+          size="medium"
+          onClick={form.handleSubmit(handleFormSubmit)}
+          className="w-full sm:w-auto"
+        >
+          {isEditing ? '更新交易' : '保存交易'}
+        </MaterialButton>
+      </DialogFooter>
     </>
   );
 }

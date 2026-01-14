@@ -31,7 +31,7 @@ const formatTradeTime = (tradeTime: string | Date): string => {
     } else {
         date = new Date(tradeTime);
     }
-    
+
     return format(date, 'yyyy-MM-dd HH:mm');
 };
 
@@ -83,7 +83,9 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
     const contentRef = useRef<HTMLDivElement>(null);
     const tradeResultValue = parseTradeResult(log.tradeResult);
     const isProfit = tradeResultValue >= 0;
-    
+    const isOpening = ['Buy', 'Long', 'Short'].includes(log.direction);
+    const displayValue = isOpening ? (log.buyPrice || 0) : tradeResultValue;
+
     // 计算详细内容的高度
     useEffect(() => {
         if (contentRef.current) {
@@ -96,7 +98,7 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
             }
         }
     }, [isExpanded]);
-    
+
     return (
         <Card className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-md bg-white dark:bg-white overflow-hidden">
             <CardHeader className="pb-4 space-y-4">
@@ -117,15 +119,18 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                             </div>
                         </div>
                     </div>
-                    <div className="text-right space-y-2">
-                        <div className={`text-xl font-bold ${isProfit ? 'text-success' : 'text-destructive'}`}>
-                            {tradeResultValue.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                    <div className="text-right flex flex-col items-end gap-1">
+                        <div className="text-xl font-bold text-gray-900 font-mono">
+                            {(isOpening ? log.buyPrice : log.sellPrice)?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' }) || '¥0.00'}
                         </div>
-                        {getDirectionBadge(log.direction)}
+
+                        <div className="mt-1">
+                            {getDirectionBadge(log.direction)}
+                        </div>
                     </div>
                 </div>
             </CardHeader>
-            
+
             <CardContent className="pt-0 space-y-5">
                 <div className="grid grid-cols-2 gap-6">
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
@@ -135,8 +140,24 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                             <p className="font-semibold text-gray-900">{log.positionSize}</p>
                         </div>
                     </div>
+
+                    {!isOpening && (
+                        <div className={`flex items-center gap-3 p-3 rounded-lg ${isProfit ? 'bg-success/10' : 'bg-destructive/10'}`}>
+                            {isProfit ? (
+                                <TrendingUp className="h-5 w-5 text-success" />
+                            ) : (
+                                <TrendingDown className="h-5 w-5 text-destructive" />
+                            )}
+                            <div>
+                                <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">{isProfit ? '盈利' : '亏损'}</p>
+                                <p className={`font-semibold ${isProfit ? 'text-success' : 'text-destructive'}`}>
+                                    {tradeResultValue > 0 ? '+' : ''}{tradeResultValue.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                
+
                 {(log.entryReason || log.exitReason || log.mindsetState || log.lessonsLearned) && (
                     <>
                         <Button
@@ -148,9 +169,9 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                             <span className="text-sm font-medium">查看详细分析</span>
                             <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isExpanded && "rotate-180")} />
                         </Button>
-                        
+
                         {/* 详细分析内容容器 - 使用高度过渡动画 */}
-                        <div 
+                        <div
                             className="overflow-hidden transition-all duration-500 ease-in-out"
                             style={{ height: `${contentHeight}px` }}
                         >
@@ -184,7 +205,7 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
                     </>
                 )}
             </CardContent>
-            
+
             <CardFooter className="px-6 py-4 bg-transparent flex justify-end gap-3">
                 <Button
                     variant="outline"
@@ -239,19 +260,19 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
         if (!tradeLogs || tradeLogs.length === 0) {
             return [];
         }
-        
+
         return [...tradeLogs].sort((a, b) => {
             // 处理createdAt字段，支持Date对象和字符串格式
             const getCreatedAtTime = (log: TradeLog) => {
                 if (!log.createdAt) return 0;
-                return log.createdAt instanceof Date 
-                    ? log.createdAt.getTime() 
+                return log.createdAt instanceof Date
+                    ? log.createdAt.getTime()
                     : new Date(log.createdAt).getTime();
             };
-            
+
             const timeA = getCreatedAtTime(a);
             const timeB = getCreatedAtTime(b);
-            
+
             // 降序排列：最新的记录在前面
             return timeB - timeA;
         });

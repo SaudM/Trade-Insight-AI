@@ -25,42 +25,64 @@ const FloatingLabelTextarea = React.forwardRef<HTMLTextAreaElement, FloatingLabe
   ({ className, label, error, helperText, required, ...props }, ref) => {
     const [isFocused, setIsFocused] = React.useState(false)
     const [hasValue, setHasValue] = React.useState(false)
-    
+
     const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(true)
       props.onFocus?.(e)
     }
-    
+
     const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(false)
       setHasValue(e.target.value !== '')
       props.onBlur?.(e)
     }
-    
+
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setHasValue(e.target.value !== '')
       props.onChange?.(e)
     }
-    
+
     React.useEffect(() => {
       if (props.value !== undefined) {
         setHasValue(String(props.value) !== '')
       }
     }, [props.value])
-    
+
     const isLabelFloating = isFocused || hasValue
     const hasError = !!error
-    
+
     // 根据 Material Design 规范：占位符在标签浮动且聚焦时显示，避免与标签重叠
     const dynamicPlaceholder = (isFocused && isLabelFloating) ? (props.placeholder || "") : ""
-    
+
+    // 自动高度调整
+    const adjustHeight = (el: HTMLTextAreaElement) => {
+      el.style.height = 'auto'; // Reset height to recalculate
+      el.style.height = `${el.scrollHeight}px`;
+    };
+
+    const localRef = React.useRef<HTMLTextAreaElement>(null);
+
+    React.useImperativeHandle(ref, () => localRef.current!);
+
+    const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+      adjustHeight(e.currentTarget);
+      props.onInput?.(e);
+    };
+
+    React.useEffect(() => {
+      if (localRef.current) {
+        // 初始化时也调整一次，如果有默认值
+        adjustHeight(localRef.current);
+      }
+    }, [props.value]);
+
     return (
       <div className="relative">
         <div className="relative">
           <textarea
             className={cn(
-              // 基础样式 - 增加最小高度并优化字体大小
-              "peer w-full min-h-[120px] px-4 pt-6 pb-2 text-sm sm:text-base bg-transparent border-b border-t-0 border-l-0 border-r-0 transition-all duration-200 ease-out resize-none outline-none",
+              // 基础样式
+              "peer w-full min-h-[56px] px-4 pt-6 pb-2 text-sm sm:text-base bg-transparent border-b border-t-0 border-l-0 border-r-0 transition-all duration-200 ease-out resize-none outline-none overflow-hidden",
               // 边框样式
               "border-gray-300 hover:border-gray-400",
               // 聚焦状态
@@ -73,21 +95,23 @@ const FloatingLabelTextarea = React.forwardRef<HTMLTextAreaElement, FloatingLabe
               "leading-relaxed",
               className
             )}
-            ref={ref}
+            ref={localRef}
+            rows={1}
             onFocus={handleFocus}
             onBlur={handleBlur}
             onChange={handleChange}
+            onInput={handleInput}
             placeholder={dynamicPlaceholder}
             {...props}
           />
-          
+
           {/* MD 标准聚焦指示线 */}
           <div className={cn(
             "absolute bottom-0 left-0 h-0.5 w-full transform scale-x-0 transition-transform duration-200 ease-out",
             "peer-focus:scale-x-100",
             hasError ? "bg-red-500" : "bg-blue-600"
           )} />
-          
+
           {/* 浮动标签 */}
           <label
             className={cn(
@@ -106,10 +130,10 @@ const FloatingLabelTextarea = React.forwardRef<HTMLTextAreaElement, FloatingLabe
             {label}
             {required && <span className="text-red-500 ml-1">*</span>}
           </label>
-          
+
 
         </div>
-        
+
         {/* 辅助文本或错误消息 */}
         {(error || helperText) && (
           <p className={cn(

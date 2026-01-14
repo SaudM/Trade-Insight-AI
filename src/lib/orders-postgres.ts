@@ -14,15 +14,15 @@ import { Order } from './types';
  * @returns 创建的订单ID
  */
 export async function createOrderPostgres(
-  firebaseUid: string,
+  userId: string,
   orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
   try {
-    // 首先通过Firebase UID查找PostgreSQL用户UUID
-    const user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
-    
+    // 验证用户是否存在 (通过系统UID)
+    const user = await UserAdapter.getUserByUid(userId);
+
     if (!user) {
-      throw new Error(`用户未找到: ${firebaseUid}`);
+      throw new Error(`用户未找到: ${userId}`);
     }
 
     const order = await OrderAdapter.createOrder({
@@ -38,8 +38,8 @@ export async function createOrderPostgres(
       tradeType: orderData.tradeType,
       paidAt: orderData.paidAt ? (orderData.paidAt instanceof Date ? orderData.paidAt : new Date()) : undefined,
     });
-    
-    console.log(`PostgreSQL订单创建成功: ${order.id} for user: ${user.id} (Firebase UID: ${firebaseUid})`);
+
+    console.log(`PostgreSQL订单创建成功: ${order.id} for user: ${user.id}`);
     return order.id;
   } catch (error) {
     console.error('PostgreSQL创建订单失败:', error);
@@ -113,10 +113,10 @@ export async function getUserOrderStatsPostgres(userId: string): Promise<{
 }> {
   try {
     const stats = await OrderAdapter.getOrderStats(userId);
-    
+
     // 获取待支付订单数量
     const pendingOrders = stats.totalOrders - stats.paidOrders;
-    
+
     return {
       totalOrders: stats.totalOrders,
       paidOrders: stats.paidOrders,

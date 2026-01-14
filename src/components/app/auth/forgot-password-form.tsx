@@ -40,7 +40,19 @@ export function ForgotPasswordForm() {
   async function onSubmit(values: ForgotPasswordFormValues) {
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(auth, values.email);
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: values.email }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '发送失败');
+      }
+
       toast({
         title: '邮件已发送',
         description: '密码重置链接已发送到您的邮箱，请检查您的收件箱和垃圾邮件箱。',
@@ -48,16 +60,12 @@ export function ForgotPasswordForm() {
       form.reset();
     } catch (error: any) {
       console.error("Password reset error:", error);
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      let message = `发送失败，请重试。错误: ${errorMessage}`;
-      if (errorCode === 'auth/user-not-found') {
-        message = '该邮箱地址未注册。';
-      }
+      const errorMessage = error.message || '发送失败，请重试。';
+
       toast({
         variant: 'destructive',
         title: '发送出错',
-        description: message,
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
