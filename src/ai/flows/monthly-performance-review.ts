@@ -18,13 +18,8 @@ const TradingLogSchema = z.object({
     .enum(['Buy', 'Sell', 'Long', 'Short', 'Close'])
     .describe('The direction of the trade.'),
   positionSize: z.string().describe('The position size in percentage or lots.'),
-  entryReason: z.string().describe('The reason for entering the trade.'),
-  exitReason: z.string().describe('The reason for exiting the trade.'),
+  analysisAndPlan: z.string().describe('The trader’s core logic, mood, and plan (TP/SL) or post-trade review.'),
   tradeResult: z.string().describe('The profit or loss of the trade.'),
-  mindsetState:
-    z.string()
-      .describe('The trader’s emotional and mental state during the trade.'),
-  lessonsLearned: z.string().describe('Lessons learned from the trade.'),
 });
 
 const MonthlyPerformanceReviewInputSchema = z.object({
@@ -82,12 +77,12 @@ const monthlyPerformanceReviewPrompt = ai.definePrompt({
 
   Current Month Logs:
   {{#each currentMonthLogs}}
-  - Trade Time: {{tradeTime}}, Symbol: {{symbol}}, Direction: {{direction}}, Position Size: {{positionSize}}, Entry Reason: {{entryReason}}, Exit Reason: {{exitReason}}, Trade Result: {{tradeResult}}, MindsetState: {{mindsetState}}, Lessons Learned: {{lessonsLearned}}
+  - Trade Time: {{tradeTime}}, Symbol: {{symbol}}, Direction: {{direction}}, Position Size: {{positionSize}}, Analysis & Plan: {{analysisAndPlan}}, Trade Result: {{tradeResult}}
   {{/each}}
 
   Previous Month Logs:
   {{#each previousMonthLogs}}
-  - Trade Time: {{tradeTime}}, Symbol: {{symbol}}, Direction: {{direction}}, Position Size: {{positionSize}}, Entry Reason: {{entryReason}}, Exit Reason: {{exitReason}}, Trade Result: {{tradeResult}}, MindsetState: {{mindsetState}}, Lessons Learned: {{lessonsLearned}}
+  - Trade Time: {{tradeTime}}, Symbol: {{symbol}}, Direction: {{direction}}, Position Size: {{positionSize}}, Analysis & Plan: {{analysisAndPlan}}, Trade Result: {{tradeResult}}
   {{/each}}
 
   Based on the provided trading logs, generate the following in Chinese:

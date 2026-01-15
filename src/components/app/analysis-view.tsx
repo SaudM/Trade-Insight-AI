@@ -185,7 +185,7 @@ export function AnalysisView({
                 console.log('当日交易记录数:', dailyLogs.length);
 
                 const logsString = dailyLogs.map(log =>
-                    `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 入场理由: ${log.entryReason}, 出场理由: ${log.exitReason}, 心态: ${log.mindsetState}, 心得: ${log.lessonsLearned}`
+                    `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 分析与计划: ${log.entryReason || log.exitReason || ''}`
                 ).join('\n');
 
                 console.log('准备调用AI分析，日志字符串长度:', logsString.length);
@@ -249,7 +249,11 @@ export function AnalysisView({
                 return logDate >= startOfCurrentWeek && logDate <= endOfCurrentWeek;
             });
 
-            const logsString = JSON.stringify(weeklyLogs, null, 2);
+            const cleanLogs = weeklyLogs.map(({ entryReason, exitReason, mindsetState, lessonsLearned, ...rest }: any) => ({
+                ...rest,
+                analysisAndPlan: entryReason || exitReason || ''
+            }));
+            const logsString = JSON.stringify(cleanLogs, null, 2);
             const result = await weeklyPatternDiscovery({
                 tradingLogs: logsString,
                 weekStartDate: startOfCurrentWeek.toLocaleDateString('zh-CN'),
@@ -307,6 +311,14 @@ export function AnalysisView({
 
             const toPlainObject = (log: TradeLog) => {
                 const plainLog: any = { ...log };
+
+                // Merge into 'analysisAndPlan' and remove old fields
+                plainLog.analysisAndPlan = log.entryReason || log.exitReason || '';
+                delete plainLog.entryReason;
+                delete plainLog.exitReason;
+                delete plainLog.mindsetState;
+                delete plainLog.lessonsLearned;
+
                 if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
                     plainLog.tradeTime = (plainLog.tradeTime as Date).toISOString();
                 }
