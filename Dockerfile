@@ -40,6 +40,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
 # 安装 prisma CLI (用于 prisma db push)
+RUN npm config set registry https://registry.npmmirror.com
 RUN npm install prisma --legacy-peer-deps
 
 # 启动 standalone 服务 (使用 prisma db push 更新数据库)

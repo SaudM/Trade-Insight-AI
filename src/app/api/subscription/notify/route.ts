@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         // 验证签名
         try {
             const wxpay = getPayment();
-            const isValid = await wxpay.verifySignature({
+            const isValid = await wxpay.verifySign({
                 body,
                 signature,
                 timestamp,

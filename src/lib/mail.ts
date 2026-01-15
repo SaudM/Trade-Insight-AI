@@ -9,13 +9,13 @@ const SMTP_FROM = `"Trade Insight" <${SMTP_USER}>`;
 
 // Create reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: true, // true for 465, false for other ports
-    auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-    },
+  host: SMTP_HOST,
+  port: SMTP_PORT,
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: SMTP_USER,
+    pass: SMTP_PASS,
+  },
 });
 
 /**
@@ -24,13 +24,13 @@ const transporter = nodemailer.createTransport({
  * @param token Reset token
  */
 export async function sendPasswordResetEmail(to: string, token: string) {
-    // Determine base URL based on environment
-    // In production, this should be set in environment variables
-    // For now, we'll try to use NEXT_PUBLIC_APP_URL or fall back to localhost
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:9002';
-    const resetLink = `${baseUrl}/reset-password?token=${token}`;
+  // Determine base URL based on environment
+  // In production, this should be set in environment variables
+  // For now, we'll try to use NEXT_PUBLIC_APP_URL or fall back to localhost
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:9002';
+  const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
-    const html = `
+  const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
       <div style="text-align: center; margin-bottom: 20px;">
         <h1 style="color: #333;">重置您的密码</h1>
@@ -52,18 +52,22 @@ export async function sendPasswordResetEmail(to: string, token: string) {
     </div>
   `;
 
-    try {
-        const info = await transporter.sendMail({
-            from: SMTP_FROM,
-            to,
-            subject: '重置您的密码 - 福利复盘',
-            text: `请点击以下链接重置您的密码: ${resetLink}`,
-            html,
-        });
-        console.log('Message sent: %s', info.messageId);
-        return true;
-    } catch (error) {
-        console.error('Error sending email:', error);
-        throw error;
-    }
+  try {
+    console.log(`Preparing to send password reset email to: ${to}`);
+    console.log(`Using SMTP Config: Host=${SMTP_HOST}, User=${SMTP_USER}, Port=${SMTP_PORT}, Secure=${true}`);
+
+    const info = await transporter.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject: '重置您的密码 - 福利复盘',
+      text: `请点击以下链接重置您的密码: ${resetLink}`,
+      html,
+    });
+    console.log('Nodemailer sendMail success. Result:', JSON.stringify(info));
+    console.log('Message sent ID: %s', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
 }
