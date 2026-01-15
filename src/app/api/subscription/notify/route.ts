@@ -13,7 +13,8 @@ export const runtime = 'nodejs';
  */
 export async function POST(request: NextRequest) {
     try {
-        console.log('收到微信支付通知');
+        console.log('--------------------------------------------------');
+        console.log('收到微信支付通知 - 开始处理');
 
         // 获取请求体
         const body = await request.text();
@@ -22,6 +23,15 @@ export async function POST(request: NextRequest) {
         const nonce = request.headers.get('wechatpay-nonce');
         const serial = request.headers.get('wechatpay-serial');
 
+        console.log('Notification Headers:', {
+            signature: signature ? `${signature.substring(0, 20)}...` : 'missing',
+            timestamp,
+            nonce,
+            serial
+        });
+        console.log('Notification Body Length:', body.length);
+        console.log('Notification Body (First 100 chars):', body.substring(0, 100));
+
         if (!signature || !timestamp || !nonce || !serial) {
             console.error('微信支付通知缺少必要的头部信息');
             return NextResponse.json({ code: 'FAIL', message: '缺少必要的头部信息' }, { status: 400 });
@@ -29,7 +39,24 @@ export async function POST(request: NextRequest) {
 
         // 验证签名
         try {
+            console.log('Preparing to verify signature...');
             const wxpay = getPayment();
+
+            // Ensure certificates are loaded before verification to prevent "this.certificates is not iterable" error
+            // The wxpay-v3 library fetches certificates asynchronously in constructor but doesn't await it
+            if (!wxpay.certificates || Object.keys(wxpay.certificates).length === 0) {
+                try {
+                    console.log('WeChat Pay certificates not loaded, fetching now...');
+                    await wxpay.decodeCertificates();
+                    console.log('WeChat Pay certificates loaded successfully. Count:', Object.keys(wxpay.certificates).length);
+                } catch (certError) {
+                    console.error('Failed to load WeChat Pay certificates:', certError);
+                    // Continue to verifySign, it might fail but better to try or fail there
+                }
+            } else {
+                console.log('WeChat Pay certificates already loaded. Count:', Object.keys(wxpay.certificates).length);
+            }
+
             const isValid = await wxpay.verifySign({
                 body,
                 signature,
@@ -38,8 +65,11 @@ export async function POST(request: NextRequest) {
                 serial
             });
 
+            console.log('Signature verification result:', isValid);
+
             if (!isValid) {
                 console.error('微信支付通知签名验证失败');
+                console.error('Failed Signature Details:', { timestamp, nonce, serial, body_length: body.length });
                 return NextResponse.json({ code: 'FAIL', message: '签名验证失败' }, { status: 400 });
             }
         } catch (error) {
@@ -56,7 +86,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ code: 'FAIL', message: '通知内容格式错误' }, { status: 400 });
         }
 
-        console.log('微信支付通知内容:', notificationData);
+        console.log('微信支付通知 Event Type:', notificationData.event_type);
 
         // 检查事件类型
         if (notificationData.event_type !== 'TRANSACTION.SUCCESS') {
@@ -67,19 +97,28 @@ export async function POST(request: NextRequest) {
         // 解密资源内容
         let decryptedData;
         try {
+            console.log('Decrypting resource data...');
             const wxpay = getPayment();
             decryptedData = wxpay.decipher(
                 notificationData.resource.ciphertext,
                 notificationData.resource.associated_data,
                 notificationData.resource.nonce
             );
+            console.log('Decryption successful.');
         } catch (error) {
             console.error('解密微信支付通知资源失败:', error);
             return NextResponse.json({ code: 'FAIL', message: '解密失败' }, { status: 500 });
         }
 
         const paymentData = JSON.parse(decryptedData);
-        console.log('解密后的支付数据:', paymentData);
+        // Log critical payment info, mask sensitive if needed (standard logs are safe for internal use mainly)
+        console.log('解密后的支付数据 Summary:', {
+            out_trade_no: paymentData.out_trade_no,
+            transaction_id: paymentData.transaction_id,
+            trade_state: paymentData.trade_state,
+            amount: paymentData.amount,
+            payer_openid: paymentData.payer ? paymentData.payer.openid : 'unknown'
+        });
 
         // 检查支付状态
         if (paymentData.trade_state !== 'SUCCESS') {
@@ -90,6 +129,7 @@ export async function POST(request: NextRequest) {
         // 从商户订单号中提取用户信息和套餐信息
         const outTradeNo = paymentData.out_trade_no;
         const parts = outTradeNo.split('_');
+        console.log('Parsing OutTradeNo:', outTradeNo, 'Parts:', parts);
 
         if (parts.length < 4) {
             console.error('商户订单号格式错误:', outTradeNo);
@@ -98,6 +138,7 @@ export async function POST(request: NextRequest) {
 
         const firebaseUid = parts[1];
         const planId = parts[2];
+        console.log('Extracted Info:', { firebaseUid, planId });
 
         // 获取用户内部ID
         let userId;
@@ -108,6 +149,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ code: 'FAIL', message: '用户不存在' }, { status: 404 });
             }
             userId = user.id;
+            console.log('Found internal User ID:', userId);
         } catch (error) {
             console.error('获取用户信息失败:', error);
             return NextResponse.json({ code: 'FAIL', message: '获取用户信息失败' }, { status: 500 });
@@ -115,6 +157,7 @@ export async function POST(request: NextRequest) {
 
         // 激活订阅
         try {
+            console.log('Activating subscription for user:', userId, 'Plan:', planId);
             const result = await activateSubscriptionPostgres({
                 userId,
                 planId,
@@ -135,12 +178,15 @@ export async function POST(request: NextRequest) {
                     cacheKeysToClear.push(`subscription:${firebaseUid}`); // 保留原有的 subscription key 清理，防止有遗漏的旧逻辑依赖
                 }
 
+                console.log('Clearing cache keys:', cacheKeysToClear);
                 CachedApiHandler.clearMultipleCacheAsync(cacheKeysToClear);
                 console.log(`已清理用户缓存: ${userId}, ${firebaseUid}`);
             } catch (cacheError) {
                 console.warn('清理缓存失败:', cacheError);
             }
 
+            console.log('微信支付通知处理完成 - SUCCESS');
+            console.log('--------------------------------------------------');
             return NextResponse.json({ code: 'SUCCESS', message: '订阅激活成功' });
 
         } catch (error) {
