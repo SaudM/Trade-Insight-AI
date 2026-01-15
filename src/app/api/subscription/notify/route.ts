@@ -95,22 +95,19 @@ export async function POST(request: NextRequest) {
         }
 
         // 解密资源内容
-        let decryptedData;
+        let paymentData;
         try {
             console.log('Decrypting resource data...');
             const wxpay = getPayment();
-            decryptedData = wxpay.decipher(
-                notificationData.resource.ciphertext,
-                notificationData.resource.associated_data,
-                notificationData.resource.nonce
-            );
+            // wxpay-v3 uses decodeResource which returns the parsed JSON object
+            paymentData = wxpay.decodeResource(notificationData.resource);
             console.log('Decryption successful.');
         } catch (error) {
             console.error('解密微信支付通知资源失败:', error);
             return NextResponse.json({ code: 'FAIL', message: '解密失败' }, { status: 500 });
         }
 
-        const paymentData = JSON.parse(decryptedData);
+        // paymentData is already parsed by decodeResource
         // Log critical payment info, mask sensitive if needed (standard logs are safe for internal use mainly)
         console.log('解密后的支付数据 Summary:', {
             out_trade_no: paymentData.out_trade_no,
