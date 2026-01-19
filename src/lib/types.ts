@@ -199,6 +199,7 @@ export interface Recommendation {
   signal_date: string;
   initial_price: number;
   stop_loss_ref: number;
+  score?: number;
   max_track_days: number;
   performance: Performance[];
 }

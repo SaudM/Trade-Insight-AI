@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 
-type SortField = 'signal_type' | number | null; // number represents t_day
+type SortField = 'signal_type' | 'score' | number | null; // number represents t_day
 type SortDirection = 'asc' | 'desc' | null;
 
 export function RecommendationsView() {
@@ -93,6 +93,9 @@ export function RecommendationsView() {
             if (sortField === 'signal_type') {
                 valA = a.signal_type;
                 valB = b.signal_type;
+            } else if (sortField === 'score') {
+                valA = a.score ?? -999;
+                valB = b.score ?? -999;
             } else if (typeof sortField === 'number') {
                 valA = a.performance.find(p => p.t_day === sortField)?.daily ?? -999;
                 valB = b.performance.find(p => p.t_day === sortField)?.daily ?? -999;
@@ -231,6 +234,15 @@ export function RecommendationsView() {
                                                 <SortIndicator field="signal_type" />
                                             </div>
                                         </TableHead>
+                                        <TableHead
+                                            className="w-[80px] font-bold text-slate-700 text-xs text-center cursor-pointer hover:bg-slate-100/50 transition-colors group"
+                                            onClick={() => handleSort('score')}
+                                        >
+                                            <div className="flex items-center justify-center">
+                                                评分
+                                                <SortIndicator field="score" />
+                                            </div>
+                                        </TableHead>
                                         <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">推荐时</TableHead>
                                         <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">止损价</TableHead>
                                         {/* Performance Columns - Always render maxDays columns */}
@@ -290,6 +302,17 @@ export function RecommendationsView() {
                                                 >
                                                     {rec.signal_type === 'STRONG_BUY' ? '买入' : '关注'}
                                                 </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center font-semibold text-slate-600 text-xs w-[80px]">
+                                                <div className="flex items-center justify-center">
+                                                    <span className={cn(
+                                                        "font-mono font-bold",
+                                                        (rec.score ?? 0) >= 80 ? "text-red-500" :
+                                                            (rec.score ?? 0) >= 60 ? "text-orange-500" : "text-slate-400"
+                                                    )}>
+                                                        {rec.score ?? '-'}
+                                                    </span>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="text-right font-semibold text-slate-600 text-xs w-[90px]">
                                                 ¥{rec.initial_price}
