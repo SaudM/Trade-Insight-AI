@@ -1,5 +1,6 @@
 import '@/lib/polyfills';
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -39,6 +40,19 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap" rel="stylesheet" />
       </head>
       <body className={cn('font-body antialiased')}>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-R81L8E8WGJ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-R81L8E8WGJ');
+          `}
+        </Script>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

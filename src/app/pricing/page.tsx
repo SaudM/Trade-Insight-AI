@@ -37,10 +37,10 @@ const pricingPlans: PricingPlan[] = [
         id: 'quarterly',
         name: '季度会员',
         duration: '/季',
-        price: 0.01,
+        price: 0.99,
         originalPrice: 84,
         pricePerMonth: 13,
-        discount: '节省35%',
+        discount: '限时福利',
         features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
     },
     {
@@ -392,7 +392,7 @@ export default function PricingPage() {
                     isSubscriptionValid && "border-emerald-200 shadow-xl ring-2 ring-emerald-100"
                 )}
             >
-                {plan.isPopular && !isSubscriptionValid && (
+                {plan.discount && !isSubscriptionValid && (
                     <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
                         <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
                             {plan.discount}
@@ -428,7 +428,14 @@ export default function PricingPage() {
                             <span className="text-gray-500">{plan.duration}</span>
                             <div className="h-6 mt-1">
                                 <span className="text-sm text-gray-500 line-through">原价 ¥{plan.originalPrice}</span>
-                                {plan.pricePerMonth && <span className="ml-2 text-sm text-accent"> (折合 ¥{plan.pricePerMonth.toFixed(1)}/月)</span>}
+                                {(() => {
+                                    let days = 30;
+                                    if (plan.id === 'quarterly') days = 90;
+                                    if (plan.id === 'semi_annually') days = 180;
+                                    if (plan.id === 'annually') days = 365;
+                                    const dailyPrice = plan.price / days;
+                                    return <span className="ml-2 text-sm text-orange-600 font-semibold"> (折合 ¥{dailyPrice.toFixed(2)}/天)</span>;
+                                })()}
                             </div>
                         </div>
                     )}

@@ -17,14 +17,12 @@ export const authConfig = {
             return true;
         },
         async session({ session, token }) {
-            console.error('[Auth Debug] Session callback', { hasToken: !!token, hasSessionUser: !!session?.user });
             if (token.sub && session.user) {
                 session.user.id = token.sub;
             }
             return session;
         },
         async jwt({ token, user }) {
-            console.error('[Auth Debug] JWT callback', { hasUser: !!user, tokenSub: token.sub });
             if (user) {
                 token.sub = user.id;
             }
@@ -34,37 +32,38 @@ export const authConfig = {
     providers: [
         Credentials({
             async authorize(credentials) {
+                console.log('[Auth] Authorize called');
                 const parsedCredentials = z
                     .object({ email: z.string().email(), password: z.string().min(6) })
                     .safeParse(credentials);
 
                 if (parsedCredentials.success) {
                     const { email, password } = parsedCredentials.data;
-                    console.error(`[Auth Debug] Authorize called for ${email}`);
+                    console.log(`[Auth] Attempting login for: ${email}`);
 
                     const user = await UserAdapter.getUserByEmail(email);
                     if (!user) {
-                        console.error('[Auth Debug] User not found (getUserByEmail returned null)');
+                        console.log('[Auth] User not found');
                         return null;
                     }
 
                     // Only allow login if user has a password set
                     if (!user.password) {
-                        console.error('[Auth Debug] User has no password set (possibly Google-only user)');
+                        console.log('[Auth] User has no password set (likely OAuth user)');
                         return null;
                     }
 
                     const passwordsMatch = await bcrypt.compare(password, user.password);
                     if (passwordsMatch) {
-                        console.error('[Auth Debug] Password match success');
+                        console.log('[Auth] Password matched, login successful');
                         return user;
+                    } else {
+                        console.log('[Auth] Password mismatch');
                     }
-                    console.error('[Auth Debug] Password mismatch');
                 } else {
-                    console.error('[Auth Debug] Invalid credentials schema:', parsedCredentials.error);
+                    console.log('[Auth] Invalid credentials format');
                 }
 
-                console.error('[Auth Debug] Authorize returning null');
                 return null;
             },
         }),

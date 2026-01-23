@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 判断是否为系统UID（UUID格式）
-    const isSystemUid = uid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid);
+    const isSystemUid = userIdentifier && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userIdentifier);
 
     // 获取内部用户ID
     let internalUserId = userIdentifier;

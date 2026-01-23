@@ -7,7 +7,8 @@ WORKDIR /app
 
 # 安装依赖
 COPY package*.json ./
-RUN npm ci
+RUN npm config set registry https://registry.npmmirror.com
+RUN npm ci --legacy-peer-deps
 
 # 复制所有源文件
 COPY . .
@@ -35,11 +36,12 @@ COPY --from=builder /app/.next/static ./.next/static
 RUN mkdir -p ./public
 COPY --from=builder /app/public ./public
 
-# ✅ 复制 Prisma 相关目录（关键）
+# 复制 Prisma schema (用于 prisma db push)
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
-# 启动 standalone 服务
-CMD ["node", "server.js"]
+# 安装 prisma CLI (用于 prisma db push)
+RUN npm config set registry https://registry.npmmirror.com
+RUN npm install prisma --legacy-peer-deps
+
+# 启动 standalone 服务 (使用 prisma db push 更新数据库)
+CMD ["sh", "-c", "npx prisma db push && node server.js"]

@@ -69,7 +69,7 @@ const prompt = ai.definePrompt({
   output: { schema: DailyTradeAnalysisOutputSchema },
   prompt: `You are an expert trading analyst. Your task is to analyze a trader's daily trade log, which is provided in Chinese. Provide your entire analysis in Chinese and format the output as a JSON object.
 
-The trade log is a multi-line string. Each line represents one trade with the following fields: 时间 (Time), 标的 (Symbol), 方向 (Direction), 仓位大小 (Position Size), 盈亏 (P/L), 入场理由 (Entry Reason), 出场理由 (Exit Reason), 心态 (Mindset), and 心得 (Lessons Learned).
+The trade log is a multi-line string. Each line represents one trade with the following fields: 时间 (Time), 标的 (Symbol), 方向 (Direction), 仓位大小 (Position Size), 盈亏 (P/L), and 分析与计划 (Analysis & Plan). The Analysis & Plan field contains the trader's core logic, current mood, and plan (TP/SL) or post-trade review.
 
 Analyze the provided trade logs for the trading date: {{{analysisDate}}} and generate the following insights:
 1.  **Summary**: Provide a concise summary of the day's trading activity. MUST include the specific trading date ({{{analysisDate}}}) being analyzed in the summary.

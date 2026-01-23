@@ -42,7 +42,7 @@ export async function registerUser(prevState: State | undefined, formData: FormD
         const existingUser = await UserAdapter.getUserByEmail(email);
         if (existingUser) {
             return {
-                message: 'Email already exists.',
+                message: '该邮箱已被注册',
             };
         }
 
@@ -56,7 +56,7 @@ export async function registerUser(prevState: State | undefined, formData: FormD
 
     } catch (error) {
         console.error('Registration failed:', error);
-        return { message: 'Database Error: Failed to Create User.' };
+        return { message: '创建用户失败，请稍后重试' };
     }
 
     // Attempt auto-login after registration
@@ -72,16 +72,10 @@ export async function registerUser(prevState: State | undefined, formData: FormD
         console.error('Auto-login error:', error);
         if (error instanceof AuthError) {
             if (error.type === 'CredentialsSignin') {
-                return { message: 'Registration successful, but login failed.' };
+                return { message: '注册成功，但自动登录失败。请手动登录。' };
             }
         }
-        // In NextAuth v5, signIn might throw even on success if redirect happens (though we set redirect: false).
-        // If it's not an AuthError, it might be a redirect or other system error.
-        // We should log it to be sure.
-        // If it WAS a redirect, we might want to let it bubble up if we were redirecting?
-        // But with redirect: false, it shouldn't redirect.
-        // However, if it throws for other reasons, we want to know.
-        // For now, let's swallow it but LOG it heavily so we see it.
+        // ...
     }
 
     return { message: 'Success' };
@@ -97,27 +91,15 @@ export async function authenticate(
             redirect: false,
         });
 
-        // In NextAuth v5 with redirect: false, unrelated errors might throw,
-        // but failures like 'CredentialsSignin' might just be returned in result?
-        // Actually, looking at docs/source, signIn with redirect:false returns a promise that resolves.
-        // But if strict credentials checks fail, it might throw?
-        // Let's assume if it doesn't throw, we check validation.
         console.log('SignIn result:', result);
-
-        // Wait, does v5 signIn return anything useful with redirect:false?
-        // V5 beta: signIn returns Promise<void> if redirect:true (throws redirect).
-        // If redirect:false, it might not return the full object like V4.
-        // Actually, V5 recommends catching the error.
-
-        // Let's assume success if no error is thrown.
         return null;
 
     } catch (error) {
         if (error instanceof AuthError) {
             if (error.type === 'CredentialsSignin') {
-                return 'Invalid credentials.';
+                return '邮箱或密码错误';
             }
-            return 'Something went wrong.';
+            return '登录失败，请稍后重试';
         }
         throw error;
     }
