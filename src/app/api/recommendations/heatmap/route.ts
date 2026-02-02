@@ -21,19 +21,77 @@ export async function GET(request: Request) {
     if (limit) url.searchParams.set('limit', limit);
 
     try {
-        const response = await fetch(url.toString(), {
+        // Parallel fetch: Heatmap (for rich data) and Recommendations (for hot board info)
+        const heatmapResponsePromise = fetch(url.toString(), {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
         });
 
-        if (!response.ok) {
-            throw new Error(`Backend API returned ${response.status}`);
+        // Recommendations endpoint (contains related_hot_board data)
+        const recUrl = new URL(`${baseUrl}/recommendations/`);
+        if (signalDate) recUrl.searchParams.set('date', signalDate); // Defines 'date' param as per user hint
+        // Note: passing other params if necessary, but 'date' is the key filter for alignment.
+
+        const recResponsePromise = fetch(recUrl.toString(), {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        const [heatmapRes, recRes] = await Promise.all([heatmapResponsePromise, recResponsePromise]);
+
+        if (!heatmapRes.ok) {
+            throw new Error(`Backend API (Heatmap) returned ${heatmapRes.status}`);
         }
 
-        const data = await response.json();
-        return NextResponse.json(data);
+        const heatmapData = await heatmapRes.json();
+
+        // Attempt to merge hot board data if recommendations fetch was successful
+        if (recRes.ok) {
+            try {
+                const recData = await recRes.json();
+                if (Array.isArray(recData) && heatmapData.data && Array.isArray(heatmapData.data)) {
+                    // Create lookup map for O(1) access
+                    const bonusMap = new Map<string, { board: string | null, score: number | null }>();
+                    recData.forEach((r: any) => {
+                        if (r.asset_symbol) {
+                            bonusMap.set(r.asset_symbol, {
+                                board: r.related_hot_board,
+                                score: r.board_strength_score
+                            });
+                        }
+                    });
+
+                    // Enrich heatmap data
+                    heatmapData.data.forEach((item: any) => {
+                        const bonus = bonusMap.get(item.symbol);
+                        if (bonus) {
+                            item.related_hot_board = bonus.board;
+                            item.board_strength_score = bonus.score;
+                        }
+                    });
+                    console.log(`Merged hot board data for ${heatmapData.data.length} items`);
+                }
+            } catch (e) {
+                console.error('Error merging hot board data:', e);
+                // Continue without merge if this fails, ensure main data is returned
+            }
+        } else {
+            console.warn(`Recommendations API returned ${recRes.status}, skipping merge.`);
+        }
+
+        // Deduplicate data based on symbol and signal_date
+        if (heatmapData.data && Array.isArray(heatmapData.data)) {
+            const uniqueMap = new Map();
+            heatmapData.data.forEach((item: any) => {
+                const key = `${item.symbol}-${item.signal_date}`;
+                if (!uniqueMap.has(key)) {
+                    uniqueMap.set(key, item);
+                }
+            });
+            heatmapData.data = Array.from(uniqueMap.values());
+        }
+
+        return NextResponse.json(heatmapData);
     } catch (error) {
         console.error('Heatmap proxy error:', error);
         return NextResponse.json(

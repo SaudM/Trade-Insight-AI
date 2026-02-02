@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { AppHeader } from './header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Calendar as CalendarIcon, Filter, Info, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, Filter, Info, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Flame } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { cn, getXueqiuUrl } from '@/lib/utils';
 import type { Recommendation, HeatmapData } from '@/lib/types';
@@ -14,6 +14,12 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -118,6 +124,20 @@ export function RecommendationsView() {
         if (value > -2) return 'bg-green-100 text-green-700';
         if (value > -5) return 'bg-green-400 text-white';
         return 'bg-green-500 text-white';
+    };
+
+    const getBoardStrengthColor = (score: number | undefined | null) => {
+        if (!score) return 'bg-slate-100 text-slate-500';
+        // 4%以上：非常强劲，深红/Rose
+        if (score >= 4.0) return 'bg-rose-600 text-white shadow-sm shadow-rose-200 border-rose-500';
+        // 3-4%：强劲
+        if (score >= 3.0) return 'bg-rose-500 text-white';
+        // 2-3%：活跃
+        if (score >= 2.0) return 'bg-rose-400 text-white';
+        // 1-2%：温和
+        if (score >= 1.0) return 'bg-rose-100 text-rose-700 border-rose-200';
+        // 0-1%：微弱
+        return 'bg-slate-100 text-slate-600 border-slate-200';
     };
 
 
@@ -281,15 +301,74 @@ export function RecommendationsView() {
                                                     >
                                                         {rec.name}
                                                     </a>
-                                                    <a
-                                                        href={getXueqiuUrl(rec.symbol)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-[10px] font-mono text-slate-400 uppercase hover:text-primary transition-colors cursor-pointer block"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        {rec.symbol}
-                                                    </a>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <a
+                                                            href={getXueqiuUrl(rec.symbol)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[10px] font-mono text-slate-400 uppercase hover:text-primary transition-colors cursor-pointer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {rec.symbol}
+                                                        </a>
+                                                        {rec.related_hot_board && (
+                                                            <TooltipProvider delayDuration={100}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <span className={cn(
+                                                                            "inline-flex items-center gap-0.5 text-[9px] font-medium cursor-pointer hover:opacity-80 transition-opacity",
+                                                                            rec.board_strength_score && rec.board_strength_score >= 2.0 ? "text-rose-500" : "text-slate-400"
+                                                                        )}>
+                                                                            <Flame className="h-2.5 w-2.5" />
+                                                                            <span className="truncate max-w-[50px]">{rec.related_hot_board}</span>
+                                                                        </span>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent
+                                                                        className="w-48 p-3 text-xs rounded-xl shadow-lg border-slate-200/60 bg-white"
+                                                                        side="top"
+                                                                        align="start"
+                                                                        sideOffset={8}
+                                                                    >
+                                                                        <div className="space-y-2">
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <Flame className={cn(
+                                                                                    "h-3.5 w-3.5",
+                                                                                    rec.board_strength_score && rec.board_strength_score >= 2.0 ? "text-rose-500" : "text-slate-400"
+                                                                                )} />
+                                                                                <span className="font-semibold text-slate-800">{rec.related_hot_board}</span>
+                                                                            </div>
+                                                                            <div className="border-t border-slate-100 pt-2">
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-slate-500">板块涨幅</span>
+                                                                                    <span className={cn(
+                                                                                        "font-mono font-bold",
+                                                                                        rec.board_strength_score && rec.board_strength_score >= 2.0 ? "text-rose-500" :
+                                                                                            rec.board_strength_score && rec.board_strength_score >= 1.0 ? "text-orange-500" : "text-slate-500"
+                                                                                    )}>
+                                                                                        {rec.board_strength_score ? `+${rec.board_strength_score.toFixed(2)}%` : '-'}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex justify-between items-center mt-1">
+                                                                                    <span className="text-slate-500">热度等级</span>
+                                                                                    <span className={cn(
+                                                                                        "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                                                                                        rec.board_strength_score && rec.board_strength_score >= 4.0 ? "bg-rose-100 text-rose-600" :
+                                                                                            rec.board_strength_score && rec.board_strength_score >= 2.0 ? "bg-orange-100 text-orange-600" :
+                                                                                                rec.board_strength_score && rec.board_strength_score >= 1.0 ? "bg-amber-100 text-amber-600" :
+                                                                                                    "bg-slate-100 text-slate-500"
+                                                                                    )}>
+                                                                                        {rec.board_strength_score && rec.board_strength_score >= 4.0 ? '🔥 极热 (≥4%)' :
+                                                                                            rec.board_strength_score && rec.board_strength_score >= 2.0 ? '热门 (≥2%)' :
+                                                                                                rec.board_strength_score && rec.board_strength_score >= 1.0 ? '活跃 (≥1%)' : '一般 (<1%)'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-center w-[80px]">

@@ -200,6 +200,8 @@ export interface Recommendation {
   initial_price: number;
   stop_loss_ref: number;
   score?: number;
+  related_hot_board?: string | null;
+  board_strength_score?: number | null;
   max_track_days: number;
   performance: Performance[];
 }
