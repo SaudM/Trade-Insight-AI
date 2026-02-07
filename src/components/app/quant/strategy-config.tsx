@@ -4,17 +4,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Activity, Loader2 } from 'lucide-react';
+import { Activity, Clock, Loader2, Lock } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { StrategyDetail } from './strategy-detail';
+
+export type StrategyAvailability = 'ACTIVE' | 'PREVIEW' | 'BETA' | 'DEPRECATED';
 
 export type Strategy = {
     id: string;
     name: string;
     description?: string;
     tags?: string[];
+    availability?: StrategyAvailability;
     annualizedReturn?: number | null;
     maxDrawdown?: number | null;
     sharpeRatio?: number | null;
@@ -140,6 +143,7 @@ const mapStrategyFromApi = (raw: ApiStrategy): Strategy => {
         name: raw.name ?? raw.title ?? '未命名策略',
         description: raw.description ?? raw.brief ?? raw.summary ?? '',
         tags: raw.tags ?? raw.labels ?? [],
+        availability: (raw.availability as StrategyAvailability) ?? 'ACTIVE',
         annualizedReturn:
             raw.annualized_return ??
             raw.annualizedReturn ??
@@ -270,15 +274,43 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId }: StrategyC
                         ];
 
                     const annualized = strategy.annualizedReturn ?? 0;
+                    const isPreview = strategy.availability === 'PREVIEW';
+                    const isBeta = strategy.availability === 'BETA';
+                    const isDeprecated = strategy.availability === 'DEPRECATED';
+                    const isNotActive = isPreview || isBeta || isDeprecated;
+
+                    // 已废弃策略不显示
+                    if (isDeprecated) return null;
+
                     return (
                         <Card
                             key={strategy.id}
                             className={cn(
-                                'flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg border-slate-200 cursor-pointer group',
-                                isActive ? 'ring-2 ring-primary border-primary bg-primary/5' : 'bg-white hover:border-primary/50'
+                                'flex flex-col overflow-hidden transition-all duration-300 border-slate-200 group relative',
+                                isNotActive
+                                    ? 'opacity-70 cursor-not-allowed bg-slate-50'
+                                    : 'hover:shadow-lg cursor-pointer bg-white hover:border-primary/50',
+                                isActive ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
                             )}
-                            onClick={() => setSelectedStrategy(strategy)}
+                            onClick={() => !isNotActive && setSelectedStrategy(strategy)}
                         >
+                            {/* Preview/Coming Soon 标签 */}
+                            {isPreview && (
+                                <div className="absolute top-0 right-0 z-10">
+                                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg shadow-md flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        即将推出
+                                    </div>
+                                </div>
+                            )}
+                            {isBeta && (
+                                <div className="absolute top-0 right-0 z-10">
+                                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg shadow-md flex items-center gap-1">
+                                        <Lock className="w-3 h-3" />
+                                        内测中
+                                    </div>
+                                </div>
+                            )}
                             <CardHeader className="pb-2">
                                 <div className="flex justify-between items-start gap-2">
                                     <div>
@@ -350,8 +382,16 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId }: StrategyC
                             </CardContent>
 
                             <CardFooter className="pt-2 bg-slate-50/50 border-t border-slate-100">
-                                <Button className="w-full bg-white text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors">
-                                    查看详情
+                                <Button
+                                    className={cn(
+                                        'w-full transition-colors',
+                                        isNotActive
+                                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                            : 'bg-white text-primary border border-primary/20 hover:bg-primary hover:text-white'
+                                    )}
+                                    disabled={isNotActive}
+                                >
+                                    {isPreview ? '敬请期待' : isBeta ? '申请试用' : '查看详情'}
                                 </Button>
                             </CardFooter>
                         </Card>
