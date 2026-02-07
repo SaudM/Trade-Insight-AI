@@ -19,6 +19,8 @@ export async function GET(request: Request) {
     if (signalDate) url.searchParams.set('signal_date', signalDate);
     if (signalType) url.searchParams.set('signal_type', signalType);
     if (limit) url.searchParams.set('limit', limit);
+    const strategyId = searchParams.get('strategy_id');
+    if (strategyId) url.searchParams.set('strategy_id', strategyId);
 
     try {
         // Parallel fetch: Heatmap (for rich data) and Recommendations (for hot board info)
