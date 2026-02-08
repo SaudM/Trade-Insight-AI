@@ -8,13 +8,20 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, CheckCircle2, Zap, Activity, AlertCircle, TrendingUp, BarChart3, Shield } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Zap, Activity, AlertCircle, TrendingUp, BarChart3, Shield, Bell } from 'lucide-react';
 import { Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { SignalMonitor } from './signal-monitor';
-import type { Strategy } from './strategy-config';
+import {
+    type Strategy,
+    type FollowConfig,
+    type ApiStrategy,
+    mapStrategyFromApi,
+    rebaseToZero
+} from '@/lib/strategy-utils';
 import { subYears, subMonths, addDays, isAfter, format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 
 interface StrategyDetailProps {
     strategy: Strategy;
@@ -23,7 +30,6 @@ interface StrategyDetailProps {
     isActive: boolean;
 }
 
-import type { FollowConfig } from './strategy-config';
 import { Switch } from '@/components/ui/switch';
 
 export function StrategyDetail({ strategy, onBack, onFollow, isActive }: StrategyDetailProps) {
@@ -33,7 +39,13 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
     const [takeProfit, setTakeProfit] = useState<number[]>([20]);
     const [autoExit, setAutoExit] = useState<boolean>(true);
     const [isFollowDialogOpen, setIsFollowDialogOpen] = useState(false);
-    const detail = useMemo(() => strategy, [strategy]);
+
+    // Dynamic strategy state
+    const [activeStrategy, setActiveStrategy] = useState<Strategy>(strategy);
+    const [isFetching, setIsFetching] = useState(false);
+
+    const detail = useMemo(() => activeStrategy, [activeStrategy]);
+
     const RANGE_OPTIONS = [
         { label: '全部', value: 'all' as const },
         { label: '一年', value: '1y' as const },
@@ -42,6 +54,48 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
         { label: '一月', value: '1m' as const },
     ];
     const [range, setRange] = useState<(typeof RANGE_OPTIONS)[number]['value']>('1y');
+
+    // Fetch strategy data when range changes
+    useEffect(() => {
+        const fetchStrategy = async () => {
+            setIsFetching(true);
+            try {
+                const res = await fetch(`/api/strategies?period=${range}`, { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const payload = await res.json();
+                const list: ApiStrategy[] = Array.isArray(payload)
+                    ? payload
+                    : payload?.strategies ?? payload?.data ?? [];
+
+                const matching = list.find(s =>
+                    (s.key ?? s.id ?? s.strategy_id ?? s.slug) === strategy.id
+                );
+
+                if (matching) {
+                    setActiveStrategy(mapStrategyFromApi(matching));
+                }
+            } catch (err) {
+                console.error('Failed to fetch strategy with period:', range, err);
+                toast({
+                    title: "获取数据失败",
+                    description: "无法获取选中周期的收益数据，已显示本地过滤结果。",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsFetching(false);
+            }
+        };
+
+        // Don't refetch on initial mount if range is 1y (already fetched by parent)
+        if (range !== '1y') {
+            fetchStrategy();
+        } else {
+            // If switching back to 1y, we might want to keep the prop strategy
+            // But if the prop strategy was also updated, we should decide.
+            // For simplicity, always fetch if it's not the first time.
+            fetchStrategy();
+        }
+    }, [range, strategy.id, toast]);
 
     useEffect(() => {
         // keep capital in sync when minCapital increases
@@ -54,35 +108,27 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
     const filteredPerformance = useMemo(() => {
         const series = detail.performanceData ?? [];
         if (!series.length) return [];
-        if (range === 'all') return series;
+        if (range === 'all') return rebaseToZero(series);
+
         const latest = new Date(series[series.length - 1].date || Date.now());
         let start: Date;
         switch (range) {
-            case '1y':
-                start = subYears(latest, 1);
-                break;
-            case '6m':
-                start = subMonths(latest, 6);
-                break;
-            case '3m':
-                start = subMonths(latest, 3);
-                break;
-            case '1m':
-                start = subMonths(latest, 1);
-                break;
-            default:
-                start = subYears(latest, 5);
+            case '1y': start = subYears(latest, 1); break;
+            case '6m': start = subMonths(latest, 6); break;
+            case '3m': start = subMonths(latest, 3); break;
+            case '1m': start = subMonths(latest, 1); break;
+            default: start = subYears(latest, 5);
         }
-        return series.filter(p => {
-            const d = new Date(p.date);
-            return isAfter(d, addDays(start, -1));
-        });
+
+        const filtered = series.filter(p => isAfter(new Date(p.date), addDays(start, -1)));
+        return rebaseToZero(filtered);
     }, [detail.performanceData, range]);
 
     const filteredBenchmark = useMemo(() => {
         const series = detail.benchmarkPerformanceData ?? [];
         if (!series.length) return [];
-        if (range === 'all') return series;
+        if (range === 'all') return rebaseToZero(series);
+
         const latest = new Date(series[series.length - 1].date || Date.now());
         let start: Date;
         switch (range) {
@@ -92,13 +138,16 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
             case '1m': start = subMonths(latest, 1); break;
             default: start = subYears(latest, 5);
         }
-        return series.filter(p => isAfter(new Date(p.date), addDays(start, -1)));
+
+        const filtered = series.filter(p => isAfter(new Date(p.date), addDays(start, -1)));
+        return rebaseToZero(filtered);
     }, [detail.benchmarkPerformanceData, range]);
 
     const filteredExcess = useMemo(() => {
         const series = detail.excessPerformanceData ?? [];
         if (!series.length) return [];
-        if (range === 'all') return series;
+        if (range === 'all') return rebaseToZero(series);
+
         const latest = new Date(series[series.length - 1].date || Date.now());
         let start: Date;
         switch (range) {
@@ -108,7 +157,9 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
             case '1m': start = subMonths(latest, 1); break;
             default: start = subYears(latest, 5);
         }
-        return series.filter(p => isAfter(new Date(p.date), addDays(start, -1)));
+
+        const filtered = series.filter(p => isAfter(new Date(p.date), addDays(start, -1)));
+        return rebaseToZero(filtered);
     }, [detail.excessPerformanceData, range]);
 
     const mergedChartData = useMemo(() => {
@@ -136,6 +187,7 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
             return format(d, 'yyyy-MM');
         };
     }, [range]);
+
 
     const handleConfirmFollow = () => {
         const config: FollowConfig = {
@@ -176,127 +228,178 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                     </div>
                 </div>
 
-                {!isActive ? (
-                    <Dialog open={isFollowDialogOpen} onOpenChange={setIsFollowDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        className="bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200"
+                        onClick={() => {
+                            toast({
+                                title: "功能开发中",
+                                description: "企业微信/飞书信号推送功能正在开发中，敬请期待！",
+                            });
+                        }}
+                    >
+                        <Bell className="w-4 h-4 mr-2" />
+                        订阅信号
+                    </Button>
+
+                    {!isActive ? (
+                        <>
+                            <Button
+                                className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+                                onClick={() => {
+                                    toast({
+                                        title: "功能开发中",
+                                        description: "实盘跟单功能正在对接券商接口，敬请期待！",
+                                    });
+                                }}
+                            >
                                 <Zap className="w-4 h-4 mr-2" />
                                 立即跟单
                             </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[500px]">
-                            <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2">
-                                    配置跟单: {detail.name}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    配置您的初始资金和风控参数。AI将自动执行买卖操作。
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-6 py-4">
-                                <AlertCircle className="absolute right-4 top-4 h-5 w-5 text-slate-300" />
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="capital" className="text-right font-medium text-slate-700">
-                                            跟单资金 (CNY)
-                                        </Label>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl font-bold text-slate-400">¥</span>
-                                            <Input
-                                                id="capital"
-                                                type="number"
-                                                value={capital}
-                                                onChange={(e) => setCapital(Number(e.target.value))}
-                                                className="text-lg font-bold"
-                                                min={detail.minCapital ?? 0}
-                                                step={1000}
-                                            />
+                            {/* <Dialog open={isFollowDialogOpen} onOpenChange={setIsFollowDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                                        <Zap className="w-4 h-4 mr-2" />
+                                        立即跟单
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[500px]">
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            配置跟单: {detail.name}
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            配置您的初始资金和风控参数。AI将自动执行买卖操作。
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-6 py-4">
+                                        <AlertCircle className="absolute right-4 top-4 h-5 w-5 text-slate-300" />
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="capital" className="text-right font-medium text-slate-700">
+                                                    跟单资金 (CNY)
+                                                </Label>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xl font-bold text-slate-400">¥</span>
+                                                    <Input
+                                                        id="capital"
+                                                        type="number"
+                                                        value={capital}
+                                                        onChange={(e) => setCapital(Number(e.target.value))}
+                                                        className="text-lg font-bold"
+                                                        min={detail.minCapital ?? 0}
+                                                        step={1000}
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-slate-400">最低起投金额: ¥{(detail.minCapital ?? 0).toLocaleString()}</p>
+                                            </div>
+
+                                            <div className="space-y-4 pt-2 border-t border-slate-100">
+                                                <h4 className="font-medium text-slate-900 flex items-center gap-2">
+                                                    <Shield className="w-4 h-4 text-slate-500" />
+                                                    风控设置
+                                                </h4>
+
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between">
+                                                        <Label className="font-medium text-slate-700">止损阈值 (%)</Label>
+                                                        <span className="text-sm font-bold text-red-600">-{stopLoss}%</span>
+                                                    </div>
+                                                    <Slider
+                                                        defaultValue={[10]}
+                                                        max={30}
+                                                        min={1}
+                                                        step={1}
+                                                        value={stopLoss}
+                                                        onValueChange={setStopLoss}
+                                                        className="py-2"
+                                                    />
+                                                    <p className="text-xs text-slate-400">当总资产回撤达到此比例时，自动清仓停止策略。</p>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between">
+                                                        <Label className="font-medium text-slate-700">止盈目标 (%)</Label>
+                                                        <span className="text-sm font-bold text-green-600">+{takeProfit}%</span>
+                                                    </div>
+                                                    <Slider
+                                                        defaultValue={[20]}
+                                                        max={100}
+                                                        min={5}
+                                                        step={5}
+                                                        value={takeProfit}
+                                                        onValueChange={setTakeProfit}
+                                                        className="py-2"
+                                                    />
+                                                    <p className="text-xs text-slate-400">当总收益达到此比例时，触发自动止盈或提示。</p>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-2">
+                                                    <div className="space-y-0.5">
+                                                        <Label className="text-base">自动退出</Label>
+                                                        <p className="text-xs text-slate-400">触发风控条件时自动卖出所有持仓</p>
+                                                    </div>
+                                                    <Switch
+                                                        checked={autoExit}
+                                                        onCheckedChange={setAutoExit}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p className="text-xs text-slate-400">最低起投金额: ¥{(detail.minCapital ?? 0).toLocaleString()}</p>
                                     </div>
-
-                                    {/* Risk Management */}
-                                    <div className="space-y-4 pt-2 border-t border-slate-100">
-                                        <h4 className="font-medium text-slate-900 flex items-center gap-2">
-                                            <Shield className="w-4 h-4 text-slate-500" />
-                                            风控设置
-                                        </h4>
-
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <Label className="font-medium text-slate-700">止损阈值 (%)</Label>
-                                                <span className="text-sm font-bold text-red-600">-{stopLoss}%</span>
-                                            </div>
-                                            <Slider
-                                                defaultValue={[10]}
-                                                max={30}
-                                                min={1}
-                                                step={1}
-                                                value={stopLoss}
-                                                onValueChange={setStopLoss}
-                                                className="py-2"
-                                            />
-                                            <p className="text-xs text-slate-400">当总资产回撤达到此比例时，自动清仓停止策略。</p>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between">
-                                                <Label className="font-medium text-slate-700">止盈目标 (%)</Label>
-                                                <span className="text-sm font-bold text-green-600">+{takeProfit}%</span>
-                                            </div>
-                                            <Slider
-                                                defaultValue={[20]}
-                                                max={100}
-                                                min={5}
-                                                step={5}
-                                                value={takeProfit}
-                                                onValueChange={setTakeProfit}
-                                                className="py-2"
-                                            />
-                                            <p className="text-xs text-slate-400">当总收益达到此比例时，触发自动止盈或提示。</p>
-                                        </div>
-
-                                        <div className="flex items-center justify-between pt-2">
-                                            <div className="space-y-0.5">
-                                                <Label className="text-base">自动退出</Label>
-                                                <p className="text-xs text-slate-400">触发风控条件时自动卖出所有持仓</p>
-                                            </div>
-                                            <Switch
-                                                checked={autoExit}
-                                                onCheckedChange={setAutoExit}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsFollowDialogOpen(false)}>取消</Button>
-                                <Button onClick={handleConfirmFollow} className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                                    <Activity className="w-4 h-4 mr-2" />
-                                    确认启动实盘
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                ) : (
-                    <Button disabled variant="secondary">
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                        已在运行
-                    </Button>
-                )}
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setIsFollowDialogOpen(false)}>取消</Button>
+                                        <Button onClick={handleConfirmFollow} className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                                            <Activity className="w-4 h-4 mr-2" />
+                                            确认启动实盘
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog> */}
+                        </>
+                    ) : (
+                        <Button disabled variant="secondary">
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            已在运行
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Strategy Info & Metrics */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2 border-slate-200 shadow-sm">
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-primary" />
                             收益走势
                         </CardTitle>
+                        {/* Time Range Selector - Top Right */}
+                        <div className="flex gap-0.5">
+                            {RANGE_OPTIONS.map(opt => (
+                                <Button
+                                    key={opt.value}
+                                    size="sm"
+                                    variant={range === opt.value ? "default" : "ghost"}
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => setRange(opt.value)}
+                                >
+                                    {opt.label}
+                                </Button>
+                            ))}
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[280px]">
+                        <div className="h-[280px] relative">
+                            {isFetching && (
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-lg">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                        <p className="text-xs text-slate-500 font-medium tracking-wider">加载中...</p>
+                                    </div>
+                                </div>
+                            )}
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={mergedChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
@@ -363,9 +466,8 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>
-                        {/* 图例和时间筛选器 - 图表下方左右分布 */}
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-                            {/* 左侧：图例 */}
+                        {/* Legend - Below Chart */}
+                        <div className="flex items-center justify-center mt-3 pt-3 border-t border-slate-100">
                             <div className="flex items-center gap-4 text-sm">
                                 <div className="flex items-center gap-1.5">
                                     <div className="w-4 h-0.5 rounded bg-primary" />
@@ -384,20 +486,6 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                     </div>
                                 )}
                             </div>
-                            {/* 右侧：时间筛选器 */}
-                            <div className="flex gap-1">
-                                {RANGE_OPTIONS.map(opt => (
-                                    <Button
-                                        key={opt.value}
-                                        size="sm"
-                                        variant={range === opt.value ? "default" : "ghost"}
-                                        className="h-7 px-2.5 text-xs"
-                                        onClick={() => setRange(opt.value)}
-                                    >
-                                        {opt.label}
-                                    </Button>
-                                ))}
-                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -408,9 +496,46 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                             <CardTitle className="text-lg font-bold text-slate-800">策略详情</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <p className="text-sm text-slate-600 leading-relaxed">
-                                {detail.description}
-                            </p>
+                            <div className="relative group">
+                                <Dialog>
+                                    <div className="relative">
+                                        <p className="text-sm text-slate-600 leading-relaxed line-clamp-4 text-justify">
+                                            {detail.description}
+                                        </p>
+                                        {/* Gradient Overlay for visual cue of truncation */}
+                                        {(detail.description?.length ?? 0) > 100 && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+                                        )}
+                                    </div>
+
+                                    {(detail.description?.length ?? 0) > 100 && (
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                variant="link"
+                                                className="p-0 h-auto text-primary text-xs font-medium mt-1 hover:text-primary/80"
+                                            >
+                                                查看全部
+                                            </Button>
+                                        </DialogTrigger>
+                                    )}
+
+                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                        <DialogHeader>
+                                            <DialogTitle className="flex items-center gap-2">
+                                                <span className="text-lg font-bold">{detail.name}</span>
+                                                <span className="text-sm font-normal text-slate-500">策略说明</span>
+                                            </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="mt-4">
+                                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                                <p className="text-sm text-slate-700 leading-7 whitespace-pre-wrap text-justify">
+                                                    {detail.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {detail.tags?.map(tag => (
                                     <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 font-normal border-slate-200 hover:bg-slate-200/80">
@@ -422,32 +547,56 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                     </Card>
 
                     <Card className="bg-slate-50 border-slate-200 shadow-sm">
-                        <CardContent className="pt-6 grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-xs text-slate-500 mb-1">年化收益</p>
-                                <p className={cn("text-xl font-black", (detail.annualizedReturn ?? 0) > 0 ? "text-red-500" : "text-green-500")}>
+                        <CardContent className="pt-4 pb-3 grid grid-cols-3 gap-x-4 gap-y-2">
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">年化收益</p>
+                                <p className={cn("text-base font-black", (detail.annualizedReturn ?? 0) > 0 ? "text-red-500" : "text-green-500")}>
                                     {detail.annualizedReturn !== null && detail.annualizedReturn !== undefined ? `${detail.annualizedReturn > 0 ? '+' : ''}${detail.annualizedReturn}%` : '--'}
                                 </p>
                             </div>
-                            <div>
-                                <p className="text-xs text-slate-500 mb-1">夏普比率</p>
-                                <p className="text-xl font-bold text-slate-800">{detail.sharpeRatio ?? '--'}</p>
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">夏普比率</p>
+                                <p className="text-base font-bold text-slate-800">{detail.sharpeRatio ?? '--'}</p>
                             </div>
-                            <div>
-                                <p className="text-xs text-slate-500 mb-1">最大回撤</p>
-                                <p className="text-xl font-bold text-slate-800">{detail.maxDrawdown ?? '--'}%</p>
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">最大回撤</p>
+                                <p className="text-base font-bold text-slate-800">{detail.maxDrawdown ?? '--'}%</p>
                             </div>
-                            <div>
-                                <p className="text-xs text-slate-500 mb-1">超额收益</p>
-                                <p className="text-xl font-bold text-slate-800">
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">超额收益</p>
+                                <p className={cn("text-base font-bold", (filteredExcess.at(-1)?.value ?? 0) > 0 ? "text-red-500" : "text-slate-800")}>
                                     {filteredExcess.at(-1)?.value !== undefined
                                         ? `${filteredExcess.at(-1)!.value > 0 ? '+' : ''}${filteredExcess.at(-1)!.value.toFixed(2)}%`
                                         : '--'}
                                 </p>
                             </div>
-                            <div>
-                                <p className="text-xs text-slate-500 mb-1">风险等级</p>
-                                <p className="text-xl font-bold text-slate-800">
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">胜率</p>
+                                <p className={cn("text-base font-bold", (detail.winRate ?? 0) >= 50 ? "text-red-500" : "text-slate-800")}>
+                                    {detail.winRate !== null && detail.winRate !== undefined ? `${detail.winRate}%` : '--'}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">盈亏比</p>
+                                <p className={cn("text-base font-bold", (detail.profitLossRatio ?? 0) >= 1 ? "text-red-500" : "text-slate-800")}>
+                                    {detail.profitLossRatio !== null && detail.profitLossRatio !== undefined ? detail.profitLossRatio.toFixed(2) : '--'}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">卡玛比率</p>
+                                <p className="text-base font-bold text-slate-800">
+                                    {detail.calmarRatio !== null && detail.calmarRatio !== undefined ? detail.calmarRatio.toFixed(2) : '--'}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">交易次数</p>
+                                <p className="text-base font-bold text-slate-800">
+                                    {detail.totalTrades !== null && detail.totalTrades !== undefined ? detail.totalTrades : '--'}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">风险等级</p>
+                                <p className="text-base font-bold text-slate-800">
                                     {detail.riskLevel === 'High' ? '高' : detail.riskLevel === 'Medium' ? '中' : '低'}
                                 </p>
                             </div>
