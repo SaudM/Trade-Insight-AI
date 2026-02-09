@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -6,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, FileText, Calendar, Search, RefreshCcw, Plus, User as UserIcon } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { format } from 'date-fns';
 import { useResearchReports } from '@/hooks/use-research-reports';
 import { ResearchDetailView } from './research-detail-view';
@@ -47,32 +47,53 @@ export function ResearchView() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-slate-50/50 p-6 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">个股调研报告</h1>
-                    <p className="text-slate-500 mt-1">深度解析市场共识与预期差</p>
-                </div>
+        <div className="flex flex-col h-full bg-slate-50/50 p-4 md:p-6 space-y-4 md:space-y-6">
+            {/* Header */}
+            <div className="flex flex-col gap-3">
+                {/* Title Row with Sidebar Trigger on Mobile */}
                 <div className="flex items-center gap-2">
-                    <div className="relative">
+                    <SidebarTrigger className="md:hidden shrink-0 -ml-2" />
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-xl md:text-3xl font-bold text-slate-900 tracking-tight truncate">个股调研报告</h1>
+                        <p className="text-slate-500 text-xs md:text-base mt-0.5 hidden md:block">深度解析市场共识与预期差</p>
+                    </div>
+                    {/* Mobile: Only show refresh and add buttons */}
+                    <div className="flex items-center gap-1.5 md:hidden">
+                        <Button variant="outline" size="icon" onClick={() => refetch()} className="rounded-xl h-8 w-8">
+                            <RefreshCcw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+                        </Button>
+                        {userData?.user && (
+                            <Button onClick={() => setIsAdminModalOpen(true)} size="icon" className="rounded-xl h-8 w-8">
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Search and Actions Row */}
+                <div className="flex items-center gap-2">
+                    <div className="relative flex-1 md:flex-initial">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
                             type="text"
                             placeholder="搜索标题或股票代码..."
-                            className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-64 transition-all"
+                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button variant="outline" size="icon" onClick={() => refetch()} className="rounded-xl">
-                        <RefreshCcw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-                    </Button>
-                    {userData?.user && (
-                        <Button onClick={() => setIsAdminModalOpen(true)} className="rounded-xl">
-                            <Plus className="h-4 w-4 mr-2" />
-                            提交研报
+                    {/* Desktop: Show all action buttons */}
+                    <div className="hidden md:flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => refetch()} className="rounded-xl">
+                            <RefreshCcw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
                         </Button>
-                    )}
+                        {userData?.user && (
+                            <Button onClick={() => setIsAdminModalOpen(true)} className="rounded-xl">
+                                <Plus className="h-4 w-4 mr-2" />
+                                提交研报
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 
