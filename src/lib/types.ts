@@ -119,7 +119,7 @@ export type Order = {
   updatedAt: Date;
 }
 
-export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile' | 'recommendations';
+export type View = 'dashboard' | 'tradelog' | 'analysis' | 'pricing' | 'profile' | 'recommendations' | 'research';
 
 export const StockSchema = z.object({
   value: z.string(),
@@ -204,6 +204,27 @@ export interface Recommendation {
   board_strength_score?: number | null;
   max_track_days: number;
   performance: Performance[];
+  has_research_report?: boolean;
+}
+
+export interface ResearchReportAuthor {
+  id: string;
+  name: string;
+}
+
+export interface ResearchReport {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  stocks?: string[]; // Array of symbol strings
+  author?: ResearchReportAuthor;
+}
+
+export interface ResearchReportStock {
+  reportId: string;
+  symbol: string;
 }
 
 export interface HeatmapData {

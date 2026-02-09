@@ -13,9 +13,19 @@ declare global {
 /**
  * 创建Prisma客户端实例
  * 在开发环境中复用连接，在生产环境中创建新连接
+ * 注意：当 schema 更新后，需要重启 dev server 以刷新全局实例
  */
+// Clear stale global prisma in dev to pick up new schema models
+if (process.env.NODE_ENV === 'development' && globalThis.prisma) {
+  // Check if model exists, if not, clear
+  if (!(globalThis.prisma as any).researchReport) {
+    console.log('[db.ts] Detected stale Prisma client, clearing globalThis.prisma');
+    globalThis.prisma = undefined;
+  }
+}
+
 const prisma = globalThis.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 })
 
 // 在开发环境中将客户端实例保存到全局变量

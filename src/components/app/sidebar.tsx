@@ -104,6 +104,16 @@ export function AppSidebar({ activeView, setActiveView, isProUser, onContactSupp
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
+            onClick={() => setActiveView('research')}
+            isActive={activeView === 'research'}
+            tooltip={{ children: '个股调研' }}
+          >
+            <FileText />
+            <span className="text-base font-medium">个股调研</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
             onClick={() => setActiveView('profile')}
             isActive={activeView === 'profile'}
             tooltip={{ children: '个人中心' }}

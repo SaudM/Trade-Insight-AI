@@ -25,6 +25,7 @@ model User {
   tradeLogs        TradeLog[]
   weeklyReviews    WeeklyReview[]
   userConfig       UserConfig?
+  researchReports  ResearchReport[]
 
   @@map("users")
 }
@@ -182,6 +183,28 @@ model MonthlySummary {
   @@index([createdAt], map: "idx_monthly_summaries_created_at")
   @@unique([userId, monthStartDate, monthEndDate])
   @@map("monthly_summaries")
+}
+
+model ResearchReport {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  title     String
+  content   String   // HTML content
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  stocks    ResearchReportStock[]
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("research_reports")
+}
+
+model ResearchReportStock {
+  reportId String @map("report_id") @db.Uuid
+  symbol   String @db.VarChar(50)
+  report   ResearchReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@id([reportId, symbol])
+  @@map("research_report_stocks")
 }
 
 // 用户个性化配置

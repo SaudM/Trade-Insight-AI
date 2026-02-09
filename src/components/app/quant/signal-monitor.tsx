@@ -35,6 +35,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
+import { ResearchDetailModal } from '@/components/app/research-detail-modal';
+import { FileText } from 'lucide-react';
 
 const FASTAPI_BASE = process.env.NEXT_PUBLIC_FASTAPI_BASE || 'http://localhost:8000';
 
@@ -52,7 +54,28 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [sortField, setSortField] = useState<SortField>(null);
     const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+    const [selectedReport, setSelectedReport] = useState<any | null>(null);
+    const [isReportLoading, setIsReportLoading] = useState(false);
     const { toast } = useToast();
+
+    const handleOpenReport = async (symbol: string) => {
+        setIsReportLoading(true);
+        try {
+            const response = await fetch(`/api/research-reports?symbol=${symbol}`);
+            if (!response.ok) throw new Error('Failed to fetch report');
+            const result = await response.json();
+            if (result.data && result.data.length > 0) {
+                setSelectedReport(result.data[0]);
+            } else {
+                toast({ title: '暂无报告', description: `未找到 ${symbol} 的详情调研报告。` });
+            }
+        } catch (error) {
+            console.error('Error fetching report:', error);
+            toast({ variant: 'destructive', title: '获取报告失败', description: '无法获取调研报告详情。' });
+        } finally {
+            setIsReportLoading(false);
+        }
+    };
 
     const fetchHeatmap = async (date: string) => {
         setIsLoading(true);
@@ -386,6 +409,19 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                                 </Tooltip>
                                                             </TooltipProvider>
                                                         )}
+                                                        {rec.has_research_report && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="ml-1 px-1 py-0 h-4 text-[9px] bg-emerald-50 text-emerald-600 border-emerald-200 cursor-pointer hover:bg-emerald-100 transition-colors flex items-center gap-0.5"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOpenReport(rec.symbol);
+                                                                }}
+                                                            >
+                                                                <FileText className="h-2 w-2" />
+                                                                研报
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -463,6 +499,12 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                     )}
                 </Card>
             </div>
+
+            <ResearchDetailModal
+                isOpen={!!selectedReport}
+                onOpenChange={(open) => !open && setSelectedReport(null)}
+                report={selectedReport}
+            />
         </div>
     );
 }

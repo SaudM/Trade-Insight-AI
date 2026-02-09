@@ -17,7 +17,10 @@ const config = {
         code: ["monospace"],
       },
       colors: {
-        primary: "hsl(var(--primary))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
         "on-primary": "hsl(var(--primary-foreground))",
         "primary-container": "hsl(var(--primary-container))",
         "on-primary-container": "hsl(var(--on-primary-container))",
@@ -160,4 +163,3 @@ const config = {
 
 export default config
 
-    

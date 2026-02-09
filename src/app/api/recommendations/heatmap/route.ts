@@ -1,5 +1,5 @@
-
 import { NextResponse } from 'next/server';
+import { ResearchReportAdapter } from '@/lib/adapters/research-report-adapter';
 
 /**
  * 热力图数据代理接口
@@ -91,6 +91,13 @@ export async function GET(request: Request) {
                 }
             });
             heatmapData.data = Array.from(uniqueMap.values());
+        }
+
+        // Add research report indicator
+        if (heatmapData.data && Array.isArray(heatmapData.data)) {
+            await Promise.all(heatmapData.data.map(async (item: any) => {
+                item.has_research_report = await ResearchReportAdapter.hasReport(item.symbol);
+            }));
         }
 
         return NextResponse.json(heatmapData);

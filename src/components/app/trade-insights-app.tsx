@@ -11,6 +11,7 @@ import { TradeLogView } from '@/components/app/tradeLogView/trade-log-view';
 import { AnalysisView } from '@/components/app/analysis-view';
 import { ProfileView } from '@/components/app/profile-view';
 import { RecommendationsView } from '@/components/app/recommendations-view';
+import { ResearchView } from '@/components/app/research-view';
 import type { TradeLog, View, DailyAnalysis, WeeklyReview, MonthlySummary, Subscription } from '@/lib/types';
 import { useFirebase } from '@/firebase';
 import { subDays, startOfDay, isSameDay } from 'date-fns';
@@ -415,6 +416,8 @@ export function TradeInsightsApp() {
         return <ProfileView />;
       case 'recommendations':
         return <RecommendationsView />;
+      case 'research':
+        return <ResearchView />;
       default:
         return <Dashboard
           tradeLogs={filteredTradeLogs}
