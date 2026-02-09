@@ -208,30 +208,35 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
 
     return (
         <div className="space-y-6">
-            {/* Header / Navigation */}
-            <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" onClick={onBack} className="h-8 w-8 rounded-full">
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold text-slate-900">{detail.name}</h2>
-                        {isActive && (
-                            <Badge variant="default" className="bg-green-500 hover:bg-green-600 shrink-0 whitespace-nowrap shadow-sm">
-                                <Activity className="w-3 h-3 mr-1 animate-pulse" />
-                                运行中
+            {/* Header / Navigation - Responsive Layout */}
+            <div className="flex flex-col gap-3">
+                {/* Row 1: Back + Title + Badges */}
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" size="icon" onClick={onBack} className="h-8 w-8 rounded-full shrink-0">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-lg md:text-2xl font-bold text-slate-900 truncate">{detail.name}</h2>
+                            {isActive && (
+                                <Badge variant="default" className="bg-green-500 hover:bg-green-600 shrink-0 whitespace-nowrap shadow-sm text-xs">
+                                    <Activity className="w-3 h-3 mr-1 animate-pulse" />
+                                    运行中
+                                </Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs font-normal hidden sm:inline-flex">
+                                {detail.riskLevel === 'High' ? '高风险' : detail.riskLevel === 'Medium' ? '中风险' : '低风险'}
                             </Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs font-normal">
-                            {detail.riskLevel === 'High' ? '高风险' : detail.riskLevel === 'Medium' ? '中风险' : '低风险'}
-                        </Badge>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                {/* Row 2: Action Buttons - Full width on mobile */}
+                <div className="flex items-center gap-2 ml-0 md:ml-11">
                     <Button
                         variant="outline"
-                        className="bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200"
+                        size="sm"
+                        className="flex-1 md:flex-none bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200 h-9"
                         onClick={() => {
                             toast({
                                 title: "功能开发中",
@@ -239,129 +244,28 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                             });
                         }}
                     >
-                        <Bell className="w-4 h-4 mr-2" />
-                        订阅信号
+                        <Bell className="w-4 h-4 md:mr-2" />
+                        <span className="hidden md:inline">订阅信号</span>
                     </Button>
 
                     {!isActive ? (
-                        <>
-                            <Button
-                                className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-                                onClick={() => {
-                                    toast({
-                                        title: "功能开发中",
-                                        description: "实盘跟单功能正在对接券商接口，敬请期待！",
-                                    });
-                                }}
-                            >
-                                <Zap className="w-4 h-4 mr-2" />
-                                立即跟单
-                            </Button>
-                            {/* <Dialog open={isFollowDialogOpen} onOpenChange={setIsFollowDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                                        <Zap className="w-4 h-4 mr-2" />
-                                        立即跟单
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[500px]">
-                                    <DialogHeader>
-                                        <DialogTitle className="flex items-center gap-2">
-                                            配置跟单: {detail.name}
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            配置您的初始资金和风控参数。AI将自动执行买卖操作。
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="grid gap-6 py-4">
-                                        <AlertCircle className="absolute right-4 top-4 h-5 w-5 text-slate-300" />
-                                        <div className="space-y-6">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="capital" className="text-right font-medium text-slate-700">
-                                                    跟单资金 (CNY)
-                                                </Label>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xl font-bold text-slate-400">¥</span>
-                                                    <Input
-                                                        id="capital"
-                                                        type="number"
-                                                        value={capital}
-                                                        onChange={(e) => setCapital(Number(e.target.value))}
-                                                        className="text-lg font-bold"
-                                                        min={detail.minCapital ?? 0}
-                                                        step={1000}
-                                                    />
-                                                </div>
-                                                <p className="text-xs text-slate-400">最低起投金额: ¥{(detail.minCapital ?? 0).toLocaleString()}</p>
-                                            </div>
-
-                                            <div className="space-y-4 pt-2 border-t border-slate-100">
-                                                <h4 className="font-medium text-slate-900 flex items-center gap-2">
-                                                    <Shield className="w-4 h-4 text-slate-500" />
-                                                    风控设置
-                                                </h4>
-
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between">
-                                                        <Label className="font-medium text-slate-700">止损阈值 (%)</Label>
-                                                        <span className="text-sm font-bold text-red-600">-{stopLoss}%</span>
-                                                    </div>
-                                                    <Slider
-                                                        defaultValue={[10]}
-                                                        max={30}
-                                                        min={1}
-                                                        step={1}
-                                                        value={stopLoss}
-                                                        onValueChange={setStopLoss}
-                                                        className="py-2"
-                                                    />
-                                                    <p className="text-xs text-slate-400">当总资产回撤达到此比例时，自动清仓停止策略。</p>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between">
-                                                        <Label className="font-medium text-slate-700">止盈目标 (%)</Label>
-                                                        <span className="text-sm font-bold text-green-600">+{takeProfit}%</span>
-                                                    </div>
-                                                    <Slider
-                                                        defaultValue={[20]}
-                                                        max={100}
-                                                        min={5}
-                                                        step={5}
-                                                        value={takeProfit}
-                                                        onValueChange={setTakeProfit}
-                                                        className="py-2"
-                                                    />
-                                                    <p className="text-xs text-slate-400">当总收益达到此比例时，触发自动止盈或提示。</p>
-                                                </div>
-
-                                                <div className="flex items-center justify-between pt-2">
-                                                    <div className="space-y-0.5">
-                                                        <Label className="text-base">自动退出</Label>
-                                                        <p className="text-xs text-slate-400">触发风控条件时自动卖出所有持仓</p>
-                                                    </div>
-                                                    <Switch
-                                                        checked={autoExit}
-                                                        onCheckedChange={setAutoExit}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setIsFollowDialogOpen(false)}>取消</Button>
-                                        <Button onClick={handleConfirmFollow} className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                                            <Activity className="w-4 h-4 mr-2" />
-                                            确认启动实盘
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog> */}
-                        </>
+                        <Button
+                            size="sm"
+                            className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-9"
+                            onClick={() => {
+                                toast({
+                                    title: "功能开发中",
+                                    description: "实盘跟单功能正在对接券商接口，敬请期待！",
+                                });
+                            }}
+                        >
+                            <Zap className="w-4 h-4 md:mr-2" />
+                            <span className="hidden md:inline">立即跟单</span>
+                        </Button>
                     ) : (
-                        <Button disabled variant="secondary">
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            已在运行
+                        <Button disabled variant="secondary" size="sm" className="flex-1 md:flex-none h-9">
+                            <CheckCircle2 className="w-4 h-4 md:mr-2" />
+                            <span className="hidden md:inline">已在运行</span>
                         </Button>
                     )}
                 </div>
