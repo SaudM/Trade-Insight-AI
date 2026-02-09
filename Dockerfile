@@ -39,9 +39,9 @@ COPY --from=builder /app/public ./public
 # 复制 Prisma schema (用于 prisma db push)
 COPY --from=builder /app/prisma ./prisma
 
-# 安装 prisma CLI (用于 prisma db push)
-RUN npm config set registry https://registry.npmmirror.com
-RUN npm install prisma --legacy-peer-deps
+# 全局安装 prisma CLI (用于 prisma db push)
+# 固定版本为 6.17.1，与项目保持一致，避免 Prisma 7.x 破坏性变更
+RUN npm config set registry https://registry.npmmirror.com && npm install -g prisma@6.17.1
 
 # 启动 standalone 服务 (使用 prisma db push 更新数据库)
-CMD ["sh", "-c", "npx prisma db push && node server.js"]
+CMD ["sh", "-c", "prisma db push && node server.js"]
