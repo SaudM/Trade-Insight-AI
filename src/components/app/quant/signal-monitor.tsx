@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Calendar as CalendarIcon, Filter, Info, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Flame } from 'lucide-react';
 import { format, subDays } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import { cn, getXueqiuUrl } from '@/lib/utils';
 import type { Recommendation, HeatmapData } from '@/lib/types';
 import {
@@ -206,6 +207,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                             <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white overflow-hidden" align="start">
                                 <Calendar
                                     mode="single"
+                                    locale={zhCN}
                                     selected={signalDate ? new Date(signalDate) : undefined}
                                     onSelect={(date) => {
                                         if (date) {
