@@ -2,7 +2,7 @@
 "use client"
 
 import { Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LayoutDashboard, Book, LogOut, FileText, Sparkles, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, Book, LogOut, FileText, Sparkles, User as UserIcon, MessageCircle } from 'lucide-react';
 import type { View } from '@/lib/types';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -16,9 +16,10 @@ type AppSidebarProps = {
   activeView: View;
   setActiveView: (view: View) => void;
   isProUser: boolean;
+  onContactSupport: () => void;
 };
 
-export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarProps) {
+export function AppSidebar({ activeView, setActiveView, isProUser, onContactSupport }: AppSidebarProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
@@ -109,6 +110,16 @@ export function AppSidebar({ activeView, setActiveView, isProUser }: AppSidebarP
           >
             <UserIcon />
             <span className="text-base font-medium">个人中心</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={onContactSupport}
+            tooltip={{ children: '联系客服' }}
+            className="text-muted-foreground hover:text-primary transition-colors"
+          >
+            <MessageCircle className="h-5 w-5" />
+            <span className="text-base font-medium">联系客服</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

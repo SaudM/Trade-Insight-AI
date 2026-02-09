@@ -29,6 +29,7 @@ import {
 } from '@/hooks/use-postgres-data';
 
 import { SubscriptionModal } from './subscription-modal';
+import { CustomerServiceModal } from './customer-service-modal';
 
 
 export function TradeInsightsApp() {
@@ -46,6 +47,9 @@ export function TradeInsightsApp() {
 
   // --- Subscription Modal State ---
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+
+  // --- Customer Service Modal State ---
+  const [isCustomerServiceModalOpen, setIsCustomerServiceModalOpen] = useState(false);
 
   // --- User Data from PostgreSQL (with Firebase fallback) ---
   const { userData, isLoading: isLoadingUserData, error: userDataError } = useUserData();
@@ -426,7 +430,12 @@ export function TradeInsightsApp() {
     <SidebarProvider>
       <TradeInsightsProvider value={{ activeView, setActiveView }}>
         <div className="flex h-screen bg-background text-foreground w-full">
-          <AppSidebar activeView={activeView} setActiveView={setActiveView} isProUser={isVipUser} />
+          <AppSidebar
+            activeView={activeView}
+            setActiveView={setActiveView}
+            isProUser={isVipUser}
+            onContactSupport={() => setIsCustomerServiceModalOpen(true)}
+          />
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={handleDialogOpenChange}>
@@ -443,6 +452,7 @@ export function TradeInsightsApp() {
               </DialogContent>
             </Dialog>
             <SubscriptionModal isOpen={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen} />
+            <CustomerServiceModal isOpen={isCustomerServiceModalOpen} onOpenChange={setIsCustomerServiceModalOpen} />
           </SidebarInset>
         </div>
       </TradeInsightsProvider>

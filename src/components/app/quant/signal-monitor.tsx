@@ -262,9 +262,9 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                             <Table className="relative min-w-full">
                                 <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-md">
                                     <TableRow className="hover:bg-transparent border-slate-200">
-                                        <TableHead className="w-[150px] font-bold text-slate-700 text-xs text-left">证券/代码</TableHead>
+                                        <TableHead className="w-[200px] font-bold text-slate-700 text-xs text-left">证券/代码</TableHead>
                                         <TableHead
-                                            className="w-[80px] font-bold text-slate-700 text-xs text-center cursor-pointer hover:bg-slate-100/50 transition-colors group"
+                                            className="w-[70px] font-bold text-slate-700 text-xs text-center cursor-pointer hover:bg-slate-100/50 transition-colors group"
                                             onClick={() => handleSort('signal_type')}
                                         >
                                             <div className="flex items-center justify-center">
@@ -281,7 +281,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                 <SortIndicator field="score" />
                                             </div>
                                         </TableHead>
-                                        <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">推荐时</TableHead>
+                                        <TableHead className="w-[80px] font-bold text-slate-700 text-xs text-right">推荐时</TableHead>
                                         <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">止损价</TableHead>
                                         {/* Performance Columns - Always render maxDays columns */}
                                         {Array.from({ length: maxDays }, (_, i) => {
@@ -307,7 +307,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                 <TableBody>
                                     {sortedRecommendations.map((rec) => (
                                         <TableRow key={`${rec.symbol}-${rec.signal_date}`} className="group hover:bg-slate-50/50 transition-colors border-slate-100">
-                                            <TableCell className="py-3 w-[150px]">
+                                            <TableCell className="py-3 w-[200px]">
                                                 <div className="flex flex-col">
                                                     <a
                                                         href={getXueqiuUrl(rec.symbol)}
@@ -389,7 +389,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-center w-[80px]">
+                                            <TableCell className="text-center w-[70px]">
                                                 <Badge
                                                     variant={rec.signal_type === 'STRONG_BUY' ? 'destructive' : 'secondary'}
                                                     className={cn(
@@ -400,7 +400,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                     {rec.signal_type === 'STRONG_BUY' ? '买入' : '关注'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-center font-semibold text-slate-600 text-xs w-[80px]">
+                                            <TableCell className="text-center font-semibold text-slate-600 text-xs w-[70px]">
                                                 <div className="flex items-center justify-center">
                                                     <span className={cn(
                                                         "font-mono font-bold",
@@ -411,7 +411,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                     </span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right font-semibold text-slate-600 text-xs w-[90px]">
+                                            <TableCell className="text-right font-semibold text-slate-600 text-xs w-[80px]">
                                                 ¥{rec.initial_price}
                                             </TableCell>
                                             <TableCell className="text-right font-semibold text-red-400 text-xs w-[90px]">
