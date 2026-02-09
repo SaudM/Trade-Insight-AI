@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { AddToHomeScreenPrompt } from '@/components/app/add-to-home-screen-prompt';
 
 export const metadata: Metadata = {
   title: '复利复盘 - Trade Insight AI | 智能交易复盘助手',
@@ -36,6 +37,12 @@ export default function RootLayout({
     <html lang="zh" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="复利复盘" />
+        <meta name="theme-color" content="#6366f1" />
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap" rel="stylesheet" />
       </head>
@@ -63,6 +70,7 @@ export default function RootLayout({
             <FirebaseClientProvider>
               {children}
               <Toaster />
+              <AddToHomeScreenPrompt />
             </FirebaseClientProvider>
           </AuthProvider>
         </ThemeProvider>
