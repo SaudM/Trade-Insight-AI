@@ -50,6 +50,8 @@ export interface UseSubscriptionReturn {
   isLoading: boolean;
   error: string | null;
   isProUser: boolean;
+  isTrialUser: boolean;
+  isVipUser: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -70,6 +72,8 @@ export interface UseSubscriptionRecordsReturn {
 export function useSubscription(): UseSubscriptionReturn {
   const { user } = useFirebase();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [isTrialUser, setIsTrialUser] = useState(false);
+  const [isSubscribedUser, setIsSubscribedUser] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,12 +96,18 @@ export function useSubscription(): UseSubscriptionReturn {
       }
 
       const data = await response.json();
-      setSubscription(data.subscription);
+      // 兼容 /api/user 返回结构：{ data: { user, subscription, isProUser, isTrialUser } }
+      const payload = data?.data ?? data ?? {};
+      setSubscription(payload.subscription ?? null);
+      setIsSubscribedUser(Boolean(payload.isProUser));
+      setIsTrialUser(Boolean(payload.isTrialUser));
 
     } catch (err) {
       console.error('获取订阅数据失败:', err);
       setError(err instanceof Error ? err.message : '获取订阅数据失败');
       setSubscription(null);
+      setIsSubscribedUser(false);
+      setIsTrialUser(false);
     } finally {
       setIsLoading(false);
     }
@@ -107,14 +117,18 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscription();
   }, [user]);
 
-  // 计算是否为专业用户
-  const isProUser = subscription?.status === 'active' && new Date(subscription.endDate) > new Date();
+  // 权限口径统一：试用会员与订阅会员权益一致
+  const hasActiveSubscription = subscription?.status === 'active' && new Date(subscription.endDate) > new Date();
+  const isProUser = Boolean(hasActiveSubscription || isSubscribedUser || isTrialUser);
+  const isVipUser = isProUser;
 
   return {
     subscription,
     isLoading,
     error,
     isProUser,
+    isTrialUser,
+    isVipUser,
     refetch: fetchSubscription,
   };
 }

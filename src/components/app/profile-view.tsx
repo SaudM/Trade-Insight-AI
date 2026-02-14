@@ -96,7 +96,8 @@ export function ProfileView() {
         router.push('/profile/orders');
     };
 
-    const isProUser = subscription?.status === 'active' || false;
+    // 权限口径统一：试用会员等同于订阅会员
+    const isVipUser = Boolean(userData?.isProUser || userData?.isTrialUser);
 
     // 处理订阅结束日期，支持string和Timestamp类型
     const subscriptionEndDate = subscription?.endDate
@@ -163,13 +164,13 @@ export function ProfileView() {
                         <CardContent className="px-4 sm:px-6">
                             <div
                                 onClick={handlePricingClick}
-                                className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-lg group cursor-pointer active:scale-[0.99] touch-manipulation ${isProUser
+                                className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-lg group cursor-pointer active:scale-[0.99] touch-manipulation ${isVipUser
                                     ? 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-yellow-200/50'
                                     : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/50'
                                     }`}>
                                 {/* 背景装饰元素 */}
                                 <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-                                    {isProUser ? (
+                                    {isVipUser ? (
                                         <Crown className="w-full h-full text-yellow-500 rotate-12" />
                                     ) : (
                                         <Sparkles className="w-full h-full text-blue-500 rotate-12" />
@@ -179,17 +180,17 @@ export function ProfileView() {
                                 <div className="relative flex items-center justify-between">
                                     <div className="flex items-center gap-4 sm:gap-5">
                                         {/* 图标容器 - 移动端隐藏 */}
-                                        <div className={`hidden sm:block relative p-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-105 ${isProUser
+                                        <div className={`hidden sm:block relative p-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-105 ${isVipUser
                                             ? 'bg-gradient-to-br from-yellow-400 to-amber-500'
                                             : 'bg-gradient-to-br from-blue-500 to-indigo-600'
                                             }`}>
-                                            {isProUser ? (
+                                            {isVipUser ? (
                                                 <Crown className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-sm" />
                                             ) : (
                                                 <Gift className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-sm" />
                                             )}
                                             {/* 闪烁效果 */}
-                                            {!isProUser && (
+                                            {!isVipUser && (
                                                 <div className="absolute -top-1 -right-1">
                                                     <Sparkles className="w-4 h-4 text-yellow-400 animate-pulse" />
                                                 </div>
@@ -199,11 +200,11 @@ export function ProfileView() {
                                         {/* 文字信息 */}
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
-                                                <h3 className={`font-bold text-base sm:text-lg leading-tight ${isProUser ? 'text-yellow-800' : 'text-blue-800'
+                                                <h3 className={`font-bold text-base sm:text-lg leading-tight ${isVipUser ? 'text-yellow-800' : 'text-blue-800'
                                                     }`}>
-                                                    {isProUser ? '专业版会员' : '免费试用'}
+                                                    {isVipUser ? '会员用户' : '免费试用'}
                                                 </h3>
-                                                {!isProUser && (
+                                                {!isVipUser && (
                                                     <div className="flex items-center gap-1 text-blue-600">
                                                         <Clock className="w-3 h-3" />
                                                         <span className="text-xs font-medium">限时</span>
@@ -212,9 +213,9 @@ export function ProfileView() {
                                             </div>
                                             {endDate && (
                                                 <div className="flex items-center gap-1.5">
-                                                    <Clock className={`w-3.5 h-3.5 ${isProUser ? 'text-yellow-600' : 'text-blue-600'
+                                                    <Clock className={`w-3.5 h-3.5 ${isVipUser ? 'text-yellow-600' : 'text-blue-600'
                                                         }`} />
-                                                    <p className={`text-xs sm:text-sm font-medium ${isProUser ? 'text-yellow-700' : 'text-blue-700'
+                                                    <p className={`text-xs sm:text-sm font-medium ${isVipUser ? 'text-yellow-700' : 'text-blue-700'
                                                         }`}>
                                                         到期时间: {format(endDate, 'yyyy年MM月dd日')}
                                                     </p>
@@ -224,7 +225,7 @@ export function ProfileView() {
                                     </div>
 
                                     {/* 状态标签 */}
-                                    {!isProUser && (
+                                    {!isVipUser && (
                                         <div className="relative">
                                             <Badge
                                                 variant="secondary"
@@ -238,7 +239,7 @@ export function ProfileView() {
                                         </div>
                                     )}
 
-                                    {isProUser && (
+                                    {isVipUser && (
                                         <div className="relative">
                                             <Badge
                                                 variant="secondary"
@@ -257,7 +258,7 @@ export function ProfileView() {
                             <Button
                                 variant="default"
                                 onClick={handlePricingClick}
-                                className={`relative w-full h-12 sm:h-14 text-sm sm:text-base font-bold rounded-2xl shadow-lg hover:shadow-xl active:shadow-md active:scale-[0.98] transition-all duration-300 touch-manipulation overflow-hidden group ${isProUser
+                                className={`relative w-full h-12 sm:h-14 text-sm sm:text-base font-bold rounded-2xl shadow-lg hover:shadow-xl active:shadow-md active:scale-[0.98] transition-all duration-300 touch-manipulation overflow-hidden group ${isVipUser
                                     ? 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
                                     : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700'
                                     }`}
@@ -266,7 +267,7 @@ export function ProfileView() {
                                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
 
                                 <div className="relative flex items-center justify-center gap-2 sm:gap-3">
-                                    {isProUser ? (
+                                    {isVipUser ? (
                                         <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-white drop-shadow-sm" />
                                     ) : (
                                         <div className="relative">
@@ -277,7 +278,7 @@ export function ProfileView() {
                                     <span className="text-white drop-shadow-sm">
                                         {subscription ? '管理订阅' : '升级到专业版'}
                                     </span>
-                                    {!isProUser && (
+                                    {!isVipUser && (
                                         <div className="flex items-center gap-1 bg-white/20 rounded-full px-2 py-0.5">
                                             <Gift className="h-3 w-3 text-white" />
                                             <span className="text-xs font-semibold text-white">限时优惠</span>

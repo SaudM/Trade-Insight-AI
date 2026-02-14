@@ -12,6 +12,7 @@ import { ArrowLeft, CheckCircle2, Zap, Activity, AlertCircle, TrendingUp, BarCha
 import { Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useUserData } from '@/hooks/use-user-data';
 import { SignalMonitor } from './signal-monitor';
 import {
     type Strategy,
@@ -32,19 +33,83 @@ interface StrategyDetailProps {
 
 import { Switch } from '@/components/ui/switch';
 
+type SignalEvent = 'BUY' | 'SELL';
+type SignalChannelType =
+    | 'feishu'
+    | 'wecom'
+    | 'sms'
+    | 'email'
+    | 'telegram'
+    | 'dingtalk'
+    | 'discord'
+    | 'slack'
+    | 'webhook';
+
+type ChannelConfig = {
+    type: SignalChannelType;
+    enabled: boolean;
+    target: string;
+};
+
+type SignalSubscriptionConfig = {
+    strategyId: string;
+    enabled: boolean;
+    events: SignalEvent[];
+    channels: ChannelConfig[];
+    updatedAt?: string;
+};
+
+const CHANNEL_DEFS: Array<{ type: SignalChannelType; label: string; placeholder: string }> = [
+    { type: 'feishu', label: '飞书', placeholder: '输入飞书群机器人 Webhook URL' },
+    { type: 'wecom', label: '企业微信', placeholder: '输入企业微信机器人 Webhook URL' },
+    { type: 'sms', label: '短信', placeholder: '输入手机号（例如 +8613812345678）' },
+    { type: 'email', label: '邮箱', placeholder: '输入邮箱地址（例如 trader@example.com）' },
+    { type: 'telegram', label: 'Telegram', placeholder: '输入 Bot Token + Chat ID 或 Webhook 地址' },
+    { type: 'dingtalk', label: '钉钉', placeholder: '输入钉钉机器人 Webhook URL' },
+    { type: 'discord', label: 'Discord', placeholder: '输入 Discord Webhook URL' },
+    { type: 'slack', label: 'Slack', placeholder: '输入 Slack Incoming Webhook URL' },
+    { type: 'webhook', label: '自定义 Webhook', placeholder: '输入你的自定义回调 URL' },
+];
+
+const createDefaultSubscription = (strategyId: string): SignalSubscriptionConfig => ({
+    strategyId,
+    enabled: true,
+    events: ['BUY', 'SELL'],
+    channels: CHANNEL_DEFS.map(def => ({ type: def.type, enabled: false, target: '' })),
+});
+
 export function StrategyDetail({ strategy, onBack, onFollow, isActive }: StrategyDetailProps) {
     const { toast } = useToast();
+    const { userData, isLoading: isUserLoading } = useUserData();
     const [capital, setCapital] = useState<number>(Math.max(strategy.minCapital ?? 0, 100000));
     const [stopLoss, setStopLoss] = useState<number[]>([10]);
     const [takeProfit, setTakeProfit] = useState<number[]>([20]);
     const [autoExit, setAutoExit] = useState<boolean>(true);
     const [isFollowDialogOpen, setIsFollowDialogOpen] = useState(false);
+    const [isSignalDialogOpen, setIsSignalDialogOpen] = useState(false);
+    const [isSignalConfigLoading, setIsSignalConfigLoading] = useState(false);
+    const [isSignalSaving, setIsSignalSaving] = useState(false);
+    const [signalConfig, setSignalConfig] = useState<SignalSubscriptionConfig>(createDefaultSubscription(strategy.id));
 
     // Dynamic strategy state
     const [activeStrategy, setActiveStrategy] = useState<Strategy>(strategy);
     const [isFetching, setIsFetching] = useState(false);
 
     const detail = useMemo(() => activeStrategy, [activeStrategy]);
+    const systemUserId = userData?.user?.id ?? '';
+    const isVipUser = useMemo(() => {
+        const hasSubscribedAccess = Boolean(userData?.isProUser);
+        if (hasSubscribedAccess) return true;
+        if (userData?.isTrialUser) return true;
+
+        // Frontend fallback: if backend trial flag is delayed, treat users created within 30 days as trial members.
+        const createdAt = userData?.user?.createdAt;
+        if (!createdAt) return false;
+        const createdAtMs = new Date(createdAt).getTime();
+        if (Number.isNaN(createdAtMs)) return false;
+        const trialWindowMs = 30 * 24 * 60 * 60 * 1000;
+        return Date.now() - createdAtMs <= trialWindowMs;
+    }, [userData?.isProUser, userData?.isTrialUser, userData?.user?.createdAt]);
 
     const RANGE_OPTIONS = [
         { label: '全部', value: 'all' as const },
@@ -206,6 +271,161 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
         });
     };
 
+    const handleSignalChannelToggle = (type: SignalChannelType, enabled: boolean) => {
+        setSignalConfig(prev => ({
+            ...prev,
+            channels: prev.channels.map(ch => ch.type === type ? { ...ch, enabled } : ch),
+        }));
+    };
+
+    const handleSignalChannelTarget = (type: SignalChannelType, target: string) => {
+        setSignalConfig(prev => ({
+            ...prev,
+            channels: prev.channels.map(ch => ch.type === type ? { ...ch, target } : ch),
+        }));
+    };
+
+    const handleSignalEventToggle = (event: SignalEvent, enabled: boolean) => {
+        setSignalConfig(prev => {
+            const eventSet = new Set(prev.events);
+            if (enabled) eventSet.add(event);
+            else eventSet.delete(event);
+            return {
+                ...prev,
+                events: Array.from(eventSet),
+            };
+        });
+    };
+
+    const openSignalDialog = async () => {
+        if (isUserLoading) {
+            toast({
+                title: "用户信息加载中",
+                description: "请稍后重试",
+            });
+            return;
+        }
+
+        if (!isVipUser) {
+            if (userData?.source === 'connection_failed' || !userData?.user) {
+                toast({
+                    title: "用户状态获取失败",
+                    description: "暂时无法读取会员状态，请刷新页面后重试",
+                    variant: "destructive",
+                });
+                return;
+            }
+            toast({
+                title: "会员专属功能",
+                description: "请先开通会员后订阅实时交易信号",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (!systemUserId) {
+            toast({
+                title: "无法识别用户",
+                description: "请刷新页面后重试",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsSignalDialogOpen(true);
+        setIsSignalConfigLoading(true);
+        try {
+            const res = await fetch(
+                `/api/quant/signal-subscriptions?uid=${encodeURIComponent(systemUserId)}&strategyId=${encodeURIComponent(detail.id)}`,
+                { cache: 'no-store' }
+            );
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const payload = await res.json();
+            const config = payload?.data as SignalSubscriptionConfig | undefined;
+            if (config) {
+                const mergedChannels = CHANNEL_DEFS.map(def => {
+                    const existing = (config.channels ?? []).find(ch => ch.type === def.type);
+                    return {
+                        type: def.type,
+                        enabled: Boolean(existing?.enabled),
+                        target: existing?.target ?? '',
+                    };
+                });
+                setSignalConfig({
+                    strategyId: detail.id,
+                    enabled: config.enabled ?? true,
+                    events: Array.isArray(config.events) && config.events.length ? config.events : ['BUY', 'SELL'],
+                    channels: mergedChannels,
+                    updatedAt: config.updatedAt,
+                });
+            } else {
+                setSignalConfig(createDefaultSubscription(detail.id));
+            }
+        } catch (error) {
+            console.error('Failed to load signal subscription:', error);
+            setSignalConfig(createDefaultSubscription(detail.id));
+            toast({
+                title: "读取订阅配置失败",
+                description: "已使用默认配置，你可以直接保存覆盖",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSignalConfigLoading(false);
+        }
+    };
+
+    const saveSignalConfig = async () => {
+        if (!systemUserId) return;
+        const enabledChannels = signalConfig.channels.filter(ch => ch.enabled && ch.target.trim().length > 0);
+        if (!enabledChannels.length) {
+            toast({
+                title: "请至少配置一个通知渠道",
+                description: "开启渠道并填写目标地址后再保存",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (!signalConfig.events.length) {
+            toast({
+                title: "请至少选择一个信号类型",
+                description: "至少选择买入或卖出中的一个",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsSignalSaving(true);
+        try {
+            const res = await fetch('/api/quant/signal-subscriptions', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid: systemUserId,
+                    strategyId: detail.id,
+                    enabled: signalConfig.enabled,
+                    events: signalConfig.events,
+                    channels: signalConfig.channels,
+                }),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            toast({
+                title: "订阅已保存",
+                description: "该策略触发买卖信号时会按你的配置推送",
+            });
+            setIsSignalDialogOpen(false);
+        } catch (error) {
+            console.error('Failed to save signal subscription:', error);
+            toast({
+                title: "保存失败",
+                description: "请稍后重试",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSignalSaving(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header / Navigation - Responsive Layout */}
@@ -233,20 +453,99 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
 
                 {/* Row 2: Action Buttons - Full width on mobile */}
                 <div className="flex items-center gap-2 ml-0 md:ml-11">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 md:flex-none bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200 h-9"
-                        onClick={() => {
-                            toast({
-                                title: "功能开发中",
-                                description: "企业微信/飞书信号推送功能正在开发中，敬请期待！",
-                            });
-                        }}
-                    >
-                        <Bell className="w-4 h-4 md:mr-2" />
-                        <span className="hidden md:inline">订阅信号</span>
-                    </Button>
+                    <Dialog open={isSignalDialogOpen} onOpenChange={setIsSignalDialogOpen}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 md:flex-none bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200 h-9"
+                            onClick={openSignalDialog}
+                        >
+                            <Bell className="w-4 h-4 md:mr-2" />
+                            <span className="hidden md:inline">订阅信号</span>
+                        </Button>
+                        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle>订阅实时交易信号</DialogTitle>
+                                <DialogDescription>
+                                    仅会员可用。策略触发买入/卖出信号后，将按你配置的渠道推送提醒。
+                                </DialogDescription>
+                            </DialogHeader>
+                            {isSignalConfigLoading ? (
+                                <div className="py-10 flex items-center justify-center text-slate-500">
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                    正在加载订阅配置...
+                                </div>
+                            ) : (
+                                <div className="space-y-5">
+                                    <div className="rounded-lg border border-slate-200 p-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-900">启用信号订阅</p>
+                                                <p className="text-xs text-slate-500">关闭后不会发送任何买卖信号通知</p>
+                                            </div>
+                                            <Switch
+                                                checked={signalConfig.enabled}
+                                                onCheckedChange={(checked) => setSignalConfig(prev => ({ ...prev, enabled: checked }))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-lg border border-slate-200 p-3 space-y-3">
+                                        <p className="text-sm font-semibold text-slate-900">信号类型</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
+                                                <Label className="text-sm text-slate-700">买入信号 (BUY)</Label>
+                                                <Switch
+                                                    checked={signalConfig.events.includes('BUY')}
+                                                    onCheckedChange={(checked) => handleSignalEventToggle('BUY', checked)}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
+                                                <Label className="text-sm text-slate-700">卖出信号 (SELL)</Label>
+                                                <Switch
+                                                    checked={signalConfig.events.includes('SELL')}
+                                                    onCheckedChange={(checked) => handleSignalEventToggle('SELL', checked)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-lg border border-slate-200 p-3 space-y-3">
+                                        <p className="text-sm font-semibold text-slate-900">通知渠道</p>
+                                        {CHANNEL_DEFS.map((channel) => {
+                                            const current = signalConfig.channels.find(c => c.type === channel.type) ?? { enabled: false, target: '', type: channel.type };
+                                            return (
+                                                <div key={channel.type} className="rounded-md border border-slate-200 px-3 py-3 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label className="text-sm font-medium text-slate-800">{channel.label}</Label>
+                                                        <Switch
+                                                            checked={current.enabled}
+                                                            onCheckedChange={(checked) => handleSignalChannelToggle(channel.type, checked)}
+                                                        />
+                                                    </div>
+                                                    <Input
+                                                        value={current.target}
+                                                        onChange={(e) => handleSignalChannelTarget(channel.type, e.target.value)}
+                                                        placeholder={channel.placeholder}
+                                                        disabled={!current.enabled}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsSignalDialogOpen(false)}>
+                                    取消
+                                </Button>
+                                <Button onClick={saveSignalConfig} disabled={isSignalConfigLoading || isSignalSaving}>
+                                    {isSignalSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                    保存订阅
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                     {!isActive ? (
                         <Button
