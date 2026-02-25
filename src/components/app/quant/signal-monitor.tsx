@@ -304,7 +304,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                 <SortIndicator field="score" />
                                             </div>
                                         </TableHead>
-                                        <TableHead className="w-[80px] font-bold text-slate-700 text-xs text-right">推荐时</TableHead>
+                                        <TableHead className="w-[70px] font-bold text-slate-700 text-xs text-right">推荐时</TableHead>
                                         <TableHead className="w-[90px] font-bold text-slate-700 text-xs text-right">止损价</TableHead>
                                         {/* Performance Columns - Always render maxDays columns */}
                                         {Array.from({ length: maxDays }, (_, i) => {
@@ -447,8 +447,43 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                     </span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right font-semibold text-slate-600 text-xs w-[80px]">
-                                                ¥{rec.initial_price}
+                                            <TableCell className="text-right font-semibold text-slate-600 text-xs w-[70px] relative group/trade">
+                                                <span>¥{rec.initial_price}</span>
+
+                                                {/* Entry Indicator (Blue Dot) */}
+                                                {rec.trade_record && (
+                                                    <div className="absolute top-1 right-1 z-10">
+                                                        <TooltipProvider delayDuration={0}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <div className="h-2.5 w-2.5 rounded-full cursor-pointer bg-blue-400 shadow-md ring-2 ring-white shadow-blue-200" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent side="left" className="w-48 p-0 overflow-hidden bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl rounded-xl">
+                                                                    <div className="flex flex-col">
+                                                                        <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+                                                                            <span className="font-bold text-xs text-slate-700">买入记录</span>
+                                                                            <Badge variant="outline" className="h-4 px-1.5 text-[9px] border-0 bg-blue-50 text-blue-600">
+                                                                                已买入
+                                                                            </Badge>
+                                                                        </div>
+                                                                        <div className="p-3 text-xs">
+                                                                            <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+                                                                                <div className="flex flex-col gap-0.5">
+                                                                                    <span className="text-slate-400 scale-90 origin-left">买入日期</span>
+                                                                                    <span className="font-medium text-slate-700 font-mono">{rec.trade_record.entry_date}</span>
+                                                                                </div>
+                                                                                <div className="flex flex-col gap-0.5">
+                                                                                    <span className="text-slate-400 scale-90 origin-left">买入价格</span>
+                                                                                    <span className="font-medium text-slate-700 font-mono">¥{rec.trade_record.entry_price.toFixed(2)}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </div>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right font-semibold text-red-400 text-xs w-[90px]">
                                                 {rec.stop_loss_ref ? `¥${rec.stop_loss_ref}` : '-'}
@@ -457,8 +492,10 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                             {Array.from({ length: maxDays }, (_, i) => {
                                                 const tDay = i + 1;
                                                 const perf = rec.performance.find(p => p.t_day === tDay);
+                                                const isExitDate = rec.trade_record?.exit_date && perf?.date && rec.trade_record.exit_date === perf.date.split('T')[0];
+
                                                 return (
-                                                    <TableCell key={tDay} className="p-1 w-[85px]">
+                                                    <TableCell key={tDay} className="p-1 w-[85px] relative group/perf">
                                                         <div className="flex flex-col rounded-lg overflow-hidden shadow-sm border border-slate-100">
                                                             <div className={cn(
                                                                 "h-6 flex items-center justify-center transition-all duration-300 border-b border-white/20",
@@ -481,6 +518,73 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                                 )}
                                                             </div>
                                                         </div>
+
+                                                        {/* Exit Indicator (PnL Dot) */}
+                                                        {isExitDate && rec.trade_record && (
+                                                            <div className="absolute top-1 right-1 z-10">
+                                                                <TooltipProvider delayDuration={0}>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <div className={cn(
+                                                                                "h-2.5 w-2.5 rounded-full cursor-pointer animate-pulse shadow-md ring-2 ring-white",
+                                                                                (rec.trade_record.pnl_pct ?? 0) > 0 ? "bg-red-500 shadow-red-200" : "bg-green-500 shadow-green-200"
+                                                                            )} />
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="bottom" className="w-56 p-0 overflow-hidden bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl rounded-xl">
+                                                                            <div className="flex flex-col">
+                                                                                <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+                                                                                    <span className="font-bold text-xs text-slate-700">卖出记录</span>
+                                                                                    <Badge variant="outline" className="h-4 px-1.5 text-[9px] border-0 bg-slate-200 text-slate-600">
+                                                                                        已平仓
+                                                                                    </Badge>
+                                                                                </div>
+                                                                                <div className="p-3 text-xs">
+                                                                                    <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+                                                                                        <div className="flex flex-col gap-0.5">
+                                                                                            <span className="text-slate-400 scale-90 origin-left">卖出日期</span>
+                                                                                            <span className="font-medium text-slate-700 font-mono">{rec.trade_record.exit_date}</span>
+                                                                                        </div>
+                                                                                        <div className="flex flex-col gap-0.5">
+                                                                                            <span className="text-slate-400 scale-90 origin-left">卖出价格</span>
+                                                                                            <span className="font-medium text-slate-700 font-mono">¥{rec.trade_record.exit_price?.toFixed(2) ?? '-'}</span>
+                                                                                        </div>
+                                                                                        <div className="flex flex-col gap-0.5 col-span-2 mt-1">
+                                                                                            <span className="text-slate-400 scale-90 origin-left">卖出理由</span>
+                                                                                            <span className="font-medium text-slate-700">
+                                                                                                {rec.trade_record.exit_reason === 'STOP_LOSS' ? '止损卖出' :
+                                                                                                    rec.trade_record.exit_reason === 'TAKE_PROFIT' ? '止盈卖出' :
+                                                                                                        rec.trade_record.exit_reason === 'EXPIRED' ? '到期卖出' :
+                                                                                                            rec.trade_record.exit_reason || '-'}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div className="bg-slate-50 rounded-lg p-2 flex justify-between items-center mt-2.5">
+                                                                                        <span className="text-slate-500 font-medium">最终盈亏</span>
+                                                                                        <div className="flex flex-col items-end">
+                                                                                            <span className={cn(
+                                                                                                "font-bold font-mono text-sm",
+                                                                                                (rec.trade_record.pnl_pct ?? 0) > 0 ? "text-red-500" : (rec.trade_record.pnl_pct ?? 0) < 0 ? "text-green-500" : "text-slate-500"
+                                                                                            )}>
+                                                                                                {(rec.trade_record.pnl_pct ?? 0) > 0 ? '+' : ''}{(rec.trade_record.pnl_pct ?? 0).toFixed(2)}%
+                                                                                            </span>
+                                                                                            {rec.trade_record.pnl_amount && (
+                                                                                                <span className={cn(
+                                                                                                    "text-[10px] scale-90 origin-right font-mono",
+                                                                                                    rec.trade_record.pnl_amount > 0 ? "text-red-400" : "text-green-400"
+                                                                                                )}>
+                                                                                                    {rec.trade_record.pnl_amount > 0 ? '+' : ''}{rec.trade_record.pnl_amount.toFixed(0)}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            </div>
+                                                        )}
                                                     </TableCell>
                                                 );
                                             })}

@@ -14,32 +14,21 @@ declare global {
 
 type SignalPublishRequest = {
   event_id?: string;
-  eventId?: string;
   event_version?: string;
-  eventVersion?: string;
   source?: string;
   run_id?: string;
-  runId?: string;
   strategy_key?: string;
-  strategyKey?: string;
   strategy_name?: string;
-  strategyName?: string;
   signal_type?: string;
-  signalType?: string;
   symbol?: string;
-  stock_name?: string;
-  stockName?: string;
+  asset_name?: string;
   price?: number;
   score?: number;
   stop_loss_ref?: number;
-  stopLossRef?: number;
-  signal_time?: string;
-  signalTime?: string;
+  occurred_at?: string;
   reason_code?: string;
-  reasonCode?: string;
   reason?: string;
-  trace_id?: string;
-  traceId?: string;
+  meta?: Record<string, any>;
 };
 
 type StrategySignalSubscription = {
@@ -86,55 +75,158 @@ function pruneIdempotencyMap(store: Map<string, number>, nowMs: number) {
   }
 }
 
-// Placeholder dispatcher for each channel. Real channel gateways can be wired here later.
+function maskTarget(target: string): string {
+  const t = String(target || '').trim();
+  if (!t) return '';
+  if (t.length <= 12) return '***';
+  return `${t.slice(0, 10)}...${t.slice(-6)}`;
+}
+
+function buildSignalText(message: Record<string, any>): string {
+  const typeText = message.signalType === 'BUY' ? '买入' : '卖出';
+  const timeText = message.occurredAt ?? '-';
+  const priceText = message.price !== undefined ? String(message.price) : '-';
+  const scoreText = message.score !== undefined ? String(message.score) : '-';
+  const stopLossText = message.stopLossRef !== undefined ? String(message.stopLossRef) : '-';
+  const reasonText = message.reason ?? '-';
+
+  return [
+    `交易信号通知（${typeText}）`,
+    `策略：${message.strategyName ?? message.strategyKey ?? '-'}`,
+    `标的：${message.assetName ?? ''} ${message.symbol ?? '-'}`.trim(),
+    `价格：${priceText}`,
+    `评分：${scoreText}`,
+    `止损参考：${stopLossText}`,
+    `原因码：${message.reasonCode ?? '-'}`,
+    `原因：${reasonText}`,
+    `时间：${timeText}`,
+    `事件ID：${message.eventId ?? '-'}`,
+  ].join('\n');
+}
+
+async function postJson(url: string, body: Record<string, any>) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status} ${res.statusText} ${text}`.trim());
+  }
+}
+
 async function dispatchToChannel(channel: string, target: string, message: Record<string, any>) {
-  console.info('[signal-events][dispatch]', { channel, target, message });
+  const channelType = String(channel || '').toLowerCase();
+
+  if (channelType === 'feishu') {
+    await postJson(target, {
+      msg_type: 'text',
+      content: {
+        text: buildSignalText(message),
+      },
+    });
+    return;
+  }
+
+  if (channelType === 'webhook') {
+    await postJson(target, message);
+    return;
+  }
+
+  throw new Error(`Unsupported channel: ${channelType}`);
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SignalPublishRequest;
-    const eventId = normalizeUuid(body.event_id ?? body.eventId ?? '');
-    const eventVersion = String(body.event_version ?? body.eventVersion ?? EVENT_VERSION_DEFAULT).trim() || EVENT_VERSION_DEFAULT;
+    const eventId = normalizeUuid(body.event_id ?? '');
+    const eventVersion = String(body.event_version ?? '').trim();
     const source = String(body.source ?? '').trim();
-    const runId = String(body.run_id ?? body.runId ?? '').trim();
-    const strategyKey = String(body.strategy_key ?? body.strategyKey ?? '').trim();
-    const strategyName = String(body.strategy_name ?? body.strategyName ?? '').trim();
-    const signalType = normalizeSignalType(body.signal_type ?? body.signalType);
+    const runId = String(body.run_id ?? '').trim();
+    const strategyKey = String(body.strategy_key ?? '').trim();
+    const strategyName = String(body.strategy_name ?? '').trim();
+    const signalType = normalizeSignalType(body.signal_type ?? '');
     const symbol = String(body.symbol ?? '').trim();
-    const stockName = String(body.stock_name ?? body.stockName ?? '').trim();
-    const signalTime = String(body.signal_time ?? body.signalTime ?? new Date().toISOString());
-    const price = Number(body.price ?? 0);
+    const assetName = String(body.asset_name ?? '').trim();
+    const occurredAt = String(body.occurred_at ?? '').trim();
+    const price = body.price === undefined || body.price === null ? undefined : Number(body.price);
     const score = body.score === undefined || body.score === null ? undefined : Number(body.score);
-    const stopLossRef = body.stop_loss_ref === undefined || body.stop_loss_ref === null
-      ? (body.stopLossRef === undefined || body.stopLossRef === null ? undefined : Number(body.stopLossRef))
-      : Number(body.stop_loss_ref);
-    const reasonCode = String(body.reason_code ?? body.reasonCode ?? '').trim();
+    const stopLossRef = body.stop_loss_ref === undefined || body.stop_loss_ref === null ? undefined : Number(body.stop_loss_ref);
+    const reasonCode = String(body.reason_code ?? '').trim();
     const reason = String(body.reason ?? '');
-    const traceId = String(body.trace_id ?? body.traceId ?? '');
+    const meta = body.meta && typeof body.meta === 'object' ? body.meta : undefined;
 
-    if (!eventId || !source || !runId || !strategyKey || !signalType || !symbol || !reasonCode) {
+    if (!eventId || !source || !runId || !strategyKey || !signalType || !symbol || !reasonCode || !occurredAt || !eventVersion) {
       return NextResponse.json(
         {
           error: 'Missing required fields',
           required: [
-            'event_id|eventId(UUID)',
+            'event_id(UUID)',
+            'event_version(v1)',
             'source',
-            'run_id|runId',
-            'strategy_key|strategyKey',
-            'signal_type|signalType(BUY/SELL)',
+            'run_id',
+            'strategy_key',
+            'signal_type(BUY/SELL)',
             'symbol',
-            'reason_code|reasonCode',
+            'reason_code',
+            'occurred_at(ISO8601 UTC)',
           ],
         },
         { status: 400 }
       );
     }
+    if (eventVersion !== EVENT_VERSION_DEFAULT) {
+      return NextResponse.json(
+        { error: 'Invalid event_version', expected: EVENT_VERSION_DEFAULT },
+        { status: 400 }
+      );
+    }
+    if (source !== 'strategy-engine') {
+      return NextResponse.json(
+        { error: 'Invalid source', expected: 'strategy-engine' },
+        { status: 400 }
+      );
+    }
+    const occurredAtTs = Date.parse(occurredAt);
+    if (Number.isNaN(occurredAtTs)) {
+      return NextResponse.json(
+        { error: 'Invalid occurred_at', expected: 'ISO8601 UTC string' },
+        { status: 400 }
+      );
+    }
+    console.info('[signal-events][incoming]', {
+      eventIdRaw: body.event_id ?? null,
+      eventId: eventId ?? null,
+      eventVersion,
+      source,
+      runId,
+      strategyKey,
+      signalType: signalType ?? null,
+      symbol,
+      reasonCode,
+      occurredAt,
+    });
 
     const nowMs = Date.now();
     const idempotencyStore = getIdempotencyMap();
     pruneIdempotencyMap(idempotencyStore, nowMs);
-    if (idempotencyStore.has(eventId)) {
+    const firstSeenAtMs = idempotencyStore.get(eventId);
+    if (firstSeenAtMs) {
+      const duplicateAgeSeconds = Math.floor((nowMs - firstSeenAtMs) / 1000);
+      console.info('[signal-events][summary]', {
+        eventId,
+        duplicate: true,
+        reason: 'idempotency_hit',
+        firstSeenAt: new Date(firstSeenAtMs).toISOString(),
+        duplicateAgeSeconds,
+        strategyKey,
+        signalType,
+        runId,
+        matchedSubscribers: 0,
+        deliveries: 0,
+        failedDeliveries: 0,
+      });
       return NextResponse.json({
         success: true,
         accepted: true,
@@ -144,6 +236,12 @@ export async function POST(request: NextRequest) {
         event_version: eventVersion,
         source,
         run_id: runId,
+        reason: 'idempotency_hit',
+        first_seen_at: new Date(firstSeenAtMs).toISOString(),
+        duplicate_age_seconds: duplicateAgeSeconds,
+        matchedSubscribers: 0,
+        deliveries: 0,
+        failedDeliveries: 0,
         idempotency_ttl_ms: IDEMPOTENCY_TTL_MS,
       });
     }
@@ -156,23 +254,48 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const matchStats = {
+      totalUserConfigs: configs.length,
+      missingStrategySubscription: 0,
+      strategyDisabled: 0,
+      eventNotSubscribed: 0,
+      channelDisabledOrEmptyTarget: 0,
+      matchedChannels: 0,
+    };
     const matched: Array<{ userId: string; channel: string; target: string }> = [];
     for (const config of configs) {
       const prefs = (config.chartPreferences ?? {}) as ChartPrefsWithSignals;
       const subs = prefs.signalSubscriptions ?? {};
       const strategySub = subs[strategyKey];
-      if (!strategySub || strategySub.enabled === false) continue;
-      if (!Array.isArray(strategySub.events) || !strategySub.events.includes(signalType)) continue;
+      if (!strategySub) {
+        matchStats.missingStrategySubscription += 1;
+        continue;
+      }
+      if (strategySub.enabled === false) {
+        matchStats.strategyDisabled += 1;
+        continue;
+      }
+      if (!Array.isArray(strategySub.events) || !strategySub.events.includes(signalType)) {
+        matchStats.eventNotSubscribed += 1;
+        continue;
+      }
 
       for (const ch of strategySub.channels ?? []) {
-        if (!ch?.enabled) continue;
+        if (!ch?.enabled) {
+          matchStats.channelDisabledOrEmptyTarget += 1;
+          continue;
+        }
         const target = String(ch?.target ?? '').trim();
-        if (!target) continue;
+        if (!target) {
+          matchStats.channelDisabledOrEmptyTarget += 1;
+          continue;
+        }
         matched.push({
           userId: config.userId,
           channel: String(ch.type ?? ''),
           target,
         });
+        matchStats.matchedChannels += 1;
       }
     }
 
@@ -185,22 +308,51 @@ export async function POST(request: NextRequest) {
       strategyName: strategyName || undefined,
       signalType,
       symbol,
-      stockName: stockName || undefined,
+      assetName: assetName || undefined,
       price: Number.isFinite(price) ? price : undefined,
       score: score !== undefined && Number.isFinite(score) ? score : undefined,
       stopLossRef: stopLossRef !== undefined && Number.isFinite(stopLossRef) ? stopLossRef : undefined,
-      signalTime,
+      occurredAt,
       reasonCode,
       reason: reason || undefined,
-      traceId: traceId || undefined,
+      meta,
     };
 
-    await Promise.all(
-      matched.map(item => dispatchToChannel(item.channel, item.target, {
-        userId: item.userId,
-        ...message,
-      }))
+    const deliveryResults = await Promise.allSettled(
+      matched.map(async (item) => {
+        await dispatchToChannel(item.channel, item.target, {
+          userId: item.userId,
+          ...message,
+        });
+        return item;
+      })
     );
+    const successDeliveries = deliveryResults.filter(r => r.status === 'fulfilled').length;
+    const failedDeliveries = deliveryResults.length - successDeliveries;
+    const matchedSubscribers = new Set(matched.map(item => item.userId)).size;
+    if (failedDeliveries > 0) {
+      const failed = deliveryResults
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .map(r => String(r.reason?.message ?? r.reason ?? 'unknown error'));
+      console.error('[signal-events][delivery-failed]', {
+        eventId,
+        failedDeliveries,
+        matchedTargets: matched.map(m => ({ channel: m.channel, target: maskTarget(m.target), userId: m.userId })),
+        errors: failed,
+      });
+    }
+    console.info('[signal-events][summary]', {
+      eventId,
+      duplicate: false,
+      reason: failedDeliveries > 0 ? 'delivery_partial_failed_or_failed' : 'delivered_or_no_subscriber',
+      strategyKey,
+      signalType,
+      runId,
+      matchStats,
+      matchedSubscribers,
+      deliveries: successDeliveries,
+      failedDeliveries,
+    });
 
     return NextResponse.json({
       success: true,
@@ -212,30 +364,31 @@ export async function POST(request: NextRequest) {
       run_id: runId,
       protocol: {
         required_fields: [
-          'event_id|eventId(UUID)',
+          'event_id(UUID)',
+          'event_version(v1)',
           'source',
-          'run_id|runId',
-          'strategy_key|strategyKey',
-          'signal_type|signalType',
+          'run_id',
+          'strategy_key',
+          'signal_type',
           'symbol',
-          'reason_code|reasonCode',
+          'reason_code',
+          'occurred_at',
         ],
         optional_fields: [
-          'strategy_name|strategyName',
-          'stock_name|stockName',
+          'strategy_name',
+          'asset_name',
           'price',
           'score',
-          'stop_loss_ref|stopLossRef',
-          'signal_time|signalTime',
+          'stop_loss_ref',
           'reason',
-          'trace_id|traceId',
-          'event_version|eventVersion',
+          'meta',
         ],
         signal_type: ['BUY', 'SELL'],
       },
       idempotency_ttl_ms: IDEMPOTENCY_TTL_MS,
-      matchedSubscribers: new Set(matched.map(item => item.userId)).size,
-      deliveries: matched.length,
+      matchedSubscribers,
+      deliveries: successDeliveries,
+      failedDeliveries,
     });
   } catch (error: any) {
     console.error('POST /api/quant/signal-events error:', error);

@@ -695,23 +695,32 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
 
                 <div className="space-y-6">
                     <Card className="border-slate-200 shadow-sm">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold text-slate-800">策略详情</CardTitle>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between gap-2">
+                                <CardTitle className="text-lg font-bold text-slate-800">策略详情</CardTitle>
+                                <div className="flex flex-wrap justify-end gap-1 max-w-[60%]">
+                                    {detail.tags?.map(tag => (
+                                        <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 font-normal border-slate-200 hover:bg-slate-200/80">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-2">
                             <div className="relative group">
                                 <Dialog>
                                     <div className="relative">
-                                        <p className="text-sm text-slate-600 leading-relaxed line-clamp-4 text-justify">
+                                        <p className="text-sm text-slate-600 leading-relaxed line-clamp-3 text-justify">
                                             {detail.description}
                                         </p>
                                         {/* Gradient Overlay for visual cue of truncation */}
-                                        {(detail.description?.length ?? 0) > 100 && (
-                                            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+                                        {(detail.description?.length ?? 0) > 80 && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
                                         )}
                                     </div>
 
-                                    {(detail.description?.length ?? 0) > 100 && (
+                                    {(detail.description?.length ?? 0) > 80 && (
                                         <DialogTrigger asChild>
                                             <Button
                                                 variant="link"
@@ -738,13 +747,6 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                         </div>
                                     </DialogContent>
                                 </Dialog>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {detail.tags?.map(tag => (
-                                    <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 font-normal border-slate-200 hover:bg-slate-200/80">
-                                        {tag}
-                                    </Badge>
-                                ))}
                             </div>
                         </CardContent>
                     </Card>
@@ -774,9 +776,15 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">胜率</p>
+                                <p className="text-[10px] text-slate-500 mb-0.5">日胜率</p>
                                 <p className={cn("text-base font-bold", (detail.winRate ?? 0) >= 50 ? "text-red-500" : "text-slate-800")}>
                                     {detail.winRate !== null && detail.winRate !== undefined ? `${detail.winRate}%` : '--'}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">交易胜率</p>
+                                <p className={cn("text-base font-bold", (detail.tradeWinRate ?? 0) >= 50 ? "text-red-500" : "text-slate-800")}>
+                                    {detail.tradeWinRate !== null && detail.tradeWinRate !== undefined ? `${detail.tradeWinRate}%` : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
@@ -786,15 +794,21 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                 </p>
                             </div>
                             <div className="text-center">
+                                <p className="text-[10px] text-slate-500 mb-0.5">盈利因子</p>
+                                <p className={cn("text-base font-bold", (detail.profitFactor ?? 0) >= 1 ? "text-red-500" : "text-slate-800")}>
+                                    {detail.profitFactor !== null && detail.profitFactor !== undefined ? detail.profitFactor.toFixed(2) : '--'}
+                                </p>
+                            </div>
+                            <div className="text-center">
                                 <p className="text-[10px] text-slate-500 mb-0.5">卡玛比率</p>
                                 <p className="text-base font-bold text-slate-800">
                                     {detail.calmarRatio !== null && detail.calmarRatio !== undefined ? detail.calmarRatio.toFixed(2) : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">交易次数</p>
+                                <p className="text-[10px] text-slate-500 mb-0.5">已平仓交易数</p>
                                 <p className="text-base font-bold text-slate-800">
-                                    {detail.totalTrades !== null && detail.totalTrades !== undefined ? detail.totalTrades : '--'}
+                                    {detail.closedTrades !== null && detail.closedTrades !== undefined ? detail.closedTrades : '--'}
                                 </p>
                             </div>
                             <div className="text-center">

@@ -10,8 +10,11 @@ export type Strategy = {
     maxDrawdown?: number | null;
     sharpeRatio?: number | null;
     winRate?: number | null;
+    tradeWinRate?: number | null;
     calmarRatio?: number | null;
+    profitFactor?: number | null;
     profitLossRatio?: number | null;
+    closedTrades?: number | null;
     totalTrades?: number | null;
     minCapital?: number | null;
     riskLevel?: 'Low' | 'Medium' | 'High' | string;
@@ -137,8 +140,18 @@ export const mapStrategyFromApi = (raw: ApiStrategy): Strategy => {
         maxDrawdown: raw.max_drawdown ?? raw.metrics?.max_drawdown ?? null,
         sharpeRatio: raw.sharpe_ratio ?? raw.metrics?.sharpe_ratio ?? raw.sharpe ?? null,
         winRate: raw.win_rate ?? raw.winRate ?? raw.metrics?.win_rate ?? null,
+        tradeWinRate: raw.trade_win_rate ?? raw.tradeWinRate ?? raw.metrics?.trade_win_rate ?? null,
         calmarRatio: raw.calmar_ratio ?? raw.calmarRatio ?? raw.metrics?.calmar_ratio ?? null,
+        profitFactor: raw.profit_factor ?? raw.profitFactor ?? raw.metrics?.profit_factor ?? null,
         profitLossRatio: raw.profit_loss_ratio ?? raw.profitLossRatio ?? raw.metrics?.profit_loss_ratio ?? null,
+        closedTrades:
+            raw.closed_trades ??
+            raw.closedTrades ??
+            raw.metrics?.closed_trades ??
+            raw.total_trades ??
+            raw.totalTrades ??
+            raw.metrics?.total_trades ??
+            null,
         totalTrades: raw.total_trades ?? raw.totalTrades ?? raw.metrics?.total_trades ?? null,
         minCapital: raw.min_capital ?? raw.minCapital ?? raw.requirement?.min_capital ?? null,
         riskLevel: mapRiskLevel(raw.risk_level ?? raw.riskLevel),
@@ -156,4 +169,3 @@ export const rebaseToZero = (series: { date: string; value: number }[]): { date:
         value: p.value - baseValue
     }));
 };
-

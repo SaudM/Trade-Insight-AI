@@ -191,6 +191,17 @@ export interface Performance {
   date: string;
 }
 
+
+export interface TradeRecord {
+  entry_date: string;
+  entry_price: number;
+  exit_date?: string | null;
+  exit_price?: number | null;
+  exit_reason?: string | null;
+  pnl_pct?: number | null;
+  pnl_amount?: number | null;
+}
+
 export interface Recommendation {
   id?: string;
   symbol: string;
@@ -205,26 +216,7 @@ export interface Recommendation {
   max_track_days: number;
   performance: Performance[];
   has_research_report?: boolean;
-}
-
-export interface ResearchReportAuthor {
-  id: string;
-  name: string;
-}
-
-export interface ResearchReport {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  stocks?: string[]; // Array of symbol strings
-  author?: ResearchReportAuthor;
-}
-
-export interface ResearchReportStock {
-  reportId: string;
-  symbol: string;
+  trade_record?: TradeRecord | null;
 }
 
 export interface HeatmapData {
@@ -232,4 +224,5 @@ export interface HeatmapData {
   max_track_days: number;
   data: Recommendation[];
 }
+
 
