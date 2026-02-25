@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic';
 type SignalEvent = 'BUY' | 'SELL';
 const EVENT_VERSION_DEFAULT = 'v1';
 const IDEMPOTENCY_TTL_MS = 6 * 60 * 60 * 1000;
+const BRAND_NAME = '福利复盘 Trade Insight AI';
+const BRAND_URL = 'https://fupan.fulitimes.com/';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -104,6 +106,55 @@ function buildSignalText(message: Record<string, any>): string {
   ].join('\n');
 }
 
+function buildFeishuPostContent(message: Record<string, any>) {
+  const isBuy = message.signalType === 'BUY';
+  const actionLabel = isBuy ? '买入' : '卖出';
+  const symbolText = `${message.assetName ?? ''} ${message.symbol ?? '-'}`.trim();
+  const priceLabel = isBuy ? '买入参考' : '卖出参考';
+  const priceText = message.price !== undefined ? String(message.price) : '-';
+  const scoreText = message.score !== undefined ? String(message.score) : '-';
+  const stopLossText = message.stopLossRef !== undefined ? String(message.stopLossRef) : '-';
+  const occurredAtRaw = String(message.occurredAt ?? '-');
+  const occurredAtText = occurredAtRaw.length >= 10 ? occurredAtRaw.slice(0, 10) : occurredAtRaw;
+
+  return {
+    post: {
+      zh_cn: {
+        title: `【${actionLabel}】${symbolText}`,
+        content: [
+          [
+            { tag: 'text', text: `信号解读：【${actionLabel}】` },
+          ],
+          [
+            { tag: 'text', text: `标的：${symbolText}` },
+          ],
+          [
+            { tag: 'text', text: `评分：${scoreText}` },
+          ],
+          [
+            { tag: 'text', text: `${priceLabel}：${priceText}` },
+          ],
+          [
+            { tag: 'text', text: `止损参考：${stopLossText}` },
+          ],
+          [
+            { tag: 'text', text: `触发时间(UTC)：${occurredAtText}` },
+          ],
+          [
+            { tag: 'text', text: '风险提示：策略信号仅供参考，不构成投资建议；请结合仓位管理与止损规则独立决策。' },
+          ],
+          [
+            { tag: 'text', text: `推送来源：${BRAND_NAME} 策略引擎` },
+          ],
+          [
+            { tag: 'a', text: '查看完整策略与订阅设置', href: BRAND_URL },
+          ],
+        ],
+      },
+    },
+  };
+}
+
 async function postJson(url: string, body: Record<string, any>) {
   const res = await fetch(url, {
     method: 'POST',
@@ -121,10 +172,8 @@ async function dispatchToChannel(channel: string, target: string, message: Recor
 
   if (channelType === 'feishu') {
     await postJson(target, {
-      msg_type: 'text',
-      content: {
-        text: buildSignalText(message),
-      },
+      msg_type: 'post',
+      content: buildFeishuPostContent(message),
     });
     return;
   }
@@ -211,6 +260,9 @@ export async function POST(request: NextRequest) {
     const nowMs = Date.now();
     const idempotencyStore = getIdempotencyMap();
     pruneIdempotencyMap(idempotencyStore, nowMs);
+    // TEST MODE:
+    // Temporarily disable idempotency short-circuit for end-to-end verification.
+    // Re-enable this block before production.
     const firstSeenAtMs = idempotencyStore.get(eventId);
     if (firstSeenAtMs) {
       const duplicateAgeSeconds = Math.floor((nowMs - firstSeenAtMs) / 1000);
