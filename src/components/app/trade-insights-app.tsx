@@ -35,8 +35,14 @@ import { CustomerServiceModal } from './customer-service-modal';
 
 export function TradeInsightsApp() {
   const searchParams = useSearchParams();
-  // 从URL参数初始化视图，如果参数无效或不存在则默认为 'dashboard'
-  const initialView = (searchParams.get('view') as View) || 'dashboard';
+  // 从 URL 初始化视图：显式 view 优先；若带策略直达参数则默认进入量化中心。
+  const initialView = useMemo<View>(() => {
+    const explicitView = searchParams.get('view') as View | null;
+    if (explicitView) return explicitView;
+    const strategyFromLink = searchParams.get('strategy') || searchParams.get('strategy_key');
+    if (strategyFromLink) return 'recommendations';
+    return 'dashboard';
+  }, [searchParams]);
 
   const [activeView, setActiveView] = useState<View>(initialView);
   const { user } = useFirebase();

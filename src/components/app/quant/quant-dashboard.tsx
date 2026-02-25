@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,14 @@ import { SignalMonitor } from './signal-monitor';
 import { AppHeader } from '../header';
 
 export function QuantDashboard() {
-    const [activeTab, setActiveTab] = useState('strategies');
+    const searchParams = useSearchParams();
+    const deepLinkStrategyId = searchParams.get('strategy') || searchParams.get('strategy_key');
+    const deepLinkTab = searchParams.get('quant_tab');
+    const initialTab = deepLinkStrategyId
+        ? 'strategies'
+        : (deepLinkTab === 'overview' || deepLinkTab === 'strategies' ? deepLinkTab : 'strategies');
+
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [activeStrategyConfig, setActiveStrategyConfig] = useState<FollowConfig | null>(null);
 
     const handleFollowStrategy = (config: FollowConfig) => {
@@ -46,6 +54,7 @@ export function QuantDashboard() {
                         <StrategyConfig
                             onFollowStrategy={handleFollowStrategy}
                             activeStrategyId={activeStrategyConfig?.strategyId}
+                            initialStrategyId={deepLinkStrategyId}
                         />
                     </TabsContent>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,15 +24,17 @@ const LIST_ENDPOINT = `${API_BASE}/strategies?period=1y`;
 interface StrategyConfigProps {
     onFollowStrategy: (config: FollowConfig) => void;
     activeStrategyId?: string | null;
+    initialStrategyId?: string | null;
 }
 
 
-export function StrategyConfig({ onFollowStrategy, activeStrategyId }: StrategyConfigProps) {
+export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStrategyId }: StrategyConfigProps) {
     const { toast } = useToast();
     const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
     const [strategies, setStrategies] = useState<Strategy[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const hasHandledInitialStrategyRef = useRef(false);
 
     useEffect(() => {
         fetchStrategies();
@@ -71,6 +73,26 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId }: StrategyC
         if (isLoading) return [];
         return [];
     }, [strategies, isLoading]);
+
+    useEffect(() => {
+        if (hasHandledInitialStrategyRef.current) return;
+        if (!initialStrategyId) return;
+        if (!strategies.length) return;
+
+        const target = strategies.find((s) => s.id === initialStrategyId);
+        hasHandledInitialStrategyRef.current = true;
+
+        if (target) {
+            setSelectedStrategy(target);
+            return;
+        }
+
+        toast({
+            title: '未找到策略',
+            description: `策略 ${initialStrategyId} 不存在或暂未上线`,
+            variant: 'destructive',
+        });
+    }, [initialStrategyId, strategies, toast]);
 
     if (selectedStrategy) {
         return (

@@ -116,6 +116,16 @@ function buildFeishuPostContent(message: Record<string, any>) {
   const stopLossText = message.stopLossRef !== undefined ? String(message.stopLossRef) : '-';
   const occurredAtRaw = String(message.occurredAt ?? '-');
   const occurredAtText = occurredAtRaw.length >= 10 ? occurredAtRaw.slice(0, 10) : occurredAtRaw;
+  const strategyLinkUrl = (() => {
+    const strategy = String(message.strategyKey ?? '').trim();
+    if (!strategy) return BRAND_URL;
+    const q = new URLSearchParams({
+      view: 'recommendations',
+      quant_tab: 'strategies',
+      strategy,
+    });
+    return `${BRAND_URL}?${q.toString()}`;
+  })();
 
   return {
     post: {
@@ -147,7 +157,7 @@ function buildFeishuPostContent(message: Record<string, any>) {
             { tag: 'text', text: `推送来源：${BRAND_NAME} 策略引擎` },
           ],
           [
-            { tag: 'a', text: '查看完整策略与订阅设置', href: BRAND_URL },
+            { tag: 'a', text: '查看完整策略与订阅设置', href: strategyLinkUrl },
           ],
         ],
       },
