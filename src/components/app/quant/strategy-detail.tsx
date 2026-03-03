@@ -631,7 +631,14 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                     <Tooltip
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                         labelFormatter={(value) => formatTick(value as string)}
-                                        formatter={(value: number) => [`${value}%`, '收益率']}
+                                        formatter={(value: number, name: string) => {
+                                            const labelMap: Record<string, string> = {
+                                                '策略': '策略收益',
+                                                '超额': '超额收益',
+                                                '沪深300': '沪深300'
+                                            };
+                                            return [`${value}%`, labelMap[name] || name];
+                                        }}
                                     />
                                     <Area
                                         type="monotone"
