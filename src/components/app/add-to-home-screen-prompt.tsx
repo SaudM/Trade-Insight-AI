@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Share, Plus, MoreVertical, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { trackEvent } from '@/lib/tracking';
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -59,6 +60,7 @@ export function AddToHomeScreenPrompt() {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
             setShowPrompt(true);
+            trackEvent('a2hs_prompt_show', { platform: 'android' });
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -66,7 +68,10 @@ export function AddToHomeScreenPrompt() {
         // iOS: 直接显示提示（iOS 不支持 beforeinstallprompt）
         if (isIOSDevice) {
             // 延迟显示，让用户先看到页面内容
-            const timer = setTimeout(() => setShowPrompt(true), 3000);
+            const timer = setTimeout(() => {
+                setShowPrompt(true);
+                trackEvent('a2hs_prompt_show', { platform: 'ios' });
+            }, 3000);
             return () => clearTimeout(timer);
         }
 
@@ -74,6 +79,7 @@ export function AddToHomeScreenPrompt() {
         const fallbackTimer = setTimeout(() => {
             if (!deferredPrompt) {
                 setShowPrompt(true);
+                trackEvent('a2hs_prompt_show', { platform: 'android' });
             }
         }, 3000);
 
@@ -84,6 +90,8 @@ export function AddToHomeScreenPrompt() {
     }, [deferredPrompt]);
 
     const handleInstall = async () => {
+        trackEvent('a2hs_install_click', { platform: isIOS ? 'ios' : 'android' });
+
         if (deferredPrompt) {
             // Android: 使用原生安装提示
             await deferredPrompt.prompt();
@@ -97,6 +105,7 @@ export function AddToHomeScreenPrompt() {
     };
 
     const handleDismiss = () => {
+        trackEvent('a2hs_dismiss', { platform: isIOS ? 'ios' : 'android' });
         setShowPrompt(false);
         localStorage.setItem('a2hs-dismissed', Date.now().toString());
     };

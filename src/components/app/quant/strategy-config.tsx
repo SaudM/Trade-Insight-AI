@@ -17,6 +17,8 @@ import {
     mapStrategyFromApi
 } from '@/lib/strategy-utils';
 
+export type { FollowConfig };
+
 const API_BASE = '/api';
 // 默认拉取最近一年的收益率曲线
 const LIST_ENDPOINT = `${API_BASE}/strategies?period=1y`;

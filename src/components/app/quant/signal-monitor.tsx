@@ -12,6 +12,7 @@ import { Loader2, Calendar as CalendarIcon, Filter, Info, ChevronRight, ArrowUpD
 import { format, subDays } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { cn, getXueqiuUrl } from '@/lib/utils';
+import { trackEvent } from '@/lib/tracking';
 import type { Recommendation, HeatmapData } from '@/lib/types';
 import {
     Popover,
@@ -80,6 +81,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
             const result = await response.json();
             if (result.data && result.data.length > 0) {
                 setSelectedReport(result.data[0]);
+                trackEvent('view_research_report', { symbol });
             } else {
                 toast({ title: '暂无报告', description: `未找到 ${symbol} 的详情调研报告。` });
             }
@@ -128,15 +130,24 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
     }, [signalDate, strategyId]);
 
     const handleSort = (field: SortField) => {
+        let newDir: SortDirection = null;
         if (sortField === field) {
-            if (sortDirection === 'desc') setSortDirection('asc');
+            if (sortDirection === 'desc') newDir = 'asc';
             else if (sortDirection === 'asc') {
-                setSortField(null);
-                setSortDirection(null);
+                newDir = null;
             }
         } else {
-            setSortField(field);
-            setSortDirection('desc');
+            newDir = 'desc';
+        }
+
+        setSortField(newDir === null ? null : field);
+        setSortDirection(newDir);
+
+        if (newDir !== null && field !== null) {
+            trackEvent('sort_signal_table', {
+                sort_field: field.toString(),
+                sort_direction: newDir
+            });
         }
     };
 
@@ -248,8 +259,10 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                     selected={signalDate ? new Date(signalDate) : undefined}
                                     onSelect={(date) => {
                                         if (date) {
-                                            setSignalDate(format(date, 'yyyy-MM-dd'));
+                                            const formattedStr = format(date, 'yyyy-MM-dd');
+                                            setSignalDate(formattedStr);
                                             setIsCalendarOpen(false);
+                                            trackEvent('filter_signal_date', { selected_date: formattedStr, is_latest: false });
                                         }
                                     }}
                                     disabled={(date) => {
@@ -268,7 +281,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                 />
                             </PopoverContent>
                         </Popover>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-slate-500 hover:text-primary" onClick={goLatest}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-slate-500 hover:text-primary" onClick={() => { goLatest(); trackEvent('filter_signal_date', { selected_date: 'latest', is_latest: true }); }}>
                             <RotateCcw className="h-3 w-3 mr-1" />
                             最新
                         </Button>
@@ -352,7 +365,10 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                         rel="noopener noreferrer"
                                                         className="font-bold text-slate-900 hover:text-primary hover:underline transition-all text-sm block"
                                                         title="点击查看雪球行情"
-                                                        onClick={(e) => e.stopPropagation()}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            trackEvent('view_stock_detail', { symbol: rec.symbol, stock_name: rec.name, signal_type: rec.signal_type });
+                                                        }}
                                                     >
                                                         {rec.name}
                                                     </a>
@@ -368,7 +384,11 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                         </a>
                                                         {rec.related_hot_board && (
                                                             <TooltipProvider delayDuration={100}>
-                                                                <Tooltip>
+                                                                <Tooltip onOpenChange={(open) => {
+                                                                    if (open && rec.related_hot_board) {
+                                                                        trackEvent('hover_hot_board', { board_name: rec.related_hot_board, board_score: rec.board_strength_score || 0 });
+                                                                    }
+                                                                }}>
                                                                     <TooltipTrigger asChild>
                                                                         <span className={cn(
                                                                             "inline-flex items-center gap-0.5 text-[9px] font-medium cursor-pointer hover:opacity-80 transition-opacity",
@@ -468,7 +488,11 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                 {rec.trade_record && (
                                                     <div className="absolute top-1 right-1 z-10">
                                                         <TooltipProvider delayDuration={0}>
-                                                            <Tooltip>
+                                                            <Tooltip onOpenChange={(open) => {
+                                                                if (open) {
+                                                                    trackEvent('hover_trade_record', { record_type: 'entry', symbol: rec.symbol });
+                                                                }
+                                                            }}>
                                                                 <TooltipTrigger asChild>
                                                                     <div className="h-2.5 w-2.5 rounded-full cursor-pointer bg-blue-400 shadow-md ring-2 ring-white shadow-blue-200" />
                                                                 </TooltipTrigger>
@@ -537,7 +561,11 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                         {isExitDate && rec.trade_record && (
                                                             <div className="absolute top-1 right-1 z-10">
                                                                 <TooltipProvider delayDuration={0}>
-                                                                    <Tooltip>
+                                                                    <Tooltip onOpenChange={(open) => {
+                                                                        if (open && rec.trade_record) {
+                                                                            trackEvent('hover_trade_record', { record_type: 'exit', symbol: rec.symbol, pnl_pct: rec.trade_record.pnl_pct ?? undefined });
+                                                                        }
+                                                                    }}>
                                                                         <TooltipTrigger asChild>
                                                                             <div className={cn(
                                                                                 "h-2.5 w-2.5 rounded-full cursor-pointer animate-pulse shadow-md ring-2 ring-white",

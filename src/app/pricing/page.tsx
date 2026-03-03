@@ -1,6 +1,6 @@
 
 "use client";
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Sparkles, ChevronRight, Gift } from "lucide-react";
 import Link from "next/link";
@@ -22,6 +22,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
 import { useUserData } from '@/hooks/use-user-data';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { trackEvent } from '@/lib/tracking';
 
 const pricingPlans: PricingPlan[] = [
     {
@@ -112,6 +113,11 @@ export default function PricingPage() {
     // 使用后端返回的试用用户状态，确保数据一致性
     const isTrialUser = userData?.isTrialUser || false;
 
+    // View pricing page event
+    React.useEffect(() => {
+        trackEvent('view_pricing_page', { source: 'organic' });
+    }, []);
+
 
     const handleActivateTrial = async () => {
         if (!user) return;
@@ -135,6 +141,8 @@ export default function PricingPage() {
 
 
     const handleSubscribe = async (plan: PricingPlan) => {
+        trackEvent('click_subscribe', { plan_id: plan.id, price: plan.price, is_popular: !!plan.isPopular });
+
         if (!user) {
             toast({
                 title: "请先登录",
@@ -165,6 +173,8 @@ export default function PricingPage() {
             }
 
             if (result.paymentUrl && result.outTradeNo) {
+                trackEvent('create_payment_order', { plan_id: plan.id, trade_type: tradeType, out_trade_no: result.outTradeNo });
+
                 if (tradeType === 'NATIVE') {
                     setQrCodeUrl(result.paymentUrl);
                     pollStatus(result.outTradeNo, plan.id);
@@ -287,6 +297,7 @@ export default function PricingPage() {
                         });
 
                         toast({ title: '支付成功', description: '您的订阅已生效。即将跳转到个人中心...' });
+                        trackEvent('payment_success', { plan_id: planId, price: pricingPlans.find(p => p.id === planId)?.price || 0, currency: 'CNY' });
                         setTimeout(() => router.push('/'), 2000);
                         return; // 成功处理，退出轮询
                     } catch (error) {
@@ -296,6 +307,7 @@ export default function PricingPage() {
                             title: '激活失败',
                             description: '支付成功但激活订阅时出错，请联系客服。'
                         });
+                        trackEvent('payment_error', { plan_id: planId, error_message: error instanceof Error ? error.message : 'Unknown activate error', error_type: 'activate_failed' });
                         return; // 激活失败，退出轮询
                     }
                 } else if (data.trade_state === 'CLOSED' || data.trade_state === 'REVOKED') {
@@ -312,6 +324,7 @@ export default function PricingPage() {
                         title: '订单已取消',
                         description: '订单已被取消，请重新尝试订阅。'
                     });
+                    trackEvent('payment_cancelled', { plan_id: planId, reason: data.trade_state });
                     return;
                 }
 
@@ -334,6 +347,7 @@ export default function PricingPage() {
                     title: '支付超时',
                     description: '订单已超时，请重新尝试订阅。如已支付，请联系客服。'
                 });
+                trackEvent('payment_error', { plan_id: planId, error_message: 'Polling timeout after max attempts', error_type: 'poll_timeout' });
                 return;
             }
 
@@ -365,6 +379,11 @@ export default function PricingPage() {
         if (pollingIntervalId) {
             clearTimeout(pollingIntervalId); // 使用clearTimeout替代clearInterval
             setPollingIntervalId(null);
+
+            // Assume the user cancelled it if there is a pending plan being loaded
+            if (typeof isLoading === 'string' && isLoading !== 'trial') {
+                trackEvent('payment_cancelled', { plan_id: isLoading, reason: 'user_closed_qr' });
+            }
         }
         setIsLoading(null);
         setQrCodeUrl(null);

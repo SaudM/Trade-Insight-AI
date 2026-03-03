@@ -18,8 +18,14 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { trackEvent } from '@/lib/tracking';
+import { useEffect } from 'react';
 
 export function LandingPage() {
+  useEffect(() => {
+    trackEvent('view_landing_page', { source: 'direct' });
+  }, []);
+
   return (
     <div
       className="relative min-h-screen overflow-hidden"
@@ -127,6 +133,7 @@ export function LandingPage() {
           </Link>
           <Link href="/signup">
             <button
+              onClick={() => trackEvent('click_cta', { button_name: 'nav_signup', target_url: '/signup' })}
               className="cursor-pointer whitespace-nowrap text-sm font-semibold px-4 py-2 rounded-lg transition-all hover:opacity-85 hover:scale-105"
               style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: '#fff' }}
             >
@@ -180,6 +187,7 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8 mb-14">
             <Link href="/signup">
               <button
+                onClick={() => trackEvent('click_cta', { button_name: 'hero_start_free', target_url: '/signup' })}
                 className="cursor-pointer group inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98] whitespace-nowrap"
                 style={{
                   background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
@@ -194,6 +202,7 @@ export function LandingPage() {
 
             <Link href="/login">
               <button
+                onClick={() => trackEvent('click_cta', { button_name: 'hero_login', target_url: '/login' })}
                 className="cursor-pointer inline-flex items-center gap-1.5 px-7 py-3 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] whitespace-nowrap"
                 style={{
                   background: 'rgba(255,255,255,0.04)',
@@ -481,6 +490,7 @@ export function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-2">
               <Link href="/signup">
                 <button
+                  onClick={() => trackEvent('click_cta', { button_name: 'footer_signup', target_url: '/signup' })}
                   className="cursor-pointer group inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98] whitespace-nowrap"
                   style={{
                     background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',

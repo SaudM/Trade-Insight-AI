@@ -225,4 +225,19 @@ export interface HeatmapData {
   data: Recommendation[];
 }
 
+export interface ResearchReportAuthor {
+  id: string;
+  name: string;
+}
+
+export interface ResearchReport {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  stocks?: string[];
+  author?: ResearchReportAuthor;
+}
+
 

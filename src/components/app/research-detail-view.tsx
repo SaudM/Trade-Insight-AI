@@ -14,6 +14,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { trackEvent } from '@/lib/tracking';
 import type { ResearchReport } from '@/lib/types';
 
 interface ResearchDetailViewProps {
@@ -74,10 +75,12 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
             // Try native share first (works on mobile and some desktop browsers)
             if (navigator.share && navigator.canShare?.(shareData)) {
                 await navigator.share(shareData);
+                trackEvent('share_research_report', { symbol: report.stocks?.[0] || 'unknown', report_title: report.title, share_method: 'native_share' });
                 toast({ title: '分享成功' });
             } else {
                 // Fallback: copy link to clipboard
                 await navigator.clipboard.writeText(shareUrl);
+                trackEvent('share_research_report', { symbol: report.stocks?.[0] || 'unknown', report_title: report.title, share_method: 'copy_link' });
                 toast({
                     title: '链接已复制',
                     description: '研报链接已复制到剪贴板，可直接粘贴分享。'
@@ -88,6 +91,7 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
                 // Try clipboard as last resort
                 try {
                     await navigator.clipboard.writeText(shareUrl);
+                    trackEvent('share_research_report', { symbol: report.stocks?.[0] || 'unknown', report_title: report.title, share_method: 'copy_link' });
                     toast({
                         title: '链接已复制',
                         description: '研报链接已复制到剪贴板。'
@@ -104,6 +108,8 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
     };
 
     const handleDownloadPDF = () => {
+        trackEvent('download_research_pdf', { symbol: report.stocks?.[0] || 'unknown', report_title: report.title });
+
         // Create a new window with the report content and trigger print dialog
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
