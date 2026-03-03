@@ -429,8 +429,8 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
     return (
         <div className="space-y-6">
             {/* Header / Navigation - Responsive Layout */}
-            <div className="flex flex-col gap-3">
-                {/* Row 1: Back + Title + Badges */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                {/* Back + Title + Badges */}
                 <div className="flex items-center gap-3">
                     <Button variant="outline" size="icon" onClick={onBack} className="h-8 w-8 rounded-full shrink-0">
                         <ArrowLeft className="h-4 w-4" />
@@ -451,8 +451,8 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                     </div>
                 </div>
 
-                {/* Row 2: Action Buttons - Full width on mobile */}
-                <div className="flex items-center gap-2 ml-0 md:ml-11">
+                {/* Action Buttons - Full width & uniform spacing on mobile */}
+                <div className="flex w-full md:w-auto items-center gap-2 shrink-0">
                     <Dialog open={isSignalDialogOpen} onOpenChange={setIsSignalDialogOpen}>
                         <Button
                             variant="outline"
