@@ -43,6 +43,20 @@ const FASTAPI_BASE = process.env.NEXT_PUBLIC_FASTAPI_BASE || 'http://localhost:8
 type SortField = 'signal_type' | 'score' | number | null; // number represents t_day
 type SortDirection = 'asc' | 'desc' | null;
 
+/** 卖出理由：后端枚举值 → 用户可读中文 */
+const EXIT_REASON_LABELS: Record<string, string> = {
+    STOP_LOSS: '止损卖出',
+    TAKE_PROFIT: '止盈卖出',
+    EXPIRED: '到期卖出',
+    BREAK_EVEN: '保本卖出',
+    LAGGARD: '表现不佳卖出',
+    TRAILING_STOP: '追踪止损',
+    SIGNAL_REVERSED: '信号反转',
+    MANUAL: '手动卖出',
+};
+const getExitReasonLabel = (reason?: string | null) =>
+    reason ? (EXIT_REASON_LABELS[reason] ?? reason) : '-';
+
 interface SignalMonitorProps {
     strategyId?: string | null;
 }
@@ -551,10 +565,7 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                                                         <div className="flex flex-col gap-0.5 col-span-2 mt-1">
                                                                                             <span className="text-slate-400 scale-90 origin-left">卖出理由</span>
                                                                                             <span className="font-medium text-slate-700">
-                                                                                                {rec.trade_record.exit_reason === 'STOP_LOSS' ? '止损卖出' :
-                                                                                                    rec.trade_record.exit_reason === 'TAKE_PROFIT' ? '止盈卖出' :
-                                                                                                        rec.trade_record.exit_reason === 'EXPIRED' ? '到期卖出' :
-                                                                                                            rec.trade_record.exit_reason || '-'}
+                                                                                                {getExitReasonLabel(rec.trade_record.exit_reason)}
                                                                                             </span>
                                                                                         </div>
                                                                                     </div>
