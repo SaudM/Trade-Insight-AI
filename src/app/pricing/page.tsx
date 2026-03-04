@@ -105,6 +105,26 @@ export default function PricingPage() {
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
     const [processedPayments, setProcessedPayments] = useState<Set<string>>(new Set());
+    const [dynamicQuarterlyPrice, setDynamicQuarterlyPrice] = useState<number>(0.01);
+
+    React.useEffect(() => {
+        // 全局统一活动开始时间：2026年3月1日 00:00:00 (北京时间)
+        const GLOBAL_START_TIME = new Date('2026-03-01T00:00:00+08:00').getTime();
+
+        const updatePrice = () => {
+            const now = Date.now();
+            const secondsPassed = Math.max(0, (now - GLOBAL_START_TIME) / 1000);
+            let newPrice = 0.01 + secondsPassed * 0.000004;
+            if (newPrice >= 39) {
+                newPrice = 39;
+            }
+            setDynamicQuarterlyPrice(newPrice);
+        };
+
+        updatePrice();
+        const interval = setInterval(updatePrice, 100);
+        return () => clearInterval(interval);
+    }, []);
 
     // --- User Data from PostgreSQL (with Firebase fallback) ---
     const { userData, isLoading: isLoadingUserData } = useUserData();
@@ -141,7 +161,11 @@ export default function PricingPage() {
 
 
     const handleSubscribe = async (plan: PricingPlan) => {
-        trackEvent('click_subscribe', { plan_id: plan.id, price: plan.price, is_popular: !!plan.isPopular });
+        const roundedPrice = plan.id === 'quarterly'
+            ? Math.round(dynamicQuarterlyPrice * 100) / 100
+            : plan.price;
+
+        trackEvent('click_subscribe', { plan_id: plan.id, price: roundedPrice, is_popular: !!plan.isPopular });
 
         if (!user) {
             toast({
@@ -161,7 +185,7 @@ export default function PricingPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     planId: plan.id,
-                    price: plan.price,
+                    price: roundedPrice,
                     userId: user.uid,
                     tradeType,
                 }),
@@ -177,7 +201,7 @@ export default function PricingPage() {
 
                 if (tradeType === 'NATIVE') {
                     setQrCodeUrl(result.paymentUrl);
-                    pollStatus(result.outTradeNo, plan.id);
+                    pollStatus(result.outTradeNo, plan.id, roundedPrice);
                 } else if (tradeType === 'H5') {
                     window.location.href = result.paymentUrl;
                 }
@@ -207,7 +231,7 @@ export default function PricingPage() {
      * 智能支付状态检测
      * 使用动态间隔和指数退避算法，结合微信推送消息提高实时性
      */
-    const pollStatus = (outTradeNo: string, planId: PricingPlan['id']) => {
+    const pollStatus = (outTradeNo: string, planId: PricingPlan['id'], paymentAmount: number) => {
         let attempts = 0;
         let consecutiveErrors = 0;
         const maxAttempts = 40; // 总共约5分钟
@@ -270,7 +294,7 @@ export default function PricingPage() {
                                 userId: user.uid,
                                 planId,
                                 paymentId: data.transaction_id,
-                                amount: pricingPlans.find(p => p.id === planId)?.price || 0
+                                amount: paymentAmount
                             })
                         });
 
@@ -297,7 +321,7 @@ export default function PricingPage() {
                         });
 
                         toast({ title: '支付成功', description: '您的订阅已生效。即将跳转到个人中心...' });
-                        trackEvent('payment_success', { plan_id: planId, price: pricingPlans.find(p => p.id === planId)?.price || 0, currency: 'CNY' });
+                        trackEvent('payment_success', { plan_id: planId, price: paymentAmount, currency: 'CNY' });
                         setTimeout(() => router.push('/'), 2000);
                         return; // 成功处理，退出轮询
                     } catch (error) {
@@ -443,19 +467,34 @@ export default function PricingPage() {
                         </div>
                     ) : (
                         <div className="my-6 text-center h-[90px]">
-                            <span className="text-5xl font-bold">¥{plan.price}</span>
-                            <span className="text-gray-500">{plan.duration}</span>
-                            <div className="h-6 mt-1">
-                                <span className="text-sm text-gray-500 line-through">原价 ¥{plan.originalPrice}</span>
-                                {(() => {
-                                    let days = 30;
-                                    if (plan.id === 'quarterly') days = 90;
-                                    if (plan.id === 'semi_annually') days = 180;
-                                    if (plan.id === 'annually') days = 365;
-                                    const dailyPrice = plan.price / days;
-                                    return <span className="ml-2 text-sm text-orange-600 font-semibold"> (折合 ¥{dailyPrice.toFixed(2)}/天)</span>;
-                                })()}
-                            </div>
+                            {plan.id === 'quarterly' ? (
+                                <>
+                                    <div className="flex items-baseline justify-center gap-1">
+                                        <span className="text-3xl font-bold font-mono tracking-tighter" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                            ¥{dynamicQuarterlyPrice < 39 ? dynamicQuarterlyPrice.toFixed(6) : "39.00"}
+                                        </span>
+                                    </div>
+                                    <span className="text-gray-500">{plan.duration}</span>
+                                    <div className="h-6 mt-1 flex flex-col items-center justify-center">
+                                        <span className="text-xs text-orange-600 font-semibold animate-pulse">随时间涨价！(实际支付四舍五入)</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-5xl font-bold">¥{plan.price}</span>
+                                    <span className="text-gray-500">{plan.duration}</span>
+                                    <div className="h-6 mt-1">
+                                        <span className="text-sm text-gray-500 line-through">原价 ¥{plan.originalPrice}</span>
+                                        {(() => {
+                                            let days = 30;
+                                            if (plan.id === 'semi_annually') days = 180;
+                                            if (plan.id === 'annually') days = 365;
+                                            const dailyPrice = plan.price / days;
+                                            return <span className="ml-2 text-sm text-orange-600 font-semibold"> (折合 ¥{dailyPrice.toFixed(2)}/天)</span>;
+                                        })()}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
