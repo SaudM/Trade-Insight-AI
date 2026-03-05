@@ -85,18 +85,13 @@ export function TradeInsightsApp() {
 
   // --- 用户验证辅助函数 ---
   const validateUser = (): boolean => {
-    if (!user) {
-      toast({ variant: 'destructive', title: "未登录", description: "请先登录。" });
-      return false;
-    }
-
     if (isLoadingUserData) {
       toast({ variant: 'destructive', title: "请稍候", description: "正在加载用户数据，请稍后再试。" });
       return false;
     }
 
     if (!userData?.user) {
-      toast({ variant: 'destructive', title: "用户错误", description: "用户数据未找到，请重新登录。" });
+      toast({ variant: 'destructive', title: "未登录", description: "请先登录。" });
       return false;
     }
 
@@ -223,7 +218,7 @@ export function TradeInsightsApp() {
   };
 
   const deleteTradeLog = async (id: string) => {
-    if (!user || !userData?.user?.id) return;
+    if (!userData?.user?.id) return;
     try {
       const response = await fetch(`/api/trade-logs/${id}?userId=${userData.user.id}`, {
         method: 'DELETE',
