@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -94,6 +95,18 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
     // Dynamic strategy state
     const [activeStrategy, setActiveStrategy] = useState<Strategy>(strategy);
     const [isFetching, setIsFetching] = useState(false);
+
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const shouldScroll = searchParams?.get('scroll_to_bottom') === '1' || searchParams?.get('scroll_to_bottom') === 'true';
+        if (shouldScroll && bottomRef.current) {
+            setTimeout(() => {
+                bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+    }, [searchParams]);
 
     const detail = useMemo(() => activeStrategy, [activeStrategy]);
     const systemUserId = userData?.user?.id ?? '';
@@ -838,6 +851,8 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                 <div className="h-[600px] border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
                     <SignalMonitor strategyId={detail.id} />
                 </div>
+                {/* Auto-scroll target */}
+                <div ref={bottomRef} />
             </div>
         </div>
     );
