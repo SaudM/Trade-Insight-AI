@@ -10,8 +10,6 @@ PLATFORM="linux/amd64"
 
 # --- 脚本逻辑 ---
 
-export DOCKER_API_VERSION=1.42
-
 # 1. 确保本地编译为 AMD64 架构
 echo "🚀 1/4: 正在本地构建跨平台镜像 ($PLATFORM)..."
 docker buildx build --platform $PLATFORM -t ${IMAGE_NAME}:${TAG} --load .
