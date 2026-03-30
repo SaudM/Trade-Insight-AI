@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -15,6 +16,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useUserData } from '@/hooks/use-user-data';
 import { SignalMonitor } from './signal-monitor';
+import { StrategyPositions } from './strategy-positions';
+import { StrategyTrades } from './strategy-trades';
 import {
     type Strategy,
     type FollowConfig,
@@ -79,6 +82,24 @@ const createDefaultSubscription = (strategyId: string): SignalSubscriptionConfig
     channels: CHANNEL_DEFS.map(def => ({ type: def.type, enabled: false, target: '' })),
 });
 
+interface FundHistoryPoint {
+    date: string;
+    cash_ratio: number;
+    invested_ratio: number;
+    position_count: number;
+    nav_absolute: number;
+}
+
+interface FundCurrentData {
+    date: string;
+    nav_absolute: number;
+    cash: number;
+    invested_value: number;
+    position_count: number;
+    cash_ratio: number;
+    invested_ratio: number;
+}
+
 export function StrategyDetail({ strategy, onBack, onFollow, isActive }: StrategyDetailProps) {
     const { toast } = useToast();
     const { userData, isLoading: isUserLoading } = useUserData();
@@ -95,6 +116,14 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
     // Dynamic strategy state
     const [activeStrategy, setActiveStrategy] = useState<Strategy>(strategy);
     const [isFetching, setIsFetching] = useState(false);
+
+    // Fund status state
+    const [fundHistory, setFundHistory] = useState<FundHistoryPoint[]>([]);
+    const [fundCurrent, setFundCurrent] = useState<FundCurrentData | null>(null);
+
+    // Secondary-panel state
+    const [isPositionsOpen, setIsPositionsOpen] = useState(false);
+    const [isTradesOpen, setIsTradesOpen] = useState(false);
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
@@ -175,6 +204,25 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
         }
     }, [range, strategy.id, toast]);
 
+    // Fetch fund status in sync with range changes
+    useEffect(() => {
+        const fetchFundStatus = async () => {
+            try {
+                const res = await fetch(
+                    `/api/strategies/${encodeURIComponent(strategy.id)}/fund-status?period=${range}`,
+                    { cache: 'no-store' }
+                );
+                if (!res.ok) return;
+                const payload = await res.json();
+                setFundHistory(payload.history ?? []);
+                setFundCurrent(payload.current ?? null);
+            } catch (e) {
+                console.warn('Failed to fetch fund status:', e);
+            }
+        };
+        fetchFundStatus();
+    }, [strategy.id, range]);
+
     useEffect(() => {
         // keep capital in sync when minCapital increases
         if (detail.minCapital && detail.minCapital > capital) {
@@ -240,14 +288,29 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
         return rebaseToZero(filtered);
     }, [detail.excessPerformanceData, range]);
 
+    const filteredFundHistory = useMemo(() => {
+        if (!fundHistory.length || range === 'all') return fundHistory;
+        const dates = fundHistory.map(h => new Date(h.date).getTime());
+        const latest = new Date(Math.max(...dates));
+        let start: Date;
+        switch (range) {
+            case '1y': start = subYears(latest, 1); break;
+            case '6m': start = subMonths(latest, 6); break;
+            case '3m': start = subMonths(latest, 3); break;
+            case '1m': start = subMonths(latest, 1); break;
+            default: start = subYears(latest, 5);
+        }
+        return fundHistory.filter(h => isAfter(new Date(h.date), addDays(start, -1)));
+    }, [fundHistory, range]);
+
+    // Chart 1 data: performance only — fund data kept separate to avoid date-key mismatch
     const mergedChartData = useMemo(() => {
         const map = new Map<string, { date: string; strategy?: number; benchmark?: number; excess?: number }>();
         const push = (arr: { date: string; value: number }[], key: 'strategy' | 'benchmark' | 'excess') => {
             arr.forEach(p => {
                 const d = p.date;
                 if (!map.has(d)) map.set(d, { date: d });
-                const obj = map.get(d)!;
-                obj[key] = p.value;
+                map.get(d)![key] = p.value;
             });
         };
         push(filteredPerformance, 'strategy');
@@ -255,6 +318,17 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
         push(filteredExcess, 'excess');
         return Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [filteredPerformance, filteredBenchmark, filteredExcess]);
+
+    // Chart 2 data: fund allocation — own array so no gaps bleed into Chart 1
+    const fundChartData = useMemo(() =>
+        filteredFundHistory
+            .map(h => ({
+                date: h.date.split('T')[0],
+                invested: +(h.invested_ratio * 100).toFixed(1),
+                cash: +(h.cash_ratio * 100).toFixed(1),
+            }))
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    [filteredFundHistory]);
 
     const formatTick = useMemo(() => {
         return (value: string | number) => {
@@ -606,8 +680,8 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                             ))}
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="h-[280px] relative">
+                    <CardContent className="pb-3">
+                        <div className="relative">
                             {isFetching && (
                                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-lg">
                                     <div className="flex flex-col items-center gap-2">
@@ -616,100 +690,144 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                     </div>
                                 </div>
                             )}
-                            <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={mergedChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                    <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
-                                    <XAxis
-                                        dataKey="date"
-                                        tick={{ fontSize: 12, fill: '#94a3b8' }}
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tickFormatter={formatTick}
-                                        minTickGap={range === '1m' ? 12 : 20}
-                                    />
-                                    <YAxis
-                                        tick={{ fontSize: 12, fill: '#94a3b8' }}
-                                        axisLine={false}
-                                        tickLine={false}
-                                        domain={['auto', 'auto']}
-                                        tickFormatter={(v: number) => `${v}%`}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                        labelFormatter={(value) => formatTick(value as string)}
-                                        formatter={(value: number, name: string) => {
-                                            const labelMap: Record<string, string> = {
-                                                '策略': '策略收益',
-                                                '超额': '超额收益',
-                                                '沪深300': '沪深300'
-                                            };
-                                            return [`${value}%`, labelMap[name] || name];
-                                        }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="strategy"
-                                        name="策略"
-                                        stroke="hsl(var(--primary))"
-                                        fillOpacity={0.5}
-                                        fill="url(#colorValue)"
-                                        strokeWidth={3}
-                                        activeDot={{ r: 3 }}
-                                    />
-                                    {filteredBenchmark.length > 0 && (
-                                        <Line
-                                            type="monotone"
-                                            dataKey="benchmark"
-                                            name="沪深300"
-                                            stroke="#0ea5e9"
-                                            strokeWidth={2}
-                                            dot={false}
-                                            activeDot={{ r: 3 }}
+
+                            {/* Chart 1: Returns — X 轴在图表底部充当两图之间的共享时间轴 */}
+                            <div className="h-[210px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={mergedChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} syncId="strategySync">
+                                        <defs>
+                                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                        <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
+                                        <XAxis
+                                            dataKey="date"
+                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tickFormatter={formatTick}
+                                            minTickGap={range === '1m' ? 12 : 20}
                                         />
-                                    )}
-                                    {filteredExcess.length > 0 && (
-                                        <Line
-                                            type="monotone"
-                                            dataKey="excess"
-                                            name="超额"
-                                            stroke="#8b5cf6"
-                                            strokeDasharray="4 4"
-                                            strokeWidth={2}
-                                            dot={false}
-                                            activeDot={{ r: 3 }}
+                                        <YAxis
+                                            width={48}
+                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            domain={['auto', 'auto']}
+                                            tickFormatter={(v: number) => `${v}%`}
                                         />
-                                    )}
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </div>
-                        {/* Legend - Below Chart */}
-                        <div className="flex items-center justify-center mt-3 pt-3 border-t border-slate-100">
-                            <div className="flex items-center gap-4 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-4 h-0.5 rounded bg-primary" />
-                                    <span className="text-slate-600">策略</span>
-                                </div>
-                                {filteredBenchmark.length > 0 && (
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-4 h-0.5 rounded" style={{ backgroundColor: '#0ea5e9' }} />
-                                        <span className="text-slate-600">沪深300</span>
-                                    </div>
-                                )}
-                                {filteredExcess.length > 0 && (
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-4 h-0.5 rounded border-dashed" style={{ backgroundColor: '#8b5cf6' }} />
-                                        <span className="text-slate-600">超额</span>
-                                    </div>
-                                )}
+                                        <Tooltip
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }}
+                                            labelFormatter={(value) => formatTick(value as string)}
+                                            formatter={(value: number, name: string) => {
+                                                const labelMap: Record<string, string> = { '策略': '策略收益', '超额': '超额收益', '沪深300': '沪深300' };
+                                                return [`${value}%`, labelMap[name] || name];
+                                            }}
+                                        />
+                                        <Area type="monotone" dataKey="strategy" name="策略" stroke="hsl(var(--primary))" fillOpacity={0.5} fill="url(#colorValue)" strokeWidth={2.5} activeDot={{ r: 3 }} />
+                                        {filteredBenchmark.length > 0 && (
+                                            <Line type="monotone" dataKey="benchmark" name="沪深300" stroke="#0ea5e9" strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} />
+                                        )}
+                                        {filteredExcess.length > 0 && (
+                                            <Line type="monotone" dataKey="excess" name="超额" stroke="#8b5cf6" strokeDasharray="4 4" strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} />
+                                        )}
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Chart 2: Fund allocation — 独立数据源，X 轴隐藏，syncId 保证 hover 同步 */}
+                            <div className="h-[90px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={fundChartData} margin={{ top: 2, right: 10, left: 0, bottom: 0 }} syncId="strategySync">
+                                        <defs>
+                                            <linearGradient id="fundInvested" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.55} />
+                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
+                                            </linearGradient>
+                                            <linearGradient id="fundCash" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.35} />
+                                                <stop offset="95%" stopColor="#94a3b8" stopOpacity={0.02} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                        <XAxis dataKey="date" hide />
+                                        <YAxis
+                                            width={48}
+                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            domain={[0, 100]}
+                                            ticks={[0, 50, 100]}
+                                            tickFormatter={(v: number) => `${v}%`}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }}
+                                            labelFormatter={(value) => formatTick(value as string)}
+                                            formatter={(value: number, name: string) => [`${value}%`, name]}
+                                        />
+                                        <Area type="monotone" dataKey="invested" name="持仓" stackId="fund" stroke="#3b82f6" fill="url(#fundInvested)" strokeWidth={1.5} dot={false} />
+                                        <Area type="monotone" dataKey="cash" name="现金" stackId="fund" stroke="#94a3b8" fill="url(#fundCash)" strokeWidth={1.5} dot={false} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
+
+                        {/* Unified Legend */}
+                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-100">
+                            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                <div className="w-4 h-0.5 rounded bg-primary" />策略
+                            </div>
+                            {filteredBenchmark.length > 0 && (
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                    <div className="w-4 h-0.5 rounded" style={{ backgroundColor: '#0ea5e9' }} />沪深300
+                                </div>
+                            )}
+                            {filteredExcess.length > 0 && (
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                    <div className="w-4 h-0.5 rounded" style={{ backgroundColor: '#8b5cf6' }} />超额
+                                </div>
+                            )}
+                            {fundChartData.length > 0 && (
+                                <>
+                                    <div className="w-px h-3 bg-slate-200 mx-1" />
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                        <div className="w-3 h-3 rounded-sm opacity-70" style={{ backgroundColor: '#3b82f6' }} />持仓%
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                        <div className="w-3 h-3 rounded-sm opacity-50" style={{ backgroundColor: '#94a3b8' }} />现金%
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* 资金占用快照 — 卡片底部；持仓相关数字可点击打开持仓面板 */}
+                        {fundCurrent && (
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">资金占用</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPositionsOpen(true)}
+                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors"
+                                >
+                                    持仓&nbsp;<b className="text-blue-600 group-hover:underline">{(fundCurrent.invested_ratio * 100).toFixed(1)}%</b>
+                                </button>
+                                <span className="text-slate-300">·</span>
+                                <span>现金&nbsp;<b className="text-slate-600">{(fundCurrent.cash_ratio * 100).toFixed(1)}%</b></span>
+                                <span className="text-slate-300">·</span>
+                                <span>净值&nbsp;<b className="text-slate-700">¥{(fundCurrent.nav_absolute / 10000).toFixed(2)}万</b></span>
+                                <span className="text-slate-300">·</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPositionsOpen(true)}
+                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors"
+                                >
+                                    持仓&nbsp;<b className="text-slate-700 group-hover:underline group-hover:text-blue-600">{fundCurrent.position_count}</b>&nbsp;只
+                                </button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -825,12 +943,17 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                     {detail.calmarRatio !== null && detail.calmarRatio !== undefined ? detail.calmarRatio.toFixed(2) : '--'}
                                 </p>
                             </div>
-                            <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">已平仓交易数</p>
-                                <p className="text-base font-bold text-slate-800">
+                            <button
+                                type="button"
+                                onClick={() => setIsTradesOpen(true)}
+                                className="text-center rounded-md hover:bg-slate-100 transition-colors px-1 py-0.5 group"
+                                title="查看历史交易明细"
+                            >
+                                <p className="text-[10px] text-slate-500 mb-0.5 group-hover:text-primary transition-colors">已平仓交易数</p>
+                                <p className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors">
                                     {detail.closedTrades !== null && detail.closedTrades !== undefined ? detail.closedTrades : '--'}
                                 </p>
-                            </div>
+                            </button>
                             <div className="text-center">
                                 <p className="text-[10px] text-slate-500 mb-0.5">风险等级</p>
                                 <p className="text-base font-bold text-slate-800">
@@ -841,6 +964,44 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                     </Card>
                 </div>
             </div>
+
+            {/* 当前持仓 Sheet */}
+            <Sheet open={isPositionsOpen} onOpenChange={setIsPositionsOpen}>
+                <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto p-0">
+                    <SheetHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
+                        <SheetTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            当前持仓
+                            {fundCurrent && (
+                                <span className="text-sm font-normal text-slate-500">
+                                    · {fundCurrent.position_count} 只
+                                </span>
+                            )}
+                        </SheetTitle>
+                    </SheetHeader>
+                    <div className="px-4 py-4">
+                        <StrategyPositions strategyKey={detail.id} />
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* 历史交易 Sheet */}
+            <Sheet open={isTradesOpen} onOpenChange={setIsTradesOpen}>
+                <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-5xl overflow-y-auto p-0">
+                    <SheetHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
+                        <SheetTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            历史交易明细
+                            {detail.closedTrades != null && (
+                                <span className="text-sm font-normal text-slate-500">
+                                    · 共 {detail.closedTrades} 笔
+                                </span>
+                            )}
+                        </SheetTitle>
+                    </SheetHeader>
+                    <div className="px-4 py-4">
+                        <StrategyTrades strategyKey={detail.id} />
+                    </div>
+                </SheetContent>
+            </Sheet>
 
             {/* Signal Monitor Section */}
             <div className="space-y-4 pt-4">

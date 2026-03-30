@@ -102,10 +102,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json(heatmapData);
     } catch (error) {
-        console.error('Heatmap proxy error:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch heatmap data' },
-            { status: 500 }
-        );
+        console.warn('Heatmap proxy: backend unavailable, returning empty data.', error);
+        return NextResponse.json({ data: [], total: 0, max_track_days: 7 });
     }
 }
