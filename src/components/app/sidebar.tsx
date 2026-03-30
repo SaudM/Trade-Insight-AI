@@ -75,7 +75,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser, onContactSupp
             <FileText />
             <span className="text-base font-medium">分析报告</span>
             {!isProUser && (
-              <Badge variant="outline" className="ml-auto h-6 px-2 bg-accent/20 border-accent/50 text-accent text-xs font-medium group-data-[active=true]:bg-accent/30">
+              <Badge variant="outline" className="ml-auto h-6 px-2 bg-amber-500 border-amber-500 text-white text-xs font-semibold group-data-[active=true]:bg-amber-600">
                 <Sparkles className="mr-1 h-3 w-3" />
                 升级
               </Badge>

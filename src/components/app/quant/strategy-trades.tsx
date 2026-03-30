@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 interface Trade {
     id: number;
     asset_symbol: string;
+    asset_name?: string;
     entry_date: string;
     entry_price: number;
     quantity: number;
@@ -37,16 +38,20 @@ const EXIT_REASONS: { value: string; label: string }[] = [
     { value: 'DYNAMIC_TP', label: '动态止盈' },
     { value: 'TAKE_PROFIT', label: '固定止盈' },
     { value: 'STOP_LOSS', label: '止损' },
+    { value: 'BREAK_EVEN', label: '保本离场' },
     { value: 'TIME_STOP', label: '时间止损' },
+    { value: 'LAGGARD', label: '滞涨出局' },
     { value: 'EXPIRE', label: '到期' },
     { value: 'MANUAL', label: '手动' },
 ];
 
 const EXIT_REASON_STYLE: Record<string, { label: string; className: string }> = {
-    DYNAMIC_TP: { label: '动态止盈', className: 'bg-red-50 text-red-600 border-red-100' },
+    DYNAMIC_TP:  { label: '动态止盈', className: 'bg-red-50 text-red-600 border-red-100' },
     TAKE_PROFIT: { label: '固定止盈', className: 'bg-red-50 text-red-600 border-red-100' },
     STOP_LOSS:   { label: '止损',     className: 'bg-green-50 text-green-700 border-green-100' },
+    BREAK_EVEN:  { label: '保本离场', className: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
     TIME_STOP:   { label: '时间止损', className: 'bg-orange-50 text-orange-600 border-orange-100' },
+    LAGGARD:     { label: '滞涨出局', className: 'bg-purple-50 text-purple-600 border-purple-100' },
     EXPIRE:      { label: '到期',     className: 'bg-blue-50 text-blue-600 border-blue-100' },
     MANUAL:      { label: '手动',     className: 'bg-slate-50 text-slate-600 border-slate-200' },
 };
@@ -204,8 +209,14 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                                                 key={trade.id}
                                                 className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
                                             >
-                                                <td className="px-3 py-2.5 font-semibold text-slate-900 whitespace-nowrap">
-                                                    {trade.asset_symbol}
+                                                <td className="px-3 py-2.5 whitespace-nowrap">
+                                                    {trade.asset_name && (
+                                                        <div className="font-semibold text-slate-900 leading-tight">{trade.asset_name}</div>
+                                                    )}
+                                                    <div className={cn(
+                                                        'text-slate-500',
+                                                        trade.asset_name ? 'text-[11px]' : 'font-semibold text-slate-900'
+                                                    )}>{trade.asset_symbol}</div>
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right text-slate-500 whitespace-nowrap">
                                                     {format(new Date(trade.entry_date), 'MM-dd')}

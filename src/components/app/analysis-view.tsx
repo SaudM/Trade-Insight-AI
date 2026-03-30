@@ -2,7 +2,6 @@
 "use client";
 
 import type { TradeLog, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
-import { AppHeader } from './header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportView } from './report-view';
 import { analyzeDailyTrades } from '@/ai/flows/daily-ai-analysis';
@@ -14,6 +13,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { WandSparkles, History } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { FloatingLabelSelect } from "@/components/ui/floating-label-select";
 import { SelectContent, SelectItem } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
@@ -86,7 +86,7 @@ export function AnalysisView({
     useEffect(() => setLocalMonthlySummaries(monthlySummaries), [monthlySummaries]);
 
     // -------------------------------------------------------------------------
-    // 新增状态管理：控制 Header 中的报告选择与生成 loading
+    // 状态管理：控制报告选择与生成 loading
     // -------------------------------------------------------------------------
     const [selectedReportId, setSelectedReportId] = useState<string | undefined>(undefined);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -102,14 +102,12 @@ export function AnalysisView({
         }
     }, [activeTab, localDailyAnalyses, localWeeklyReviews, localMonthlySummaries]);
 
-    // 辅助函数：获取报告日期（用于排序和显示）
     const getReportDate = (report: any) => report?.createdAt;
 
     // 当报告列表或 Tab 变化时，自动选中最新报告
     useEffect(() => {
         const reportsArray = Array.isArray(currentReports) ? currentReports : [];
         if (reportsArray.length > 0) {
-            // 如果切 Tab 或者列表更新，且当前没有选中或者选中ID不在列表里（简单起见每次都重置为最新）
             const latestReport = [...reportsArray].sort((a, b) => {
                 const dateA = getReportDate(a);
                 const dateB = getReportDate(b);
@@ -119,7 +117,7 @@ export function AnalysisView({
         } else {
             setSelectedReportId(undefined);
         }
-    }, [currentReports]); // 依赖 currentReports 即可，因为它已经依赖了 activeTab
+    }, [currentReports]);
 
     // 排序后的报告列表供下拉框使用
     const sortedReports = useMemo(() => {
@@ -140,7 +138,6 @@ export function AnalysisView({
         try {
             const result = await analysisFn();
             if (result) {
-                // 自动选中新生成的报告
                 setSelectedReportId(result.id);
                 toast({ title: "分析报告已生成" });
             }
@@ -158,50 +155,31 @@ export function AnalysisView({
             try {
                 console.log('开始每日分析处理，交易记录总数:', tradeLogs.length);
 
-                // 获取最近一个完整交易日的数据
                 const sortedLogs = tradeLogs
                     .filter(log => log.tradeTime)
                     .sort((a, b) => new Date(b.tradeTime as string).getTime() - new Date(a.tradeTime as string).getTime());
 
-                console.log('过滤后的交易记录数:', sortedLogs.length);
+                if (sortedLogs.length === 0) throw new Error('没有可用的交易记录');
 
-                if (sortedLogs.length === 0) {
-                    console.error('没有可用的交易记录');
-                    throw new Error('没有可用的交易记录');
-                }
-
-                // 获取最新交易日期
                 const latestTradeDate = new Date(sortedLogs[0].tradeTime as string);
                 const latestTradeDateStr = latestTradeDate.toDateString();
 
-                console.log('最新交易日期:', latestTradeDateStr);
-
-                // 筛选出最近一个完整交易日的所有交易记录
                 const dailyLogs = sortedLogs.filter(log => {
                     const logDate = new Date(log.tradeTime as string);
                     return logDate.toDateString() === latestTradeDateStr;
                 });
 
-                console.log('当日交易记录数:', dailyLogs.length);
-
                 const logsString = dailyLogs.map(log =>
                     `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 分析与计划: ${log.entryReason || log.exitReason || ''}`
                 ).join('\n');
-
-                console.log('准备调用AI分析，日志字符串长度:', logsString.length);
 
                 const result = await analyzeDailyTrades({
                     tradeLogs: logsString,
                     analysisDate: latestTradeDate.toLocaleDateString('zh-CN')
                 });
 
-                console.log('AI分析完成，结果:', result);
-
-                // 辅助函数：确保字段为字符串类型
                 const ensureString = (value: any): string => {
-                    if (Array.isArray(value)) {
-                        return value.join('\n');
-                    }
+                    if (Array.isArray(value)) return value.join('\n');
                     return String(value || '');
                 };
 
@@ -215,20 +193,11 @@ export function AnalysisView({
                     createdAt: new Date(),
                 };
 
-                console.log('准备保存分析结果:', newAnalysis);
-
                 const savedAnalysis = await addDailyAnalysis(newAnalysis as any);
-                console.log('分析结果保存成功:', savedAnalysis);
-                // 仅更新每日分析区域，避免整页刷新引发 Tab 重置
                 setLocalDailyAnalyses(prev => [savedAnalysis as DailyAnalysis, ...prev]);
                 return savedAnalysis;
             } catch (error) {
-                console.error('每日分析处理失败:', {
-                    error: error instanceof Error ? error.message : String(error),
-                    stack: error instanceof Error ? error.stack : undefined,
-                    tradeLogsCount: tradeLogs.length,
-                    isProUser
-                });
+                console.error('每日分析处理失败:', error);
                 throw error;
             }
         });
@@ -236,11 +205,10 @@ export function AnalysisView({
 
     const handleWeeklyAnalysis = async () => {
         return handleAnalysisRequest(async () => {
-            // 获取当周（周一至周日）的交易数据
             const currentDate = new Date();
-            const startOfCurrentWeek = startOfWeek(currentDate, { weekStartsOn: 1 }); // 周一开始
+            const startOfCurrentWeek = startOfWeek(currentDate, { weekStartsOn: 1 });
             const endOfCurrentWeek = new Date(startOfCurrentWeek);
-            endOfCurrentWeek.setDate(startOfCurrentWeek.getDate() + 6); // 周日结束
+            endOfCurrentWeek.setDate(startOfCurrentWeek.getDate() + 6);
             endOfCurrentWeek.setHours(23, 59, 59, 999);
 
             const weeklyLogs = tradeLogs.filter(log => {
@@ -260,11 +228,8 @@ export function AnalysisView({
                 weekEndDate: endOfCurrentWeek.toLocaleDateString('zh-CN')
             });
 
-            // 辅助函数：确保字段为字符串类型
             const ensureString = (value: any): string => {
-                if (Array.isArray(value)) {
-                    return value.join('\n');
-                }
+                if (Array.isArray(value)) return value.join('\n');
                 return String(value || '');
             };
 
@@ -281,7 +246,6 @@ export function AnalysisView({
             };
 
             const savedReview = await addWeeklyAnalysis(newReview as any);
-            // 仅更新每周回顾区域
             setLocalWeeklyReviews(prev => [savedReview as WeeklyReview, ...prev]);
             return savedReview;
         });
@@ -295,14 +259,12 @@ export function AnalysisView({
             const startOfPreviousMonth = startOfMonth(subMonths(currentTime, 1));
             const endOfPreviousMonth = new Date(startOfPreviousMonth.getFullYear(), startOfPreviousMonth.getMonth() + 1, 0, 23, 59, 59, 999);
 
-            // 获取当月完整的交易数据（1日至月末）
             const currentMonthLogs = tradeLogs.filter(log => {
                 if (!log.tradeTime) return false;
                 const logDate = new Date(log.tradeTime as string);
                 return logDate >= startOfCurrentMonth && logDate <= endOfCurrentMonth;
             });
 
-            // 获取上月完整的交易数据（1日至月末）
             const previousMonthLogs = tradeLogs.filter(log => {
                 if (!log.tradeTime) return false;
                 const logDate = new Date(log.tradeTime as string);
@@ -311,14 +273,11 @@ export function AnalysisView({
 
             const toPlainObject = (log: TradeLog) => {
                 const plainLog: any = { ...log };
-
-                // Merge into 'analysisAndPlan' and remove old fields
                 plainLog.analysisAndPlan = log.entryReason || log.exitReason || '';
                 delete plainLog.entryReason;
                 delete plainLog.exitReason;
                 delete plainLog.mindsetState;
                 delete plainLog.lessonsLearned;
-
                 if (plainLog.tradeTime && typeof plainLog.tradeTime !== 'string') {
                     plainLog.tradeTime = (plainLog.tradeTime as Date).toISOString();
                 }
@@ -335,11 +294,8 @@ export function AnalysisView({
                 previousMonthPeriod: `${startOfPreviousMonth.getFullYear()}年${startOfPreviousMonth.getMonth() + 1}月`
             });
 
-            // 辅助函数：确保字段为字符串类型
             const ensureString = (value: any): string => {
-                if (Array.isArray(value)) {
-                    return value.join('\n');
-                }
+                if (Array.isArray(value)) return value.join('\n');
                 return String(value || '');
             };
 
@@ -355,13 +311,11 @@ export function AnalysisView({
             };
 
             const savedSummary = await addMonthlySummary(newSummary as any);
-            // 仅更新月度总结区域
             setLocalMonthlySummaries(prev => [savedSummary as MonthlySummary, ...prev]);
             return savedSummary;
         });
     };
 
-    // 根据当前 Tab 决定调用哪个生成函数
     const handleGenerateClick = () => {
         if (activeTab === 'daily') handleDailyAnalysis();
         else if (activeTab === 'weekly') handleWeeklyAnalysis();
@@ -375,91 +329,111 @@ export function AnalysisView({
     };
 
     return (
-        <div className="flex flex-col h-full" style={{ ['--report-button-gap-top' as any]: '24px' }}>
-            <AppHeader title="分析报告">
-                {/* Header Controls */}
-                <div className="flex items-center gap-2">
-                    {/* 历史报告选择 */}
-                    {sortedReports && sortedReports.length > 0 && (
-                        <>
-                            {/* Desktop: Floating Label Select */}
-                            <div className="hidden md:block w-48">
-                                <FloatingLabelSelect
-                                    label="历史报告..."
-                                    onValueChange={setSelectedReportId}
-                                    value={selectedReportId}
-                                >
-                                    <SelectContent>
-                                        {sortedReports.map((r: any) => {
-                                            const createdAt = getReportDate(r);
-                                            let formattedDate = '未知日期';
-                                            try {
-                                                if (createdAt) {
-                                                    const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
-                                                    if (!isNaN(date.getTime())) {
-                                                        formattedDate = format(date, 'MM-dd HH:mm');
-                                                    }
-                                                }
-                                            } catch (error) { console.warn(error); }
-                                            return <SelectItem key={r.id} value={r.id}>{formattedDate}</SelectItem>;
-                                        })}
-                                    </SelectContent>
-                                </FloatingLabelSelect>
-                            </div>
-
-                            {/* Mobile: History Icon Menu */}
-                            <div className="md:hidden">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-9 w-9">
-                                            <History className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        {sortedReports.map((r: any) => {
-                                            const createdAt = getReportDate(r);
-                                            let formattedDate = '未知日期';
-                                            try {
-                                                if (createdAt) {
-                                                    const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
-                                                    if (!isNaN(date.getTime())) {
-                                                        formattedDate = format(date, 'MM-dd HH:mm');
-                                                    }
-                                                }
-                                            } catch (error) { }
-                                            return (
-                                                <DropdownMenuItem key={r.id} onClick={() => setSelectedReportId(r.id)}>
-                                                    {formattedDate}
-                                                </DropdownMenuItem>
-                                            );
-                                        })}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </>
-                    )}
-
-                    {/* 生成按钮 */}
-                    <Button onClick={handleGenerateClick} disabled={isGenerating} className="hidden md:flex transition-all duration-300 ease-in-out">
-                        <WandSparkles className="mr-2 h-4 w-4" />
-                        {isGenerating ? '分析中...' : `生成${reportNameMap[activeTab]}`}
-                    </Button>
-                    {/* Mobile Generate Button */}
-                    <Button onClick={handleGenerateClick} disabled={isGenerating} size="icon" className="md:hidden h-9 w-9">
-                        <WandSparkles className="h-4 w-4" />
-                    </Button>
-                </div>
-            </AppHeader>
+        <div className="flex flex-col h-full">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col flex-1">
-                <div className="px-4 md:px-6 lg:px-8 bg-white border-t-0">
-                    <TabsList>
-                        <TabsTrigger value="daily">每日分析</TabsTrigger>
-                        <TabsTrigger value="weekly">每周回顾</TabsTrigger>
-                        <TabsTrigger value="monthly">月度总结</TabsTrigger>
+                {/* Unified Header: Title + Tabs + Actions */}
+                <div className="bg-white border-b border-slate-200/80 px-3 sm:px-4 md:px-6 shrink-0">
+                    {/* Top row: title + actions */}
+                    <div className="flex items-center justify-between h-14">
+                        <div className="flex items-center gap-3">
+                            <SidebarTrigger className="md:hidden" />
+                            <h1 className="text-lg md:text-xl font-bold text-slate-900">分析报告</h1>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {/* 历史报告选择 */}
+                            {sortedReports && sortedReports.length > 0 && (
+                                <>
+                                    <div className="hidden md:block w-44">
+                                        <FloatingLabelSelect
+                                            label="历史报告..."
+                                            onValueChange={setSelectedReportId}
+                                            value={selectedReportId}
+                                        >
+                                            <SelectContent>
+                                                {sortedReports.map((r: any) => {
+                                                    const createdAt = getReportDate(r);
+                                                    let formattedDate = '未知日期';
+                                                    try {
+                                                        if (createdAt) {
+                                                            const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
+                                                            if (!isNaN(date.getTime())) {
+                                                                formattedDate = format(date, 'MM-dd HH:mm');
+                                                            }
+                                                        }
+                                                    } catch { /* ignore */ }
+                                                    return <SelectItem key={r.id} value={r.id}>{formattedDate}</SelectItem>;
+                                                })}
+                                            </SelectContent>
+                                        </FloatingLabelSelect>
+                                    </div>
+                                    <div className="md:hidden">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg">
+                                                    <History className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {sortedReports.map((r: any) => {
+                                                    const createdAt = getReportDate(r);
+                                                    let formattedDate = '未知日期';
+                                                    try {
+                                                        if (createdAt) {
+                                                            const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
+                                                            if (!isNaN(date.getTime())) formattedDate = format(date, 'MM-dd HH:mm');
+                                                        }
+                                                    } catch { /* ignore */ }
+                                                    return (
+                                                        <DropdownMenuItem key={r.id} onClick={() => setSelectedReportId(r.id)}>
+                                                            {formattedDate}
+                                                        </DropdownMenuItem>
+                                                    );
+                                                })}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* 生成按钮 */}
+                            <Button
+                                onClick={handleGenerateClick}
+                                disabled={isGenerating}
+                                size="sm"
+                                className="hidden md:flex rounded-lg h-9"
+                            >
+                                <WandSparkles className="mr-2 h-3.5 w-3.5" />
+                                {isGenerating ? '分析中...' : `生成${reportNameMap[activeTab]}`}
+                            </Button>
+                            <Button
+                                onClick={handleGenerateClick}
+                                disabled={isGenerating}
+                                size="icon"
+                                className="md:hidden h-9 w-9 rounded-lg"
+                            >
+                                <WandSparkles className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Bottom row: Tabs — underline style */}
+                    <TabsList className="bg-transparent h-auto p-0 gap-0 border-0 rounded-none">
+                        {(['daily', 'weekly', 'monthly'] as const).map(tab => (
+                            <TabsTrigger
+                                key={tab}
+                                value={tab}
+                                className="relative rounded-none border-0 bg-transparent px-4 pb-2.5 pt-1 text-sm font-medium text-slate-500 shadow-none transition-colors data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:bg-transparent hover:text-slate-700"
+                            >
+                                {reportNameMap[tab]}
+                                {/* Active indicator */}
+                                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary scale-x-0 transition-transform data-[state=active]:scale-x-100" data-state={activeTab === tab ? 'active' : 'inactive'} />
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
                 </div>
-                {/* 每日分析标签页 - 添加平滑过渡效果 */}
-                <TabsContent value="daily" className="flex-1 mt-0 flex flex-col transition-all duration-300 ease-in-out">
+
+                {/* Tab Content */}
+                <TabsContent value="daily" className="flex-1 mt-0 flex flex-col">
                     <ReportView
                         reportType="每日"
                         reportName="分析"
@@ -470,16 +444,15 @@ export function AnalysisView({
                         getReportDate={(r) => (r as DailyAnalysis).createdAt}
                         isProUser={isProUser}
                         cards={[
-                            { id: 'summary', title: '摘要', icon: BrainCircuit, content: (r) => (r as DailyAnalysis).summary },
-                            { id: 'strengths', title: '优点', icon: Zap, content: (r) => (r as DailyAnalysis).strengths },
-                            { id: 'weaknesses', title: '缺点', icon: HeartPulse, content: (r) => (r as DailyAnalysis).weaknesses },
-                            { id: 'emotionalImpact', title: '情绪影响', icon: HeartPulse, content: (r) => (r as DailyAnalysis).emotionalImpact },
-                            { id: 'improvementSuggestions', title: '改进建议', icon: Lightbulb, content: (r) => (r as DailyAnalysis).improvementSuggestions, colSpan: 2 },
+                            { id: 'summary', title: '摘要', icon: BrainCircuit, content: (r) => (r as DailyAnalysis).summary, accentColor: 'blue' },
+                            { id: 'strengths', title: '优点', icon: Zap, content: (r) => (r as DailyAnalysis).strengths, accentColor: 'emerald' },
+                            { id: 'weaknesses', title: '缺点', icon: HeartPulse, content: (r) => (r as DailyAnalysis).weaknesses, accentColor: 'rose' },
+                            { id: 'emotionalImpact', title: '情绪影响', icon: HeartPulse, content: (r) => (r as DailyAnalysis).emotionalImpact, accentColor: 'amber' },
+                            { id: 'improvementSuggestions', title: '改进建议', icon: Lightbulb, content: (r) => (r as DailyAnalysis).improvementSuggestions, colSpan: 2, accentColor: 'violet' },
                         ]}
                     />
                 </TabsContent>
-                {/* 每周回顾标签页 - 添加平滑过渡效果 */}
-                <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col transition-all duration-300 ease-in-out">
+                <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col">
                     <ReportView
                         reportType="每周"
                         reportName="回顾"
@@ -490,31 +463,30 @@ export function AnalysisView({
                         getReportDate={(r) => (r as WeeklyReview).createdAt}
                         isProUser={isProUser}
                         cards={[
-                            { id: 'successPatterns', title: '成功模式', icon: Trophy, content: (r) => (r as WeeklyReview).successPatterns },
-                            { id: 'errorPatterns', title: '错误模式', icon: Repeat, content: (r) => (r as WeeklyReview).errorPatterns },
-                            { id: 'positionSizingAnalysis', title: '仓位大小评估', icon: Scaling, content: (r) => (r as WeeklyReview).positionSizingAnalysis },
-                            { id: 'emotionalCorrelation', title: '情绪关联性', icon: HeartPulse, content: (r) => (r as WeeklyReview).emotionalCorrelation },
-                            { id: 'improvementPlan', title: '每周改进计划', icon: ListChecks, content: (r) => (r as WeeklyReview).improvementPlan, colSpan: 2 },
+                            { id: 'successPatterns', title: '成功模式', icon: Trophy, content: (r) => (r as WeeklyReview).successPatterns, accentColor: 'emerald' },
+                            { id: 'errorPatterns', title: '错误模式', icon: Repeat, content: (r) => (r as WeeklyReview).errorPatterns, accentColor: 'rose' },
+                            { id: 'positionSizingAnalysis', title: '仓位大小评估', icon: Scaling, content: (r) => (r as WeeklyReview).positionSizingAnalysis, accentColor: 'blue' },
+                            { id: 'emotionalCorrelation', title: '情绪关联性', icon: HeartPulse, content: (r) => (r as WeeklyReview).emotionalCorrelation, accentColor: 'amber' },
+                            { id: 'improvementPlan', title: '每周改进计划', icon: ListChecks, content: (r) => (r as WeeklyReview).improvementPlan, colSpan: 2, accentColor: 'violet' },
                         ]}
                     />
                 </TabsContent>
-                {/* 月度总结标签页 - 添加平滑过渡效果 */}
-                <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col transition-all duration-300 ease-in-out">
+                <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col">
                     <ReportView
                         reportType="月度"
                         reportName="总结"
                         reports={localMonthlySummaries}
                         selectedReportId={selectedReportId}
                         isLoading={isGenerating}
-                        tradeLogs={tradeLogs} // Monthly view uses all logs
+                        tradeLogs={tradeLogs}
                         getReportDate={(r) => (r as MonthlySummary).createdAt}
                         isProUser={isProUser}
                         cards={[
-                            { id: 'performanceComparison', title: '对比总结', icon: GitCompareArrows, content: (r) => (r as MonthlySummary).performanceComparison },
-                            { id: 'recurringIssues', title: '持续性问题', icon: AlertTriangle, content: (r) => (r as MonthlySummary).recurringIssues },
-                            { id: 'strategyExecutionEvaluation', title: '策略执行评估', icon: Target, content: (r) => (r as MonthlySummary).strategyExecutionEvaluation },
-                            { id: 'keyLessons', title: '关键心得', icon: BookCheck, content: (r) => (r as MonthlySummary).keyLessons },
-                            { id: 'iterationSuggestions', title: '系统迭代建议', icon: Telescope, content: (r) => (r as MonthlySummary).iterationSuggestions, colSpan: 2 },
+                            { id: 'performanceComparison', title: '对比总结', icon: GitCompareArrows, content: (r) => (r as MonthlySummary).performanceComparison, accentColor: 'blue' },
+                            { id: 'recurringIssues', title: '持续性问题', icon: AlertTriangle, content: (r) => (r as MonthlySummary).recurringIssues, accentColor: 'rose' },
+                            { id: 'strategyExecutionEvaluation', title: '策略执行评估', icon: Target, content: (r) => (r as MonthlySummary).strategyExecutionEvaluation, accentColor: 'emerald' },
+                            { id: 'keyLessons', title: '关键心得', icon: BookCheck, content: (r) => (r as MonthlySummary).keyLessons, accentColor: 'amber' },
+                            { id: 'iterationSuggestions', title: '系统迭代建议', icon: Telescope, content: (r) => (r as MonthlySummary).iterationSuggestions, colSpan: 2, accentColor: 'violet' },
                         ]}
                     />
                 </TabsContent>

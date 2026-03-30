@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, CheckCircle2, Zap, Activity, AlertCircle, TrendingUp, BarChart3, Shield, Bell } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Zap, Activity, AlertCircle, TrendingUp, BarChart3, Shield, Bell, ArrowUpRight } from 'lucide-react';
 import { Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -810,9 +810,9 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                 <button
                                     type="button"
                                     onClick={() => setIsPositionsOpen(true)}
-                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors"
+                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors cursor-pointer"
                                 >
-                                    持仓&nbsp;<b className="text-blue-600 group-hover:underline">{(fundCurrent.invested_ratio * 100).toFixed(1)}%</b>
+                                    持仓&nbsp;<b className="text-blue-600 underline decoration-dashed underline-offset-2 decoration-blue-400/50 group-hover:decoration-solid group-hover:decoration-blue-600">{(fundCurrent.invested_ratio * 100).toFixed(1)}%</b>
                                 </button>
                                 <span className="text-slate-300">·</span>
                                 <span>现金&nbsp;<b className="text-slate-600">{(fundCurrent.cash_ratio * 100).toFixed(1)}%</b></span>
@@ -822,9 +822,9 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                                 <button
                                     type="button"
                                     onClick={() => setIsPositionsOpen(true)}
-                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors"
+                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors cursor-pointer"
                                 >
-                                    持仓&nbsp;<b className="text-slate-700 group-hover:underline group-hover:text-blue-600">{fundCurrent.position_count}</b>&nbsp;只
+                                    持仓&nbsp;<b className="text-slate-700 group-hover:text-blue-600 underline decoration-dashed underline-offset-2 decoration-slate-400/50 group-hover:decoration-solid group-hover:decoration-blue-600">{fundCurrent.position_count}</b>&nbsp;只
                                 </button>
                             </div>
                         )}
@@ -849,7 +849,7 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                             <div className="relative group">
                                 <Dialog>
                                     <div className="relative">
-                                        <p className="text-sm text-slate-600 leading-relaxed line-clamp-3 text-justify">
+                                        <p className="text-sm text-slate-600 leading-relaxed line-clamp-4 text-justify">
                                             {detail.description}
                                         </p>
                                         {/* Gradient Overlay for visual cue of truncation */}
@@ -946,11 +946,14 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                             <button
                                 type="button"
                                 onClick={() => setIsTradesOpen(true)}
-                                className="text-center rounded-md hover:bg-slate-100 transition-colors px-1 py-0.5 group"
+                                className="text-center rounded-md hover:bg-slate-100 transition-colors px-1 py-0.5 group cursor-pointer"
                                 title="查看历史交易明细"
                             >
-                                <p className="text-[10px] text-slate-500 mb-0.5 group-hover:text-primary transition-colors">已平仓交易数</p>
-                                <p className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors">
+                                <p className="text-[10px] text-slate-500 mb-0.5 group-hover:text-primary transition-colors flex items-center justify-center gap-0.5">
+                                    已平仓交易数
+                                    <ArrowUpRight className="h-2.5 w-2.5 opacity-30 group-hover:opacity-100 transition-opacity" />
+                                </p>
+                                <p className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors underline decoration-dashed underline-offset-2 decoration-slate-300 group-hover:decoration-primary group-hover:decoration-solid">
                                     {detail.closedTrades !== null && detail.closedTrades !== undefined ? detail.closedTrades : '--'}
                                 </p>
                             </button>

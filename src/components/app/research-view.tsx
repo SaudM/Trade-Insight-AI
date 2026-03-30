@@ -83,7 +83,7 @@ export function ResearchView() {
                         />
                     </div>
                     {/* Desktop: Show all action buttons */}
-                    <div className="hidden md:flex items-center gap-2">
+                    <div className="hidden md:flex items-center gap-2 ml-auto">
                         <Button variant="outline" size="icon" onClick={() => refetch()} className="rounded-xl">
                             <RefreshCcw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
                         </Button>
