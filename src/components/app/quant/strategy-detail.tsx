@@ -212,8 +212,12 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                     `/api/strategies/${encodeURIComponent(strategy.id)}/fund-status?period=${range}`,
                     { cache: 'no-store' }
                 );
-                if (!res.ok) return;
+                if (!res.ok) {
+                    console.warn('[fund-status] API returned', res.status, res.statusText);
+                    return;
+                }
                 const payload = await res.json();
+                console.log('[fund-status] payload keys:', Object.keys(payload), '| history length:', payload.history?.length ?? 'N/A', '| current:', payload.current);
                 setFundHistory(payload.history ?? []);
                 setFundCurrent(payload.current ?? null);
             } catch (e) {
@@ -320,15 +324,25 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
     }, [filteredPerformance, filteredBenchmark, filteredExcess]);
 
     // Chart 2 data: fund allocation — own array so no gaps bleed into Chart 1
-    const fundChartData = useMemo(() =>
-        filteredFundHistory
+    // DEBUG: set to true to verify chart renders with known-good data, independent of API
+    const DEBUG_MOCK_FUND = false;
+    const MOCK_FUND_DATA = DEBUG_MOCK_FUND ? Array.from({ length: 30 }, (_, i) => {
+        const d = new Date('2026-01-01');
+        d.setDate(d.getDate() + i * 3);
+        const invested = Math.round(20 + i * 2);
+        return { date: d.toISOString().split('T')[0], invested, cash: 100 - invested };
+    }) : null;
+
+    const fundChartData = useMemo(() => {
+        if (MOCK_FUND_DATA) return MOCK_FUND_DATA;
+        return filteredFundHistory
             .map(h => ({
                 date: h.date.split('T')[0],
                 invested: +(h.invested_ratio * 100).toFixed(1),
                 cash: +(h.cash_ratio * 100).toFixed(1),
             }))
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-    [filteredFundHistory]);
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [filteredFundHistory]);
 
     const formatTick = useMemo(() => {
         return (value: string | number) => {

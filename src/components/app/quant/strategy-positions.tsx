@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface Position {
     asset_symbol: string;
+    asset_name?: string;
     sector: string;
     entry_date: string;
     entry_price: number;
@@ -168,7 +169,13 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                                 className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
                                             >
                                                 <td className="px-3 py-2.5 whitespace-nowrap">
-                                                    <div className="font-semibold text-slate-900">{pos.asset_symbol}</div>
+                                                    {pos.asset_name && (
+                                                        <div className="font-semibold text-slate-900 leading-tight">{pos.asset_name}</div>
+                                                    )}
+                                                    <div className={cn(
+                                                        'text-slate-500 leading-tight',
+                                                        pos.asset_name ? 'text-[11px]' : 'font-semibold text-slate-900'
+                                                    )}>{pos.asset_symbol}</div>
                                                     {pos.sector && (
                                                         <div className="text-[10px] text-slate-400 mt-0.5">{pos.sector}</div>
                                                     )}
