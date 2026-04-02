@@ -12,6 +12,19 @@ type AiAnalysisCardProps = {
   accentColor?: string;
 };
 
+/**
+ * 规范化 AI 返回的 Markdown 文本：
+ * 确保编号列表（1. 2. 3.）和无序列表（- *）各自独占一行，
+ * 避免连续出现在同一行无法被 Markdown 解析为列表的问题。
+ */
+function normalizeMarkdown(text: string): string {
+  return text
+    // 在编号列表项前插入换行（如 "。2. " → "。\n2. "）
+    .replace(/([^\n])\s*(\d+[.)]\s+)/g, (_, before, listItem) => `${before}\n${listItem}`)
+    // 在无序列表项前插入换行（如 "。- " → "。\n- "），避免误匹配连字符
+    .replace(/([^\n])\s+([-*]\s+)(?=\S)/g, (_, before, listItem) => `${before}\n${listItem}`);
+}
+
 function MarkdownContent({ text }: { text: string }) {
   return (
     <ReactMarkdown
@@ -20,12 +33,12 @@ function MarkdownContent({ text }: { text: string }) {
           <p className="text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</p>
         ),
         ul: ({ children }) => (
-          <ul className="list-disc pl-5 space-y-1.5 text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</ul>
+          <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal pl-5 space-y-1.5 text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</ol>
+          <ol className="list-decimal pl-5 space-y-1 text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</ol>
         ),
-        li: ({ children }) => <li>{children}</li>,
+        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
         strong: ({ children }) => (
           <strong className="font-semibold text-slate-800">{children}</strong>
         ),
@@ -33,23 +46,23 @@ function MarkdownContent({ text }: { text: string }) {
           <em className="italic text-slate-600">{children}</em>
         ),
         h1: ({ children }) => (
-          <h1 className="text-base font-bold text-slate-800 mb-1.5">{children}</h1>
+          <h1 className="text-base font-bold text-slate-800 mt-2 mb-1">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-sm font-bold text-slate-800 mb-1.5">{children}</h2>
+          <h2 className="text-sm font-bold text-slate-800 mt-2 mb-1">{children}</h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-sm font-semibold text-slate-700 mb-1">{children}</h3>
+          <h3 className="text-sm font-semibold text-slate-700 mt-2 mb-0.5">{children}</h3>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="border-l-2 border-slate-300 pl-3 text-slate-500 italic">{children}</blockquote>
+          <blockquote className="border-l-2 border-slate-300 pl-3 text-slate-500 italic text-sm mb-2">{children}</blockquote>
         ),
         code: ({ children }) => (
           <code className="bg-slate-100 rounded px-1 py-0.5 text-xs font-mono text-slate-700">{children}</code>
         ),
       }}
     >
-      {text}
+      {normalizeMarkdown(text)}
     </ReactMarkdown>
   );
 }

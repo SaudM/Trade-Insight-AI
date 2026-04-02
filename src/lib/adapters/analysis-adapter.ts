@@ -92,9 +92,21 @@ export class AnalysisAdapter {
     analysisData: Omit<DailyAnalysisData, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<DailyAnalysisData> {
     try {
-      // 允许同一日期生成多份报告：改为 create 而非 upsert
-      const analysis = await prisma.dailyAnalysis.create({
-        data: {
+      const analysis = await prisma.dailyAnalysis.upsert({
+        where: {
+          userId_date: {
+            userId: analysisData.userId,
+            date: analysisData.date,
+          },
+        },
+        update: {
+          summary: analysisData.summary,
+          strengths: analysisData.strengths,
+          weaknesses: analysisData.weaknesses,
+          emotionalImpact: analysisData.emotionalImpact,
+          improvementSuggestions: analysisData.improvementSuggestions,
+        },
+        create: {
           userId: analysisData.userId,
           date: analysisData.date,
           summary: analysisData.summary,

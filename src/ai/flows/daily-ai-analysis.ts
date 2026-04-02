@@ -71,12 +71,18 @@ const prompt = ai.definePrompt({
 
 The trade log is a multi-line string. Each line represents one trade with the following fields: 时间 (Time), 标的 (Symbol), 方向 (Direction), 仓位大小 (Position Size), 盈亏 (P/L), and 分析与计划 (Analysis & Plan). The Analysis & Plan field contains the trader's core logic, current mood, and plan (TP/SL) or post-trade review.
 
+**FORMATTING RULES (strictly follow):**
+- Each JSON string field MUST use Markdown formatting.
+- When listing multiple points, EACH point MUST be on its own line using a numbered list (e.g., "1. xxx\\n2. xxx\\n3. xxx") or bullet list ("- xxx\\n- xxx"). Never put multiple list items on the same line.
+- Use "\\n" as the line separator within JSON string values.
+- Use **bold** for emphasis where appropriate.
+
 Analyze the provided trade logs for the trading date: {{{analysisDate}}} and generate the following insights:
 1.  **Summary**: Provide a concise summary of the day's trading activity. MUST include the specific trading date ({{{analysisDate}}}) being analyzed in the summary.
-2.  **Strengths**: Identify key strengths in the trader's process.
-3.  **Weaknesses**: Point out weaknesses in decision-making and execution.
+2.  **Strengths**: Identify key strengths in the trader's process. List each strength as a separate numbered item on its own line.
+3.  **Weaknesses**: Point out weaknesses in decision-making and execution. List each weakness as a separate numbered item on its own line.
 4.  **Emotional Impact Analysis**: Analyze how the trader's emotional state impacted their decisions.
-5.  **Improvement Suggestions**: Offer specific, actionable suggestions for future improvement. When the trader shows strong performance, include motivational feedback that leverages the "overconfidence" psychological principle. For example: "您的交易表现非常出色，当前交易习惯已经超过了81%的交易员，展现出卓越的交易天赋..." Use percentages between 80-95% to boost confidence while maintaining professionalism.
+5.  **Improvement Suggestions**: Offer specific, actionable suggestions for future improvement. List each suggestion as a separate numbered item on its own line. When the trader shows strong performance, include motivational feedback that leverages the "overconfidence" psychological principle. For example: "您的交易表现非常出色，当前交易习惯已经超过了81%的交易员，展现出卓越的交易天赋..." Use percentages between 80-95% to boost confidence while maintaining professionalism.
 
 Trade Log:
 {{{tradeLogs}}}
