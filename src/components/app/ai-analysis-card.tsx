@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 
 type AiAnalysisCardProps = {
   title: string;
@@ -11,59 +12,46 @@ type AiAnalysisCardProps = {
   accentColor?: string;
 };
 
-function renderTextContent(text: string) {
-  const lines = text.split('\n').filter(l => l.trim());
-  const result: React.ReactNode[] = [];
-  let listBuffer: { type: 'ul' | 'ol'; items: string[] } | null = null;
-
-  const flushList = () => {
-    if (!listBuffer) return;
-    const Tag = listBuffer.type === 'ol' ? 'ol' : 'ul';
-    result.push(
-      <Tag
-        key={`list-${result.length}`}
-        className={cn(
-          "space-y-1.5 text-sm text-slate-700 leading-relaxed",
-          listBuffer.type === 'ol' ? "list-decimal pl-5" : "list-disc pl-5"
-        )}
-      >
-        {listBuffer.items.map((item, i) => (
-          <li key={i}>{item}</li>
-        ))}
-      </Tag>
-    );
-    listBuffer = null;
-  };
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Bullet list: lines starting with - or *
-    const bulletMatch = trimmed.match(/^[-*]\s+(.+)/);
-    if (bulletMatch) {
-      if (listBuffer?.type !== 'ul') { flushList(); listBuffer = { type: 'ul', items: [] }; }
-      listBuffer!.items.push(bulletMatch[1]);
-      continue;
-    }
-
-    // Numbered list: lines starting with 1. 2. etc.
-    const orderedMatch = trimmed.match(/^\d+[.)]\s+(.+)/);
-    if (orderedMatch) {
-      if (listBuffer?.type !== 'ol') { flushList(); listBuffer = { type: 'ol', items: [] }; }
-      listBuffer!.items.push(orderedMatch[1]);
-      continue;
-    }
-
-    // Regular paragraph
-    flushList();
-    result.push(
-      <p key={`p-${result.length}`} className="text-sm text-slate-700 leading-relaxed">
-        {trimmed}
-      </p>
-    );
-  }
-  flushList();
-  return result;
+function MarkdownContent({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => (
+          <p className="text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className="list-disc pl-5 space-y-1.5 text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="list-decimal pl-5 space-y-1.5 text-sm text-slate-700 leading-relaxed mb-2 last:mb-0">{children}</ol>
+        ),
+        li: ({ children }) => <li>{children}</li>,
+        strong: ({ children }) => (
+          <strong className="font-semibold text-slate-800">{children}</strong>
+        ),
+        em: ({ children }) => (
+          <em className="italic text-slate-600">{children}</em>
+        ),
+        h1: ({ children }) => (
+          <h1 className="text-base font-bold text-slate-800 mb-1.5">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-sm font-bold text-slate-800 mb-1.5">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-sm font-semibold text-slate-700 mb-1">{children}</h3>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-2 border-slate-300 pl-3 text-slate-500 italic">{children}</blockquote>
+        ),
+        code: ({ children }) => (
+          <code className="bg-slate-100 rounded px-1 py-0.5 text-xs font-mono text-slate-700">{children}</code>
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
 }
 
 // Accent color presets — Tailwind JIT needs full class names
@@ -100,7 +88,7 @@ export function AiAnalysisCard({ title, icon: Icon, isLoading, content, accentCo
     }
 
     if (typeof content === 'string') {
-      return <div className="space-y-2.5">{renderTextContent(content)}</div>;
+      return <MarkdownContent text={content} />;
     }
 
     // Object content
@@ -111,7 +99,7 @@ export function AiAnalysisCard({ title, icon: Icon, isLoading, content, accentCo
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
               {key.replace(/([A-Z])/g, ' $1').trim()}
             </h4>
-            <div className="space-y-1.5">{renderTextContent(value)}</div>
+            <MarkdownContent text={value} />
           </div>
         ))}
       </div>
