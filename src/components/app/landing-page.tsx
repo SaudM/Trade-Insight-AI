@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { trackEvent } from '@/lib/tracking';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 /* ─────────────────────────────────────────────
    Pinterest Design Tokens
@@ -41,7 +41,7 @@ const PT = {
    Data
 ───────────────────────────────────────────── */
 const METRICS = [
-  { value: '~40%',  label: '策略年化收益', note: '历史回测',  color: '#27a644' },
+  { value: '~40%',  label: '策略年化收益', note: '历史回测',  color: PT.red },
   { value: '<15%',  label: '最大回撤',     note: '风险可控',  color: PT.red },
   { value: '5000+', label: '每日扫描标的',  note: 'A股全市场', color: PT.red },
   { value: '全自动', label: '收盘即更新',  note: '无需值守',  color: PT.muted },
@@ -142,8 +142,13 @@ function SectionHeading({ children, className = '' }: { children: React.ReactNod
    Component
 ───────────────────────────────────────────── */
 export function LandingPage() {
+  const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     trackEvent('view_landing_page', { source: 'direct' });
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   return (
@@ -167,14 +172,28 @@ export function LandingPage() {
           style={{ background: `radial-gradient(circle, rgba(39,166,68,0.04) 0%, transparent 60%)` }} />
       </div>
 
+      {/* ── 吸顶灯：从 header 中央向下漫射的光晕 ── */}
+      <div
+        className="pointer-events-none fixed top-0 left-0 right-0 z-[2] flex justify-center"
+        style={{ height: 320 }}
+      >
+        <div
+          style={{
+            width: '52vw',
+            height: '100%',
+            background: 'radial-gradient(ellipse 100% 100% at 50% 0%, rgba(230,0,35,0.11) 0%, rgba(230,0,35,0.04) 40%, transparent 70%)',
+          }}
+        />
+      </div>
+
       {/* ════════ NAV ════════ */}
       <nav
-        className="sticky top-0 z-50"
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
-          background: 'rgba(246,246,243,0.88)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          borderBottom: `1px solid ${PT.border}`,
+          background: scrolled ? 'rgba(246,246,243,0.92)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(24px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(24px)' : 'none',
+          borderBottom: scrolled ? `1px solid ${PT.border}` : '1px solid transparent',
         }}
       >
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -188,6 +207,26 @@ export function LandingPage() {
             <span style={{ ...ff, fontSize: 15, fontWeight: 590, color: PT.heading, letterSpacing: '-0.3px' }}>
               复盘 · AI量化
             </span>
+          </div>
+
+          {/* Nav anchor links */}
+          <div className="hidden md:flex items-center gap-1">
+            {[
+              { label: '功能', href: '#features' },
+              { label: '定价', href: '#pricing' },
+              { label: '用户评价', href: '#testimonials' },
+            ].map(({ label, href }) => (
+              <a
+                key={href}
+                href={href}
+                className="px-3 py-1.5 rounded-lg text-[13px] transition-colors"
+                style={{ ...ff, fontWeight: 510, color: PT.body, textDecoration: 'none' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = PT.heading; (e.currentTarget as HTMLElement).style.background = 'rgba(33,25,34,0.06)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = PT.body; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              >
+                {label}
+              </a>
+            ))}
           </div>
 
           {/* Nav actions */}
@@ -216,115 +255,195 @@ export function LandingPage() {
       </nav>
 
       {/* ════════ MAIN ════════ */}
-      <main className="relative z-10">
+      <main className="relative z-10 pt-16">
 
         {/* ── Hero ── */}
-        <section className="max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center"
-          style={{ minHeight: '90vh', paddingTop: '10vh', paddingBottom: '10vh' }}>
+        <section
+          className="max-w-6xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-16"
+          style={{ minHeight: '92vh', paddingTop: '8vh', paddingBottom: '8vh' }}
+        >
+          {/* ── Left: text ── */}
+          <div className="flex-1 flex flex-col items-start">
 
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-10"
-            style={{ ...ff, fontSize: 12, fontWeight: 510, background: PT.bg, border: `1px solid ${PT.border}`, color: PT.muted }}
-          >
-            <span className="inline-flex size-1.5 rounded-full animate-pulse" style={{ background: '#27a644' }} />
-            每日收盘自动运行 · 全市场 5000+ 标的扫描
+            {/* Badge */}
+            <div
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-8"
+              style={{ ...ff, fontSize: 12, fontWeight: 510, background: PT.bg, border: `1px solid ${PT.border}`, color: PT.muted }}
+            >
+              <span className="inline-flex size-1.5 rounded-full animate-pulse" style={{ background: '#27a644' }} />
+              每日收盘自动运行 · 全市场 5000+ 标的扫描
+            </div>
+
+            {/* H1 */}
+            <h1
+              className="font-bold leading-[1.06] mb-7"
+              style={{
+                ...ff,
+                fontSize: 'clamp(2.8rem, 6vw, 5rem)',
+                fontWeight: 590,
+                letterSpacing: 'clamp(-1.5px, -0.025em, -2.5px)',
+                color: PT.heading,
+              }}
+            >
+              让 AI 替你盯盘<br />
+              <span style={{ color: PT.red }}>量化</span>选股<br />
+              不凭感觉
+            </h1>
+
+            {/* Subtitle */}
+            <p
+              className="leading-relaxed mb-10"
+              style={{ ...ff, fontSize: 16, fontWeight: 400, letterSpacing: '-0.2px', color: PT.body, lineHeight: 1.75, maxWidth: '38ch' }}
+            >
+              基于 MACD W底量化策略，结合板块主力资金流追踪与 AI 智能复盘，
+              每日精准发现高胜率买入信号并{' '}
+              <strong style={{ color: '#27a644', fontWeight: 590 }}>实时推送到手机</strong>。
+            </p>
+
+            {/* CTA buttons */}
+            <div className="flex flex-col sm:flex-row items-start gap-3 mb-12">
+              <Link href="/signup">
+                <button
+                  onClick={() => trackEvent('click_cta', { button_name: 'hero_start' })}
+                  className="cursor-pointer group inline-flex items-center gap-2.5 transition-all hover:brightness-110 active:scale-[0.98]"
+                  style={{
+                    ...ff, fontWeight: 590, fontSize: 15, borderRadius: 10,
+                    background: PT.red, color: '#fff', padding: '14px 28px',
+                    boxShadow: `0 0 0 1px rgba(230,0,35,0.5), 0 8px 24px rgba(230,0,35,0.22)`,
+                  }}
+                >
+                  免费开始使用
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </Link>
+
+              <Link href="/login">
+                <button
+                  className="cursor-pointer inline-flex items-center gap-2 transition-all active:scale-[0.98]"
+                  style={{
+                    ...ff, fontWeight: 510, fontSize: 15, borderRadius: 10,
+                    background: PT.bg, border: `1px solid ${PT.border}`, color: PT.body, padding: '14px 24px',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = PT.muted)}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = PT.border)}
+                >
+                  已有账户，立即登录
+                </button>
+              </Link>
+            </div>
+
+            {/* Social proof */}
+            <div className="flex flex-wrap items-center gap-6" style={{ ...ff, fontSize: 12, color: PT.muted }}>
+              <div className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" style={{ color: PT.red }} />
+                <span>1000+ 交易者信任</span>
+              </div>
+              <span style={{ color: PT.border }}>|</span>
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5" style={{ color: PT.red }} />
+                <span>年化回测 ~40%</span>
+              </div>
+              <span style={{ color: PT.border }}>|</span>
+              <div className="flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" style={{ color: PT.red }} />
+                <span>全市场 A股覆盖</span>
+              </div>
+            </div>
           </div>
 
-          {/* H1 */}
-          <h1
-            className="font-bold leading-[1.06] mb-7"
-            style={{
-              ...ff,
-              fontSize: 'clamp(3rem, 8vw, 6rem)',
-              fontWeight: 590,
-              letterSpacing: 'clamp(-1.5px, -0.025em, -2.5px)',
-              color: PT.heading,
-              maxWidth: '16ch',
-            }}
-          >
-            让 AI 替你盯盘<br />
-            <span style={{ color: PT.red }}>量化</span>选股<br />不凭感觉
-          </h1>
+          {/* ── Right: app preview mockup ── */}
+          <div className="hidden lg:flex flex-1 flex-col gap-3 w-full" style={{ maxWidth: 460 }}>
 
-          {/* Subtitle */}
-          <p
-            className="max-w-xl mx-auto leading-relaxed mb-12"
-            style={{ ...ff, fontSize: 17, fontWeight: 400, letterSpacing: '-0.2px', color: PT.body, lineHeight: 1.7 }}
-          >
-            基于 MACD W底量化策略，结合板块主力资金流追踪与 AI 智能复盘，
-            每日精准发现高胜率买入信号并{' '}
-            <strong style={{ color: '#27a644', fontWeight: 590 }}>实时推送到手机</strong>。
-          </p>
+            {/* NAV chart card */}
+            <div style={{ ...card, padding: '20px 20px 14px' }}>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p style={{ ...ff, fontSize: 11, color: PT.muted, marginBottom: 4 }}>策略累计收益率</p>
+                  <p style={{ ...ff, fontSize: 28, fontWeight: 590, color: PT.red, letterSpacing: '-0.5px' }}>+38.7%</p>
+                </div>
+                <span
+                  className="px-2.5 py-1 rounded-full"
+                  style={{ ...ff, fontSize: 11, fontWeight: 590, background: PT.redL, color: PT.red }}
+                >
+                  ↑ 本月 +4.2%
+                </span>
+              </div>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
-            <Link href="/signup">
-              <button
-                onClick={() => trackEvent('click_cta', { button_name: 'hero_start' })}
-                className="cursor-pointer group inline-flex items-center gap-2.5 rounded-xl transition-all hover:brightness-110 active:scale-[0.98]"
-                style={{
-                  ...ff,
-                  fontWeight: 590,
-                  fontSize: 15,
-                  borderRadius: 10,
-                  background: PT.red,
-                  color: '#fff',
-                  padding: '14px 28px',
-                  boxShadow: `0 0 0 1px rgba(230,0,35,0.5), 0 8px 24px rgba(230,0,35,0.22)`,
-                  letterSpacing: '-0.2px',
-                }}
-              >
-                免费开始使用
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </Link>
-
-            <Link href="/login">
-              <button
-                className="cursor-pointer inline-flex items-center gap-2 rounded-xl transition-all active:scale-[0.98]"
-                style={{
-                  ...ff,
-                  fontWeight: 510,
-                  fontSize: 15,
-                  borderRadius: 10,
-                  background: PT.bg,
-                  border: `1px solid ${PT.border}`,
-                  color: PT.body,
-                  padding: '14px 24px',
-                  letterSpacing: '-0.1px',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = PT.muted)}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = PT.border)}
-              >
-                已有账户，立即登录
-              </button>
-            </Link>
-          </div>
-
-          {/* Social proof strip */}
-          <div className="flex flex-wrap items-center justify-center gap-6"
-            style={{ ...ff, fontSize: 12, color: PT.muted }}>
-            <div className="flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" style={{ color: PT.red }} />
-              <span>1000+ 交易者信任使用</span>
+              {/* SVG chart */}
+              <svg viewBox="0 0 400 90" className="w-full" style={{ height: 80, display: 'block' }}>
+                <defs>
+                  <linearGradient id="navFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PT.red} stopOpacity="0.15" />
+                    <stop offset="100%" stopColor={PT.red} stopOpacity="0.01" />
+                  </linearGradient>
+                </defs>
+                {/* Grid lines */}
+                {[20, 45, 70].map(y => (
+                  <line key={y} x1="0" y1={y} x2="400" y2={y} stroke={PT.border} strokeWidth="0.5" />
+                ))}
+                {/* Area fill */}
+                <path
+                  d="M0,72 C30,68 50,60 80,54 C110,48 130,62 160,46 C190,32 215,44 245,28 C270,16 300,22 330,12 C355,5 375,8 400,6 L400,90 L0,90 Z"
+                  fill="url(#navFill)"
+                />
+                {/* Line */}
+                <path
+                  d="M0,72 C30,68 50,60 80,54 C110,48 130,62 160,46 C190,32 215,44 245,28 C270,16 300,22 330,12 C355,5 375,8 400,6"
+                  fill="none"
+                  stroke={PT.red}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* End dot */}
+                <circle cx="400" cy="6" r="3.5" fill={PT.red} />
+              </svg>
             </div>
-            <span style={{ color: PT.border }}>|</span>
-            <div className="flex items-center gap-1.5">
-              <TrendingUp className="h-3.5 w-3.5" style={{ color: '#27a644' }} />
-              <span>回测年化收益 ~40%</span>
+
+            {/* Signal cards row */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { name: '宁德时代', code: '300750', signal: 'MACD W底金叉', color: PT.red, label: '买入' },
+                { name: '比亚迪',   code: '002594', signal: '板块资金流入强',  color: PT.red, label: '关注' },
+              ].map(s => (
+                <div key={s.code} style={{ ...card, padding: '14px 16px' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full animate-pulse" style={{ background: s.color, display: 'inline-block' }} />
+                      <span style={{ ...ff, fontSize: 12, fontWeight: 590, color: PT.heading }}>{s.name}</span>
+                    </div>
+                    <span
+                      className="px-2 py-0.5 rounded-full"
+                      style={{ ...ff, fontSize: 10, fontWeight: 590, background: PT.redL, color: PT.red }}
+                    >
+                      {s.label}
+                    </span>
+                  </div>
+                  <p style={{ ...ff, fontSize: 11, color: PT.muted }}>{s.signal}</p>
+                  <p style={{ ...ff, fontSize: 10, color: PT.border, marginTop: 2 }}>{s.code}</p>
+                </div>
+              ))}
             </div>
-            <span style={{ color: PT.border }}>|</span>
-            <div className="flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5" style={{ color: PT.red }} />
-              <span>全市场 A股覆盖</span>
+
+            {/* Metrics chips */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: '今日扫描',  value: '5,247', color: PT.heading },
+                { label: '触发信号',  value: '23',    color: PT.red    },
+                { label: '胜率（近30笔）', value: '68%', color: PT.red },
+              ].map(m => (
+                <div key={m.label} style={{ ...card, padding: '14px 10px', textAlign: 'center' }}>
+                  <p style={{ ...ff, fontSize: 18, fontWeight: 590, color: m.color, letterSpacing: '-0.3px' }}>{m.value}</p>
+                  <p style={{ ...ff, fontSize: 10, color: PT.muted, marginTop: 4, lineHeight: 1.4 }}>{m.label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* ── Pain vs Solution ── */}
         <section style={{ borderTop: `1px solid ${PT.border}`, background: PT.bg }}>
-          <div className="max-w-5xl mx-auto px-6 py-28">
+          <div className="max-w-6xl mx-auto px-6 py-28">
             <div className="text-center mb-16">
               <SectionLabel>PAIN POINTS</SectionLabel>
               <SectionHeading className="mb-4">你是否有这些困惑？</SectionHeading>
@@ -382,7 +501,7 @@ export function LandingPage() {
 
         {/* ── How It Works ── */}
         <section>
-          <div className="max-w-5xl mx-auto px-6 py-28">
+          <div className="max-w-6xl mx-auto px-6 py-28">
             <div className="text-center mb-16">
               <SectionLabel>HOW IT WORKS</SectionLabel>
               <SectionHeading>三步，从选股到通知全自动</SectionHeading>
@@ -417,8 +536,8 @@ export function LandingPage() {
         </section>
 
         {/* ── Features ── */}
-        <section style={{ borderTop: `1px solid ${PT.border}`, borderBottom: `1px solid ${PT.border}`, background: PT.bg }}>
-          <div className="max-w-5xl mx-auto px-6 py-28">
+        <section id="features" style={{ borderTop: `1px solid ${PT.border}`, borderBottom: `1px solid ${PT.border}`, background: PT.bg }}>
+          <div className="max-w-6xl mx-auto px-6 py-28">
             <div className="text-center mb-16">
               <SectionLabel>FEATURES</SectionLabel>
               <SectionHeading className="mb-3">完整功能体系</SectionHeading>
@@ -455,22 +574,24 @@ export function LandingPage() {
         </section>
 
         {/* ── 数据背书 ── */}
-        <section>
-          <div className="max-w-5xl mx-auto px-6 py-28">
+        <section style={{ borderTop: `1px solid ${PT.border}`, borderBottom: `1px solid ${PT.border}` }}>
+          <div className="max-w-6xl mx-auto px-6 py-28">
             <div className="text-center mb-16">
               <SectionLabel>BY THE NUMBERS</SectionLabel>
               <SectionHeading className="mb-3">真实数据，看得见的成效</SectionHeading>
               <p style={{ ...ff, fontSize: 15, color: PT.muted }}>策略表现公开透明，历史数据真实可查</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
               {METRICS.map((m) => (
-                <div key={m.label} style={{ ...card, padding: '22px 20px' }}>
-                  <div style={{ ...ff, fontSize: 28, fontWeight: 590, color: m.color, letterSpacing: '-0.5px', lineHeight: 1 }}>
+                <div key={m.label} style={{ ...card, padding: '28px 24px' }}>
+                  <div style={{ ...ff, fontSize: 36, fontWeight: 590, color: m.color, letterSpacing: '-1px', lineHeight: 1 }}>
                     {m.value}
                   </div>
-                  <div style={{ ...ff, fontSize: 12, fontWeight: 510, color: PT.heading, marginTop: 8 }}>{m.label}</div>
-                  <div style={{ ...ff, fontSize: 11, fontWeight: 400, color: PT.muted, marginTop: 3 }}>{m.note}</div>
+                  <div style={{ borderTop: `1px solid ${PT.border}`, marginTop: 16, paddingTop: 14 }}>
+                    <div style={{ ...ff, fontSize: 13, fontWeight: 510, color: PT.heading }}>{m.label}</div>
+                    <div style={{ ...ff, fontSize: 12, fontWeight: 400, color: PT.muted, marginTop: 3 }}>{m.note}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -478,8 +599,8 @@ export function LandingPage() {
         </section>
 
         {/* ── Testimonials ── */}
-        <section style={{ borderTop: `1px solid ${PT.border}`, background: PT.bg }}>
-          <div className="max-w-5xl mx-auto px-6 py-28">
+        <section id="testimonials" style={{ borderTop: `1px solid ${PT.border}`, background: PT.bg }}>
+          <div className="max-w-6xl mx-auto px-6 py-28">
             <div className="text-center mb-16">
               <SectionLabel>TESTIMONIALS</SectionLabel>
               <SectionHeading>真实用户反馈</SectionHeading>
@@ -508,25 +629,24 @@ export function LandingPage() {
         </section>
 
         {/* ── Pricing ── */}
-        <section style={{ borderTop: `1px solid ${PT.border}`, borderBottom: `1px solid ${PT.border}` }}>
-          <div className="max-w-5xl mx-auto px-6 py-28">
+        <section id="pricing" style={{ borderTop: `1px solid ${PT.border}`, borderBottom: `1px solid ${PT.border}`, background: PT.bg }}>
+          <div className="max-w-6xl mx-auto px-6 py-28">
             <div className="text-center mb-16">
               <SectionLabel>PRICING</SectionLabel>
               <SectionHeading className="mb-3">简单透明的定价</SectionHeading>
               <p style={{ ...ff, fontSize: 15, color: PT.muted }}>先免费体验，确认有价值再付费</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-5">
               {PLANS.map((plan) => (
                 <div
                   key={plan.name}
                   className="relative flex flex-col"
                   style={{
                     background: plan.highlight ? PT.redL : PT.bg,
-                    border: `1px solid ${plan.highlight ? 'rgba(230,0,35,0.35)' : PT.border}`,
+                    border: `1px solid ${plan.highlight ? 'rgba(230,0,35,0.28)' : PT.border}`,
                     borderRadius: 16,
-                    padding: 28,
-                    boxShadow: plan.highlight ? '0 0 40px rgba(230,0,35,0.08)' : 'none',
+                    padding: plan.highlight ? '36px 28px' : '28px 24px',
                   }}
                 >
                   {plan.badge && (
@@ -539,23 +659,26 @@ export function LandingPage() {
                   )}
 
                   <div className="mb-6">
-                    <p style={{ ...ff, fontSize: 13, fontWeight: 590, color: plan.highlight ? PT.red : PT.muted, marginBottom: 6, letterSpacing: '0.02em' }}>
+                    <p style={{ ...ff, fontSize: 12, fontWeight: 590, color: plan.highlight ? PT.red : PT.muted, marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       {plan.name}
                     </p>
                     <div className="flex items-baseline gap-1.5">
-                      <span style={{ ...ff, fontSize: 40, fontWeight: 590, letterSpacing: '-1px', color: PT.heading }}>
+                      <span style={{ ...ff, fontSize: 42, fontWeight: 590, letterSpacing: '-1.5px', color: PT.heading }}>
                         {plan.price}
                       </span>
                       <span style={{ ...ff, fontSize: 13, color: PT.muted }}>{plan.unit}</span>
                     </div>
-                    <p style={{ ...ff, fontSize: 12, color: PT.muted, marginTop: 5 }}>{plan.desc}</p>
+                    <p style={{ ...ff, fontSize: 12, color: PT.muted, marginTop: 6 }}>{plan.desc}</p>
                   </div>
 
-                  <ul className="space-y-3 flex-1 mb-7">
+                  {/* Divider */}
+                  <div style={{ borderTop: `1px solid ${plan.highlight ? 'rgba(230,0,35,0.15)' : PT.border}`, marginBottom: 20 }} />
+
+                  <ul className="space-y-3 flex-1 mb-8">
                     {plan.features.map((feat) => (
                       <li key={feat} className="flex items-center gap-2.5">
                         <CheckCircle className="h-3.5 w-3.5 shrink-0" style={{ color: plan.highlight ? PT.red : PT.muted }} />
-                        <span style={{ ...ff, fontSize: 13, color: PT.muted }}>{feat}</span>
+                        <span style={{ ...ff, fontSize: 13, color: plan.highlight ? PT.body : PT.muted }}>{feat}</span>
                       </li>
                     ))}
                   </ul>
@@ -563,7 +686,7 @@ export function LandingPage() {
                   <Link href="/signup" className="block">
                     <button
                       onClick={() => trackEvent('click_cta', { button_name: `pricing_${plan.name}` })}
-                      className="cursor-pointer w-full py-3 rounded-xl text-[14px] transition-all hover:brightness-110 active:scale-[0.98]"
+                      className="cursor-pointer w-full py-3 text-[14px] transition-all hover:brightness-110 active:scale-[0.98]"
                       style={
                         plan.highlight
                           ? { ...ff, fontWeight: 590, background: PT.red, color: '#fff', borderRadius: 10 }
@@ -580,7 +703,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Final CTA ── */}
-        <section className="max-w-5xl mx-auto px-6 py-24">
+        <section className="max-w-6xl mx-auto px-6 py-24">
           <div
             className="relative text-center overflow-hidden rounded-2xl"
             style={{ background: PT.bg, border: `1px solid ${PT.border}`, padding: '96px 48px' }}
