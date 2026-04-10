@@ -601,17 +601,17 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                 </DialogDescription>
                             </DialogHeader>
                             {isSignalConfigLoading ? (
-                                <div className="py-10 flex items-center justify-center text-slate-500">
-                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                <div className="py-10 flex items-center justify-center" style={{ color: PT.muted }}>
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" style={{ color: PT.red }} />
                                     正在加载订阅配置...
                                 </div>
                             ) : (
-                                <div className="space-y-5">
-                                    <div className="rounded-lg border border-slate-200 p-3">
+                                <div className="space-y-4">
+                                    <div className="rounded-xl p-3" style={{ border: `1px solid ${PT.border}`, backgroundColor: PT.fog }}>
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm font-semibold text-slate-900">启用信号订阅</p>
-                                                <p className="text-xs text-slate-500">关闭后不会发送任何买卖信号通知</p>
+                                                <p className="text-sm font-semibold" style={{ color: PT.heading }}>启用信号订阅</p>
+                                                <p className="text-xs" style={{ color: PT.muted }}>关闭后不会发送任何买卖信号通知</p>
                                             </div>
                                             <Switch
                                                 checked={signalConfig.enabled}
@@ -620,18 +620,18 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                         </div>
                                     </div>
 
-                                    <div className="rounded-lg border border-slate-200 p-3 space-y-3">
-                                        <p className="text-sm font-semibold text-slate-900">信号类型</p>
+                                    <div className="rounded-xl p-3 space-y-3" style={{ border: `1px solid ${PT.border}` }}>
+                                        <p className="text-sm font-semibold" style={{ color: PT.heading }}>信号类型</p>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
-                                                <Label className="text-sm text-slate-700">买入信号 (BUY)</Label>
+                                            <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ border: `1px solid ${PT.border}` }}>
+                                                <Label className="text-sm" style={{ color: PT.body }}>买入信号 (BUY)</Label>
                                                 <Switch
                                                     checked={signalConfig.events.includes('BUY')}
                                                     onCheckedChange={(checked) => handleSignalEventToggle('BUY', checked)}
                                                 />
                                             </div>
-                                            <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
-                                                <Label className="text-sm text-slate-700">卖出信号 (SELL)</Label>
+                                            <div className="flex items-center justify-between rounded-xl px-3 py-2" style={{ border: `1px solid ${PT.border}` }}>
+                                                <Label className="text-sm" style={{ color: PT.body }}>卖出信号 (SELL)</Label>
                                                 <Switch
                                                     checked={signalConfig.events.includes('SELL')}
                                                     onCheckedChange={(checked) => handleSignalEventToggle('SELL', checked)}
@@ -640,14 +640,14 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                         </div>
                                     </div>
 
-                                    <div className="rounded-lg border border-slate-200 p-3 space-y-3">
-                                        <p className="text-sm font-semibold text-slate-900">通知渠道</p>
+                                    <div className="rounded-xl p-3 space-y-3" style={{ border: `1px solid ${PT.border}` }}>
+                                        <p className="text-sm font-semibold" style={{ color: PT.heading }}>通知渠道</p>
                                         {CHANNEL_DEFS.map((channel) => {
                                             const current = signalConfig.channels.find(c => c.type === channel.type) ?? { enabled: false, target: '', type: channel.type };
                                             return (
-                                                <div key={channel.type} className="rounded-md border border-slate-200 px-3 py-3 space-y-2">
+                                                <div key={channel.type} className="rounded-xl px-3 py-3 space-y-2" style={{ border: `1px solid ${PT.border}`, backgroundColor: current.enabled ? PT.bg : PT.fog }}>
                                                     <div className="flex items-center justify-between">
-                                                        <Label className="text-sm font-medium text-slate-800">{channel.label}</Label>
+                                                        <Label className="text-sm font-medium" style={{ color: PT.heading }}>{channel.label}</Label>
                                                         <Switch
                                                             checked={current.enabled}
                                                             onCheckedChange={(checked) => handleSignalChannelToggle(channel.type, checked)}
@@ -658,6 +658,7 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                                         onChange={(e) => handleSignalChannelTarget(channel.type, e.target.value)}
                                                         placeholder={channel.placeholder}
                                                         disabled={!current.enabled}
+                                                        style={{ borderRadius: 12, borderColor: PT.border }}
                                                     />
                                                 </div>
                                             );
@@ -666,13 +667,24 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                 </div>
                             )}
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsSignalDialogOpen(false)}>
+                                <button
+                                    onClick={() => setIsSignalDialogOpen(false)}
+                                    className="text-sm font-medium transition-colors"
+                                    style={{ border: `1px solid ${PT.border}`, borderRadius: 12, backgroundColor: PT.bg, color: PT.body, padding: '8px 16px' }}
+                                >
                                     取消
-                                </Button>
-                                <Button onClick={saveSignalConfig} disabled={isSignalConfigLoading || isSignalSaving}>
-                                    {isSignalSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                </button>
+                                <button
+                                    onClick={saveSignalConfig}
+                                    disabled={isSignalConfigLoading || isSignalSaving}
+                                    className="text-sm font-medium text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                    style={{ backgroundColor: PT.red, borderRadius: 12, border: 'none', padding: '8px 16px', cursor: isSignalSaving ? 'not-allowed' : 'pointer' }}
+                                    onMouseEnter={e => { if (!isSignalSaving) (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.redH; }}
+                                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.red}
+                                >
+                                    {isSignalSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                                     保存订阅
-                                </Button>
+                                </button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -741,10 +753,10 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                     <CardContent className="pb-3">
                         <div className="relative">
                             {isFetching && (
-                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-lg">
+                                <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[1px] rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.6)' }}>
                                     <div className="flex flex-col items-center gap-2">
-                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                        <p className="text-xs text-slate-500 font-medium tracking-wider">加载中...</p>
+                                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: PT.red }} />
+                                        <p className="text-xs font-medium tracking-wider" style={{ color: PT.muted }}>加载中...</p>
                                     </div>
                                 </div>
                             )}
@@ -755,15 +767,15 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                     <ComposedChart data={mergedChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} syncId="strategySync">
                                         <defs>
                                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                                <stop offset="5%" stopColor={PT.red} stopOpacity={0.25} />
+                                                <stop offset="95%" stopColor={PT.red} stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                        <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={PT.border} />
+                                        <ReferenceLine y={0} stroke={PT.sand} strokeDasharray="4 4" />
                                         <XAxis
                                             dataKey="date"
-                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            tick={{ fontSize: 11, fill: PT.muted }}
                                             axisLine={false}
                                             tickLine={false}
                                             tickFormatter={formatTick}
@@ -771,21 +783,21 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                         />
                                         <YAxis
                                             width={48}
-                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            tick={{ fontSize: 11, fill: PT.muted }}
                                             axisLine={false}
                                             tickLine={false}
                                             domain={['auto', 'auto']}
                                             tickFormatter={(v: number) => `${v}%`}
                                         />
                                         <Tooltip
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }}
+                                            contentStyle={{ borderRadius: 12, border: `1px solid ${PT.border}`, boxShadow: 'none', fontSize: 12, backgroundColor: PT.bg }}
                                             labelFormatter={(value) => formatTick(value as string)}
                                             formatter={(value: number, name: string) => {
                                                 const labelMap: Record<string, string> = { '策略': '策略收益', '超额': '超额收益', '沪深300': '沪深300' };
                                                 return [`${value}%`, labelMap[name] || name];
                                             }}
                                         />
-                                        <Area type="monotone" dataKey="strategy" name="策略" stroke="hsl(var(--primary))" fillOpacity={0.5} fill="url(#colorValue)" strokeWidth={2.5} activeDot={{ r: 3 }} />
+                                        <Area type="monotone" dataKey="strategy" name="策略" stroke={PT.red} fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} activeDot={{ r: 3 }} />
                                         {filteredBenchmark.length > 0 && (
                                             <Line type="monotone" dataKey="benchmark" name="沪深300" stroke="#0ea5e9" strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} />
                                         )}
@@ -810,11 +822,11 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                                 <stop offset="95%" stopColor="#94a3b8" stopOpacity={0.02} />
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={PT.border} />
                                         <XAxis dataKey="date" hide />
                                         <YAxis
                                             width={48}
-                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            tick={{ fontSize: 11, fill: PT.muted }}
                                             axisLine={false}
                                             tickLine={false}
                                             domain={[0, 100]}
@@ -822,7 +834,7 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                                             tickFormatter={(v: number) => `${v}%`}
                                         />
                                         <Tooltip
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }}
+                                            contentStyle={{ borderRadius: 12, border: `1px solid ${PT.border}`, boxShadow: 'none', fontSize: 12, backgroundColor: PT.bg }}
                                             labelFormatter={(value) => formatTick(value as string)}
                                             formatter={(value: number, name: string) => [`${value}%`, name]}
                                         />
@@ -834,28 +846,28 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                         </div>
 
                         {/* Unified Legend */}
-                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-100">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                                <div className="w-4 h-0.5 rounded bg-primary" />策略
+                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 pt-2" style={{ borderTop: `1px solid ${PT.border}` }}>
+                            <div className="flex items-center gap-1.5 text-xs" style={{ color: PT.body }}>
+                                <div className="w-4 h-0.5 rounded" style={{ backgroundColor: PT.red }} />策略
                             </div>
                             {filteredBenchmark.length > 0 && (
-                                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                <div className="flex items-center gap-1.5 text-xs" style={{ color: PT.body }}>
                                     <div className="w-4 h-0.5 rounded" style={{ backgroundColor: '#0ea5e9' }} />沪深300
                                 </div>
                             )}
                             {filteredExcess.length > 0 && (
-                                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                <div className="flex items-center gap-1.5 text-xs" style={{ color: PT.body }}>
                                     <div className="w-4 h-0.5 rounded" style={{ backgroundColor: '#8b5cf6' }} />超额
                                 </div>
                             )}
                             {fundChartData.length > 0 && (
                                 <>
-                                    <div className="w-px h-3 bg-slate-200 mx-1" />
-                                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                    <div className="w-px h-3 mx-1" style={{ backgroundColor: PT.border }} />
+                                    <div className="flex items-center gap-1.5 text-xs" style={{ color: PT.body }}>
                                         <div className="w-3 h-3 rounded-sm opacity-70" style={{ backgroundColor: '#3b82f6' }} />持仓%
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                                        <div className="w-3 h-3 rounded-sm opacity-50" style={{ backgroundColor: '#94a3b8' }} />现金%
+                                    <div className="flex items-center gap-1.5 text-xs" style={{ color: PT.body }}>
+                                        <div className="w-3 h-3 rounded-sm opacity-50" style={{ backgroundColor: PT.muted }} />现金%
                                     </div>
                                 </>
                             )}
@@ -863,26 +875,32 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
 
                         {/* 资金占用快照 — 卡片底部；持仓相关数字可点击打开持仓面板 */}
                         {fundCurrent && (
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">资金占用</span>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 pt-2 text-[11px]" style={{ borderTop: `1px solid ${PT.border}`, color: PT.muted }}>
+                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: PT.muted }}>资金占用</span>
                                 <button
                                     type="button"
                                     onClick={() => setIsPositionsOpen(true)}
-                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors cursor-pointer"
+                                    className="group flex items-center gap-0.5 transition-colors cursor-pointer"
+                                    style={{ color: PT.muted }}
+                                    onMouseEnter={e => (e.currentTarget.style.color = PT.red)}
+                                    onMouseLeave={e => (e.currentTarget.style.color = PT.muted)}
                                 >
-                                    持仓&nbsp;<b className="text-blue-600 underline decoration-dashed underline-offset-2 decoration-blue-400/50 group-hover:decoration-solid group-hover:decoration-blue-600">{(fundCurrent.invested_ratio * 100).toFixed(1)}%</b>
+                                    持仓&nbsp;<b style={{ color: PT.red, textDecoration: 'underline', textDecorationStyle: 'dashed', textUnderlineOffset: 2 }}>{(fundCurrent.invested_ratio * 100).toFixed(1)}%</b>
                                 </button>
-                                <span className="text-slate-300">·</span>
-                                <span>现金&nbsp;<b className="text-slate-600">{(fundCurrent.cash_ratio * 100).toFixed(1)}%</b></span>
-                                <span className="text-slate-300">·</span>
-                                <span>净值&nbsp;<b className="text-slate-700">¥{(fundCurrent.nav_absolute / 10000).toFixed(2)}万</b></span>
-                                <span className="text-slate-300">·</span>
+                                <span style={{ color: PT.border }}>·</span>
+                                <span>现金&nbsp;<b style={{ color: PT.body }}>{(fundCurrent.cash_ratio * 100).toFixed(1)}%</b></span>
+                                <span style={{ color: PT.border }}>·</span>
+                                <span>净值&nbsp;<b style={{ color: PT.heading }}>¥{(fundCurrent.nav_absolute / 10000).toFixed(2)}万</b></span>
+                                <span style={{ color: PT.border }}>·</span>
                                 <button
                                     type="button"
                                     onClick={() => setIsPositionsOpen(true)}
-                                    className="group flex items-center gap-0.5 hover:text-blue-700 transition-colors cursor-pointer"
+                                    className="group flex items-center gap-0.5 transition-colors cursor-pointer"
+                                    style={{ color: PT.muted }}
+                                    onMouseEnter={e => (e.currentTarget.style.color = PT.red)}
+                                    onMouseLeave={e => (e.currentTarget.style.color = PT.muted)}
                                 >
-                                    持仓&nbsp;<b className="text-slate-700 group-hover:text-blue-600 underline decoration-dashed underline-offset-2 decoration-slate-400/50 group-hover:decoration-solid group-hover:decoration-blue-600">{fundCurrent.position_count}</b>&nbsp;只
+                                    持仓&nbsp;<b style={{ color: PT.heading, textDecoration: 'underline', textDecorationStyle: 'dashed', textUnderlineOffset: 2 }}>{fundCurrent.position_count}</b>&nbsp;只
                                 </button>
                             </div>
                         )}
@@ -911,36 +929,32 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                             <div className="relative group">
                                 <Dialog>
                                     <div className="relative">
-                                        <p className="text-sm text-slate-600 leading-relaxed line-clamp-4 text-justify">
+                                        <p className="text-sm leading-relaxed line-clamp-4 text-justify" style={{ color: PT.body }}>
                                             {detail.description}
                                         </p>
-                                        {/* Gradient Overlay for visual cue of truncation */}
                                         {(detail.description?.length ?? 0) > 80 && (
-                                            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+                                            <div className="absolute bottom-0 left-0 right-0 h-6 pointer-events-none" style={{ background: `linear-gradient(to top, ${PT.bg}, transparent)` }} />
                                         )}
                                     </div>
 
                                     {(detail.description?.length ?? 0) > 80 && (
                                         <DialogTrigger asChild>
-                                            <Button
-                                                variant="link"
-                                                className="p-0 h-auto text-primary text-xs font-medium mt-1 hover:text-primary/80"
-                                            >
+                                            <button className="p-0 h-auto text-xs font-medium mt-1 bg-transparent border-none cursor-pointer" style={{ color: PT.red }}>
                                                 查看全部
-                                            </Button>
+                                            </button>
                                         </DialogTrigger>
                                     )}
 
-                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" style={{ borderRadius: 16, border: `1px solid ${PT.border}`, backgroundColor: PT.bg }}>
                                         <DialogHeader>
                                             <DialogTitle className="flex items-center gap-2">
-                                                <span className="text-lg font-bold">{detail.name}</span>
-                                                <span className="text-sm font-normal text-slate-500">策略说明</span>
+                                                <span className="text-lg font-bold" style={{ color: PT.heading }}>{detail.name}</span>
+                                                <span className="text-sm font-normal" style={{ color: PT.muted }}>策略说明</span>
                                             </DialogTitle>
                                         </DialogHeader>
                                         <div className="mt-4">
-                                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                                <p className="text-sm text-slate-700 leading-7 whitespace-pre-wrap text-justify">
+                                            <div className="p-4 rounded-xl" style={{ backgroundColor: PT.fog, border: `1px solid ${PT.border}` }}>
+                                                <p className="text-sm leading-7 whitespace-pre-wrap text-justify" style={{ color: PT.body }}>
                                                     {detail.description}
                                                 </p>
                                             </div>
@@ -951,77 +965,80 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                         </CardContent>
                     </Card>
 
-                    <Card style={{ background: PT.fog, border: `1px solid ${PT.border}`, boxShadow: 'none' }}>
+                    <Card style={{ background: PT.bg, border: `1px solid ${PT.border}`, boxShadow: 'none', borderRadius: 16 }}>
                         <CardContent className="pt-4 pb-3 grid grid-cols-3 gap-x-4 gap-y-2">
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">年化收益</p>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>年化收益</p>
                                 <p className={cn("text-base font-black", (detail.annualizedReturn ?? 0) > 0 ? "text-red-500" : "text-green-500")}>
                                     {detail.annualizedReturn !== null && detail.annualizedReturn !== undefined ? `${detail.annualizedReturn > 0 ? '+' : ''}${detail.annualizedReturn}%` : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">夏普比率</p>
-                                <p className="text-base font-bold text-slate-800">{detail.sharpeRatio ?? '--'}</p>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>夏普比率</p>
+                                <p className="text-base font-bold" style={{ color: PT.heading }}>{detail.sharpeRatio ?? '--'}</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">最大回撤</p>
-                                <p className="text-base font-bold text-slate-800">{detail.maxDrawdown ?? '--'}%</p>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>最大回撤</p>
+                                <p className="text-base font-bold" style={{ color: PT.heading }}>{detail.maxDrawdown ?? '--'}%</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">超额收益</p>
-                                <p className={cn("text-base font-bold", (filteredExcess.at(-1)?.value ?? 0) > 0 ? "text-red-500" : "text-slate-800")}>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>超额收益</p>
+                                <p className={cn("text-base font-bold", (filteredExcess.at(-1)?.value ?? 0) > 0 ? "text-red-500" : "")} style={(filteredExcess.at(-1)?.value ?? 0) <= 0 ? { color: PT.heading } : {}}>
                                     {filteredExcess.at(-1)?.value !== undefined
                                         ? `${filteredExcess.at(-1)!.value > 0 ? '+' : ''}${filteredExcess.at(-1)!.value.toFixed(2)}%`
                                         : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">日胜率</p>
-                                <p className={cn("text-base font-bold", (detail.winRate ?? 0) >= 50 ? "text-red-500" : "text-slate-800")}>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>日胜率</p>
+                                <p className={cn("text-base font-bold", (detail.winRate ?? 0) >= 50 ? "text-red-500" : "")} style={(detail.winRate ?? 0) < 50 ? { color: PT.heading } : {}}>
                                     {detail.winRate !== null && detail.winRate !== undefined ? `${detail.winRate}%` : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">交易胜率</p>
-                                <p className={cn("text-base font-bold", (detail.tradeWinRate ?? 0) >= 50 ? "text-red-500" : "text-slate-800")}>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>交易胜率</p>
+                                <p className={cn("text-base font-bold", (detail.tradeWinRate ?? 0) >= 50 ? "text-red-500" : "")} style={(detail.tradeWinRate ?? 0) < 50 ? { color: PT.heading } : {}}>
                                     {detail.tradeWinRate !== null && detail.tradeWinRate !== undefined ? `${detail.tradeWinRate}%` : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">盈亏比</p>
-                                <p className={cn("text-base font-bold", (detail.profitLossRatio ?? 0) >= 1 ? "text-red-500" : "text-slate-800")}>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>盈亏比</p>
+                                <p className={cn("text-base font-bold", (detail.profitLossRatio ?? 0) >= 1 ? "text-red-500" : "")} style={(detail.profitLossRatio ?? 0) < 1 ? { color: PT.heading } : {}}>
                                     {detail.profitLossRatio !== null && detail.profitLossRatio !== undefined ? detail.profitLossRatio.toFixed(2) : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">盈利因子</p>
-                                <p className={cn("text-base font-bold", (detail.profitFactor ?? 0) >= 1 ? "text-red-500" : "text-slate-800")}>
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>盈利因子</p>
+                                <p className={cn("text-base font-bold", (detail.profitFactor ?? 0) >= 1 ? "text-red-500" : "")} style={(detail.profitFactor ?? 0) < 1 ? { color: PT.heading } : {}}>
                                     {detail.profitFactor !== null && detail.profitFactor !== undefined ? detail.profitFactor.toFixed(2) : '--'}
                                 </p>
                             </div>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">卡玛比率</p>
-                                <p className="text-base font-bold text-slate-800">
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>卡玛比率</p>
+                                <p className="text-base font-bold" style={{ color: PT.heading }}>
                                     {detail.calmarRatio !== null && detail.calmarRatio !== undefined ? detail.calmarRatio.toFixed(2) : '--'}
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsTradesOpen(true)}
-                                className="text-center rounded-md hover:bg-slate-100 transition-colors px-1 py-0.5 group cursor-pointer"
+                                className="text-center rounded-lg transition-colors px-1 py-0.5 group cursor-pointer"
+                                style={{ backgroundColor: 'transparent' }}
+                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = PT.sand)}
+                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                                 title="查看历史交易明细"
                             >
-                                <p className="text-[10px] text-slate-500 mb-0.5 group-hover:text-primary transition-colors flex items-center justify-center gap-0.5">
+                                <p className="text-[10px] mb-0.5 transition-colors flex items-center justify-center gap-0.5" style={{ color: PT.muted }}>
                                     已平仓交易数
-                                    <ArrowUpRight className="h-2.5 w-2.5 opacity-30 group-hover:opacity-100 transition-opacity" />
+                                    <ArrowUpRight className="h-2.5 w-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />
                                 </p>
-                                <p className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors underline decoration-dashed underline-offset-2 decoration-slate-300 group-hover:decoration-primary group-hover:decoration-solid">
+                                <p className="text-base font-bold transition-colors underline decoration-dashed underline-offset-2" style={{ color: PT.heading, textDecorationColor: PT.border }}>
                                     {detail.closedTrades !== null && detail.closedTrades !== undefined ? detail.closedTrades : '--'}
                                 </p>
                             </button>
                             <div className="text-center">
-                                <p className="text-[10px] text-slate-500 mb-0.5">风险等级</p>
-                                <p className="text-base font-bold text-slate-800">
+                                <p className="text-[10px] mb-0.5" style={{ color: PT.muted }}>风险等级</p>
+                                <p className="text-base font-bold" style={{ color: PT.heading }}>
                                     {detail.riskLevel === 'High' ? '高' : detail.riskLevel === 'Medium' ? '中' : '低'}
                                 </p>
                             </div>

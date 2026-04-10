@@ -146,7 +146,7 @@ function TrendTooltip({ active, payload }: any) {
       padding: '10px 14px',
       fontSize: 12,
       minWidth: 165,
-      boxShadow: 'rgba(0,0,0,0.12) 0px 8px 24px 0px',
+      
     }}>
       <p style={{ fontWeight: 400, color: PT.heading, borderBottom: `1px solid ${PT.border}`, paddingBottom: 6, marginBottom: 6 }}>
         {d.dateLabel}
@@ -425,7 +425,7 @@ export function SectorFlow({ jumpToBoardName, onJumpHandled }: SectorFlowProps =
             <Loader2 style={{ width: 20, height: 20, color: PT.body }} className="animate-spin" />
           </div>
         ) : trendError ? (
-          <div className="text-center py-10" style={{ fontSize: 13, color: '#ef4444' }}>{trendError}</div>
+          <div className="text-center py-10" style={{ fontSize: 13, color: PT.red }}>{trendError}</div>
         ) : chartData.length === 0 ? (
           <div className="text-center py-10" style={{ fontSize: 13, color: PT.body }}>暂无趋势数据</div>
         ) : (
@@ -561,7 +561,7 @@ export function SectorFlow({ jumpToBoardName, onJumpHandled }: SectorFlowProps =
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: 10,
-        boxShadow: 'rgba(0,0,0,0.08) 0px 4px 12px 0px',
+        
       }}>
         {/* Board type filter */}
         <div
@@ -588,10 +588,9 @@ export function SectorFlow({ jumpToBoardName, onJumpHandled }: SectorFlowProps =
                 borderRadius: 12,
                 background: boardType === opt.value ? PT.bg : 'transparent',
                 color: boardType === opt.value ? PT.heading : PT.body,
-                border: 'none',
                 cursor: 'pointer',
                 transition: 'all 150ms',
-                boxShadow: boardType === opt.value ? 'rgba(0,0,0,0.08) 0px 4px 12px 0px' : 'none',
+                border: boardType === opt.value ? `1px solid ${PT.border}` : '1px solid transparent',
               }}
             >
               {opt.label}
@@ -707,7 +706,7 @@ export function SectorFlow({ jumpToBoardName, onJumpHandled }: SectorFlowProps =
             background: PT.bg,
             border: `1px solid ${PT.border}`,
             borderRadius: 16,
-            boxShadow: 'rgba(0,0,0,0.08) 0px 4px 12px 0px',
+            
           }}
         >
           <div style={{
@@ -731,7 +730,7 @@ export function SectorFlow({ jumpToBoardName, onJumpHandled }: SectorFlowProps =
               </div>
             ) : searchError ? (
               <div className="flex justify-center items-center flex-1 py-10">
-                <p style={{ fontSize: 13, color: '#ef4444' }}>{searchError}</p>
+                <p style={{ fontSize: 13, color: PT.red }}>{searchError}</p>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="flex flex-col items-center justify-center flex-1 py-10 gap-2">
@@ -750,7 +749,7 @@ export function SectorFlow({ jumpToBoardName, onJumpHandled }: SectorFlowProps =
               </div>
             ) : listError ? (
               <div className="flex flex-col items-center justify-center flex-1 py-10 gap-3">
-                <p style={{ fontSize: 13, color: '#ef4444' }}>{listError}</p>
+                <p style={{ fontSize: 13, color: PT.red }}>{listError}</p>
                 <button
                   onClick={fetchSectorList}
                   style={{ fontSize: 12, color: PT.red, background: 'none', border: 'none', cursor: 'pointer' }}
@@ -778,7 +777,7 @@ export function SectorFlow({ jumpToBoardName, onJumpHandled }: SectorFlowProps =
             border: `1px solid ${PT.border}`,
             borderRadius: 16,
             padding: 16,
-            boxShadow: 'rgba(0,0,0,0.08) 0px 4px 12px 0px',
+            
           }}
         >
           {renderTrendPanel()}

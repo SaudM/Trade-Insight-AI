@@ -78,18 +78,19 @@ export function PositionManager({ config, onStopStrategy }: PositionManagerProps
             {config && (
                 <div
                     style={{
-                        background: PT.dark,
+                        background: PT.bg,
+                        border: `1px solid ${PT.border}`,
                         borderRadius: 16,
                         padding: '20px 24px',
                         position: 'relative',
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Decorative glow — Pinterest Red */}
+                    {/* Decorative red tint top-right */}
                     <div style={{
-                        position: 'absolute', top: '-60px', right: '-60px',
-                        width: 200, height: 200,
-                        background: `radial-gradient(circle, rgba(230,0,35,0.15), transparent 70%)`,
+                        position: 'absolute', top: 0, right: 0,
+                        width: 160, height: 160,
+                        background: `radial-gradient(circle at top right, ${PT.redL}, transparent 70%)`,
                         pointerEvents: 'none',
                     }} />
 
@@ -98,20 +99,20 @@ export function PositionManager({ config, onStopStrategy }: PositionManagerProps
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                                 <span style={{
                                     fontSize: 11, fontWeight: 500, color: '#15be53',
-                                    background: 'rgba(21,190,83,0.15)',
-                                    border: '1px solid rgba(21,190,83,0.3)',
+                                    background: 'rgba(21,190,83,0.10)',
+                                    border: '1px solid rgba(21,190,83,0.25)',
                                     borderRadius: 10, padding: '2px 8px',
                                     display: 'inline-flex', alignItems: 'center', gap: 4,
                                 }}>
                                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#15be53', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                                     运行中
                                 </span>
-                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>刚刚启动</span>
+                                <span style={{ fontSize: 11, color: PT.muted }}>刚刚启动</span>
                             </div>
-                            <h2 style={{ fontSize: 20, fontWeight: 500, color: '#ffffff', letterSpacing: '-0.3px', marginBottom: 4 }}>
+                            <h2 style={{ fontSize: 20, fontWeight: 500, color: PT.heading, letterSpacing: '-0.3px', marginBottom: 4 }}>
                                 {config.strategyName}
                             </h2>
-                            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 300 }}>
+                            <p style={{ fontSize: 13, color: PT.body, fontWeight: 300 }}>
                                 初始资金：¥{config.capital.toLocaleString()}
                             </p>
                         </div>
@@ -121,9 +122,9 @@ export function PositionManager({ config, onStopStrategy }: PositionManagerProps
                                 style={{
                                     fontSize: 13, fontWeight: 400,
                                     padding: '7px 14px', borderRadius: 12,
-                                    background: 'rgba(255,255,255,0.08)',
-                                    border: '1px solid rgba(255,255,255,0.15)',
-                                    color: 'rgba(255,255,255,0.85)',
+                                    background: PT.fog,
+                                    border: `1px solid ${PT.border}`,
+                                    color: PT.body,
                                     cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', gap: 6,
                                 }}
@@ -195,32 +196,32 @@ export function PositionManager({ config, onStopStrategy }: PositionManagerProps
                     {/* Bottom stats row */}
                     <div style={{
                         display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16,
-                        borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 16, paddingTop: 16,
+                        borderTop: `1px solid ${PT.border}`, marginTop: 16, paddingTop: 16,
                         position: 'relative', zIndex: 1,
                     }}>
                         <div>
-                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>总资产净值</p>
-                            <p style={{ fontSize: 18, fontWeight: 600, color: '#fff' }}>¥{totalMarketValue.toLocaleString()}</p>
+                            <p style={{ fontSize: 11, color: PT.muted, marginBottom: 4 }}>总资产净值</p>
+                            <p style={{ fontSize: 18, fontWeight: 600, color: PT.heading }}>¥{totalMarketValue.toLocaleString()}</p>
                         </div>
                         <div>
-                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>累计盈亏</p>
+                            <p style={{ fontSize: 11, color: PT.muted, marginBottom: 4 }}>累计盈亏</p>
                             <p style={{ fontSize: 18, fontWeight: 600, color: pnlColor(totalPnL) }}>
                                 {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString()}
                             </p>
                         </div>
                         <div>
-                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <p style={{ fontSize: 11, color: PT.muted, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <ShieldCheck size={11} />风控设置
                             </p>
-                            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
+                            <p style={{ fontSize: 13, color: PT.body }}>
                                 止损 <span style={{ color: '#0cad45' }}>-{config.stopLoss}%</span>
                                 &nbsp;/&nbsp;
                                 止盈 <span style={{ color: '#e8192c' }}>+{config.takeProfit}%</span>
                             </p>
                         </div>
                         <div>
-                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>自动退出</p>
-                            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{config.autoExit ? '已开启' : '未开启'}</p>
+                            <p style={{ fontSize: 11, color: PT.muted, marginBottom: 4 }}>自动退出</p>
+                            <p style={{ fontSize: 13, color: PT.body }}>{config.autoExit ? '已开启' : '未开启'}</p>
                         </div>
                     </div>
                 </div>
@@ -228,29 +229,22 @@ export function PositionManager({ config, onStopStrategy }: PositionManagerProps
 
             {/* Summary cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Total market value — Pinterest Red accent */}
+                {/* Total market value */}
                 <div style={{
-                    background: PT.red,
+                    background: PT.redL,
+                    border: `1px solid rgba(230,0,35,0.2)`,
                     borderRadius: 16,
                     padding: '18px 20px',
-                    position: 'relative',
-                    overflow: 'hidden',
                 }}>
-                    <div style={{
-                        position: 'absolute', top: '-40px', right: '-40px',
-                        width: 120, height: 120,
-                        background: 'rgba(255,255,255,0.08)',
-                        borderRadius: '50%',
-                    }} />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, position: 'relative', zIndex: 1 }}>
-                        <Wallet size={14} style={{ color: 'rgba(255,255,255,0.7)' }} />
-                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>总资产净值</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <Wallet size={14} style={{ color: PT.red }} />
+                        <p style={{ fontSize: 12, color: PT.body }}>总资产净值</p>
                     </div>
-                    <p style={{ fontSize: 26, fontWeight: 600, color: '#fff', letterSpacing: '-0.5px', position: 'relative', zIndex: 1 }}>
+                    <p style={{ fontSize: 26, fontWeight: 600, color: PT.heading, letterSpacing: '-0.5px' }}>
                         ¥{totalMarketValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
-                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6, position: 'relative', zIndex: 1 }}>
-                        仓位占比：<span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>85.4%</span>
+                    <p style={{ fontSize: 11, color: PT.body, marginTop: 6 }}>
+                        仓位占比：<span style={{ fontWeight: 600, color: PT.red }}>85.4%</span>
                     </p>
                 </div>
 
@@ -282,7 +276,7 @@ export function PositionManager({ config, onStopStrategy }: PositionManagerProps
             </div>
 
             {/* Positions table */}
-            <div style={{ background: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16, overflow: 'hidden', boxShadow: 'rgba(0,0,0,0.08) 0px 4px 12px 0px' }}>
+            <div style={{ background: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16, overflow: 'hidden' }}>
                 {/* Table header row */}
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',

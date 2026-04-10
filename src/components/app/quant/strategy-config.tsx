@@ -357,7 +357,7 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
                             </div>
 
                             {/* Footer CTA */}
-                            <div style={{ padding: '10px 16px 14px', borderTop: `1px solid ${PT.border}`, background: PT.fog }}>
+                            <div style={{ padding: '10px 16px 14px', borderTop: `1px solid ${PT.border}`, background: cardBg }}>
                                 <button
                                     disabled={isNotActive}
                                     onClick={(e) => { e.stopPropagation(); if (!isNotActive) setSelectedStrategy(strategy); }}

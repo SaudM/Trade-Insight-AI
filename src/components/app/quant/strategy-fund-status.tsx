@@ -106,7 +106,7 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
     const current = data?.current;
 
     return (
-        <Card style={{ border: `1px solid ${PT.border}`, borderRadius: 16, backgroundColor: PT.bg }}
+        <Card style={{ border: `1px solid ${PT.border}`, borderRadius: 16, backgroundColor: PT.bg }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-lg font-bold flex items-center gap-2" style={{ color: PT.heading }}>
                     <PieChart className="w-5 h-5 text-primary" />

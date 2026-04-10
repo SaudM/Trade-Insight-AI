@@ -140,7 +140,7 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
               radius={[4, 4, 0, 0]}
             >
               {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.pl === null ? 'transparent' : (entry.pl >= 0 ? 'hsl(var(--success))' : 'hsl(var(--destructive))')} />
+                  <Cell key={`cell-${index}`} fill={entry.pl === null ? 'transparent' : (entry.pl >= 0 ? '#e8192c' : '#0cad45')} />
               ))}
             </Bar>
           </BarChart>

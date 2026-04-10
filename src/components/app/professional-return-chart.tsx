@@ -44,7 +44,7 @@ const DEFAULT_INITIAL_CAPITAL = 100000;
 const CHART_CONFIG = {
   colors: {
     positive: '#e60023', // Pinterest red - 正收益（中国习惯）
-    negative: '#10b981', // 绿色 - 负收益（中国习惯）
+    negative: '#0cad45', // 绿色 - 负收益（中国习惯）
     neutral: '#91918c',  // PT.muted - 基准线
     grid: '#e5e5e0',     // PT.border - 网格线
     text: '#91918c'      // PT.muted - 文字颜色
@@ -99,7 +99,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <div style={{ borderTop: `1px solid ${PT.border}`, paddingTop: 4, marginTop: 4 }}>
           <div className="flex justify-between items-center">
             <span style={{ color: PT.body }}>累计收益率:</span>
-            <span style={{ fontWeight: 700, color: isPositive ? PT.red : '#10b981' }}>
+            <span style={{ fontWeight: 700, color: isPositive ? PT.red : '#0cad45' }}>
               {data.cumulativeReturn.toFixed(2)}%
             </span>
           </div>
@@ -130,8 +130,8 @@ const CustomLegend = ({ finalReturn }: { finalReturn: number }) => {
         <span className="text-sm" style={{ color: PT.body }}>累计收益率曲线</span>
       </div>
       <div className="flex items-center gap-1">
-        <Icon className="w-4 h-4" style={{ color: isPositive ? PT.red : '#10b981' }} />
-        <span className="text-sm font-medium" style={{ color: isPositive ? PT.red : '#10b981' }}>
+        <Icon className="w-4 h-4" style={{ color: isPositive ? PT.red : '#0cad45' }} />
+        <span className="text-sm font-medium" style={{ color: isPositive ? PT.red : '#0cad45' }}>
           {finalReturn.toFixed(2)}%
         </span>
       </div>
@@ -390,19 +390,19 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 rounded-lg" style={{ backgroundColor: PT.fog }}>
           <div className="text-center">
             <div className="text-xs" style={{ color: PT.muted }}>最终收益率</div>
-            <div className="text-lg font-bold" style={{ color: isPositiveReturn ? PT.red : '#10b981' }}>
+            <div className="text-lg font-bold" style={{ color: isPositiveReturn ? PT.red : '#0cad45' }}>
               {stats.finalReturn.toFixed(2)}%
             </div>
           </div>
           <div className="text-center">
             <div className="text-xs" style={{ color: PT.muted }}>最高收益率</div>
-            <div className="text-lg font-semibold" style={{ color: '#10b981' }}>
+            <div className="text-lg font-semibold" style={{ color: '#e8192c' }}>
               {stats.maxReturn.toFixed(2)}%
             </div>
           </div>
           <div className="text-center">
             <div className="text-xs" style={{ color: PT.muted }}>最大回撤</div>
-            <div className="text-lg font-semibold" style={{ color: PT.red }}>
+            <div className="text-lg font-semibold" style={{ color: '#0cad45' }}>
               {stats.minReturn.toFixed(2)}%
             </div>
           </div>
@@ -429,14 +429,14 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
               <defs>
                 {/* 正收益渐变 - 红色（中国习惯） */}
                 <linearGradient id="positiveGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="#e8192c" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#e8192c" stopOpacity={0.05} />
                 </linearGradient>
-                
+
                 {/* 负收益渐变 - 绿色（中国习惯） */}
                 <linearGradient id="negativeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.05} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="0%" stopColor="#0cad45" stopOpacity={0.05} />
+                  <stop offset="100%" stopColor="#0cad45" stopOpacity={0.3} />
                 </linearGradient>
               </defs>
               

@@ -128,7 +128,7 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
                     return (
                       <div style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 12, padding: '8px 12px' }}>
                         <div style={{ color: PT.muted, fontSize: 12, marginBottom: 4 }}>{`第 ${label} 笔交易`}</div>
-                        <div style={{ color: returnValue >= 0 ? PT.red : '#10b981', fontWeight: 600 }}>
+                        <div style={{ color: returnValue >= 0 ? PT.red : '#0cad45', fontWeight: 600 }}>
                           累计收益率: {returnValue?.toFixed(2)}%
                         </div>
                       </div>

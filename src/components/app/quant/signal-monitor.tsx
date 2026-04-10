@@ -6,7 +6,6 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Calendar as CalendarIcon, Filter, Info, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, Flame } from 'lucide-react';
 import { format, subDays } from 'date-fns';
@@ -248,8 +247,7 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
     return (
         <div className="flex flex-col h-full" style={{ background: PT.fog }}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 px-4 shrink-0" style={{ background: PT.bg, borderBottom: `1px solid ${PT.border}` }}>
-                <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                         <Filter className="h-4 w-4" style={{ color: PT.muted }} />
                         <h2 className="text-sm font-semibold" style={{ color: PT.heading }}>信号日期</h2>
                         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -299,7 +297,6 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                             <RotateCcw className="h-3 w-3 mr-1" />
                             最新
                         </Button>
-                    </div>
                 </div>
 
                 <div className="flex items-center gap-4 text-[10px] uppercase tracking-wider font-bold" style={{ color: PT.muted }}>
@@ -314,16 +311,15 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                 </div>
             </div>
 
-            <div className="flex-1 p-4 md:p-6 lg:p-8 space-y-4 overflow-hidden flex flex-col">
-                <Card className="flex-1 overflow-hidden flex flex-col min-w-0 w-full" style={{ border: `1px solid ${PT.border}`, borderRadius: 16, background: PT.bg, boxShadow: 'none' }}>
+            {/* 卡片直接 flex-1，用 margin 替代外层 padding 容器，减少一层嵌套 */}
+            <div className="flex-1 overflow-auto flex flex-col min-h-0" style={{ background: PT.bg }}>
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center flex-1 space-y-4">
                             <Loader2 className="h-8 w-8 animate-spin opacity-50" style={{ color: PT.red }} />
                             <p className="text-sm font-medium animate-pulse" style={{ color: PT.muted }}>正在同步市场数据...</p>
                         </div>
                     ) : data && data.data.length > 0 ? (
-                        <div className="flex-1 overflow-auto min-w-0 max-w-full">
-                            <Table className="relative min-w-full">
+                        <Table className="relative min-w-full">
                                 <TableHeader className="sticky top-0 z-10 backdrop-blur-md" style={{ background: PT.fog }}>
                                     <TableRow className="hover:bg-transparent" style={{ borderColor: PT.border }}>
                                         <TableHead className="w-[200px] text-xs text-left" style={{ fontWeight: 600, color: PT.heading }}>证券/代码</TableHead>
@@ -653,7 +649,6 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center flex-1 space-y-3 opacity-60">
                             <div className="p-3 rounded-full" style={{ background: PT.fog }}>
@@ -662,7 +657,6 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                             <p className="text-sm font-medium" style={{ color: PT.muted }}>该日期暂无推荐信号数据</p>
                         </div>
                     )}
-                </Card>
             </div>
 
             <ResearchDetailModal

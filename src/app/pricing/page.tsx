@@ -24,6 +24,20 @@ import { useUserData } from '@/hooks/use-user-data';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { trackEvent } from '@/lib/tracking';
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+} as const;
+
 const pricingPlans: PricingPlan[] = [
     {
         id: 'monthly',
@@ -429,15 +443,21 @@ export default function PricingPage() {
             <div
                 key={plan.id}
                 className={cn(
-                    "rounded-2xl border p-6 flex flex-col relative bg-card/80 backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
-                    plan.isPopular ? "border-blue-200 shadow-xl ring-2 ring-blue-100" : "border-gray-100",
+                    "rounded-2xl p-6 flex flex-col relative backdrop-blur-sm transition-transform duration-300 hover:scale-105 hover:shadow-2xl",
                     isMonthlyTrial && "border-green-200 shadow-xl ring-2 ring-green-100",
                     isSubscriptionValid && "border-emerald-200 shadow-xl ring-2 ring-emerald-100"
                 )}
+                style={
+                    isMonthlyTrial || isSubscriptionValid
+                        ? { backgroundColor: PT.bg }
+                        : plan.isPopular
+                            ? { backgroundColor: PT.bg, border: '1px solid #e60023', boxShadow: '0 0 0 3px rgba(230,0,35,0.12)' }
+                            : { backgroundColor: PT.bg, border: '1px solid #e5e5e0' }
+                }
             >
                 {plan.discount && !isSubscriptionValid && (
                     <div className="absolute top-0 -translate-y-1/2 w-full flex justify-center">
-                        <div className="rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+                        <div className="rounded-full px-4 py-1 text-xs font-semibold text-white shadow-md" style={{ backgroundColor: PT.red }}>
                             {plan.discount}
                         </div>
                     </div>
@@ -458,7 +478,7 @@ export default function PricingPage() {
                 )}
 
                 <div className="flex-1">
-                    <h3 className="text-xl font-bold font-headline text-center mt-2">{plan.name}</h3>
+                    <h3 className="text-xl font-bold font-headline text-center mt-2" style={{ color: PT.heading }}>{plan.name}</h3>
 
                     {isMonthlyTrial ? (
                         <div className="my-6 text-center flex flex-col items-center justify-center h-[90px]">
@@ -474,7 +494,7 @@ export default function PricingPage() {
                                             ¥{dynamicQuarterlyPrice < 39 ? dynamicQuarterlyPrice.toFixed(6) : "39.00"}
                                         </span>
                                     </div>
-                                    <span className="text-gray-500">{plan.duration}</span>
+                                    <span style={{ color: PT.muted }}>{plan.duration}</span>
                                     <div className="h-6 mt-1 flex flex-col items-center justify-center">
                                         <span className="text-xs text-orange-600 font-semibold animate-pulse">随时间涨价！(实际支付四舍五入)</span>
                                     </div>
@@ -482,9 +502,9 @@ export default function PricingPage() {
                             ) : (
                                 <>
                                     <span className="text-5xl font-bold">¥{plan.price}</span>
-                                    <span className="text-gray-500">{plan.duration}</span>
+                                    <span style={{ color: PT.muted }}>{plan.duration}</span>
                                     <div className="h-6 mt-1">
-                                        <span className="text-sm text-gray-500 line-through">原价 ¥{plan.originalPrice}</span>
+                                        <span className="text-sm line-through" style={{ color: PT.muted }}>原价 ¥{plan.originalPrice}</span>
                                         {(() => {
                                             let days = 30;
                                             if (plan.id === 'semi_annually') days = 180;
@@ -502,7 +522,7 @@ export default function PricingPage() {
                         {plan.features.map((feature, i) => (
                             <li key={i} className="flex items-center gap-3">
                                 <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                                <span className="text-gray-600">{feature}</span>
+                                <span style={{ color: PT.body }}>{feature}</span>
                             </li>
                         ))}
                     </ul>
@@ -524,20 +544,12 @@ export default function PricingPage() {
                         className={cn(
                             "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
                             "transform hover:scale-[1.02] active:scale-[0.98]",
-                            "focus:ring-2 focus:ring-offset-2",
-                            plan.isPopular
-                                ? cn(
-                                    "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
-                                    "text-white shadow-md hover:shadow-lg active:shadow-sm",
-                                    "focus:ring-blue-500"
-                                )
-                                : cn(
-                                    "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
-                                    "text-slate-700 border border-slate-200 hover:border-slate-300",
-                                    "shadow-sm hover:shadow-md active:shadow-sm",
-                                    "focus:ring-slate-400"
-                                )
+                            "focus:ring-2 focus:ring-offset-2"
                         )}
+                        style={plan.isPopular
+                            ? { backgroundColor: PT.red, color: '#fff', border: 'none', borderRadius: 16 }
+                            : { backgroundColor: PT.fog, color: PT.body, border: `1px solid ${PT.border}`, borderRadius: 16 }
+                        }
                     >
                         <div className="flex items-center justify-center gap-2">
                             <span>立即订阅</span>
@@ -567,11 +579,8 @@ export default function PricingPage() {
                         size="lg"
                         variant="outline"
                         disabled={true}
-                        className={cn(
-                            "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out",
-                            "bg-blue-50 border-blue-200 text-blue-700",
-                            "cursor-not-allowed opacity-75"
-                        )}
+                        className="w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out cursor-not-allowed opacity-75"
+                        style={{ backgroundColor: PT.redL, borderColor: PT.red, color: PT.red }}
                     >
                         <div className="flex items-center justify-center gap-2">
                             <Gift className="w-5 h-5" />
@@ -589,20 +598,12 @@ export default function PricingPage() {
                             "w-full h-12 px-6 font-medium text-base transition-all duration-200 ease-out group",
                             "transform hover:scale-[1.02] active:scale-[0.98]",
                             "focus:ring-2 focus:ring-offset-2",
-                            "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none",
-                            plan.isPopular
-                                ? cn(
-                                    "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
-                                    "text-white shadow-md hover:shadow-lg active:shadow-sm",
-                                    "focus:ring-blue-500"
-                                )
-                                : cn(
-                                    "bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200",
-                                    "text-slate-700 border border-slate-200 hover:border-slate-300",
-                                    "shadow-sm hover:shadow-md active:shadow-sm",
-                                    "focus:ring-slate-400"
-                                )
+                            "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                         )}
+                        style={plan.isPopular
+                            ? { backgroundColor: PT.red, color: '#fff', border: 'none', borderRadius: 16 }
+                            : { backgroundColor: PT.fog, color: PT.body, border: `1px solid ${PT.border}`, borderRadius: 16 }
+                        }
                     >
                         {isLoading === plan.id ? (
                             <div className="flex items-center justify-center gap-2">
@@ -623,14 +624,25 @@ export default function PricingPage() {
 
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-foreground overflow-hidden relative">
+            <div className="min-h-screen text-foreground overflow-hidden relative" style={{ backgroundColor: PT.fog }}>
                 <StockMarketBackground />
 
+                {/* Frosted overlay — sits between particles (z-0) and content (z-10) */}
+                <div
+                    className="fixed inset-0 pointer-events-none"
+                    style={{
+                        zIndex: 1,
+                        backdropFilter: 'blur(2px)',
+                        WebkitBackdropFilter: 'blur(2px)',
+                        backgroundColor: 'rgba(246,246,243,0.72)',
+                    }}
+                />
+
                 <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-                    <div className="w-full max-w-5xl flex h-16 items-center justify-between px-6 rounded-full border border-white/20 bg-background/60 backdrop-blur-md shadow-lg transition-all duration-300 hover:bg-background/80 hover:shadow-xl">
-                        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary mr-8 group">
-                            <div className="bg-primary/10 p-2 rounded-full group-hover:bg-primary/20 transition-colors">
-                                <Sparkles className="w-5 h-5 text-primary" />
+                    <div className="w-full max-w-5xl flex h-16 items-center justify-between px-6 rounded-full backdrop-blur-md shadow-lg transition-all duration-300 hover:shadow-xl" style={{ border: '1px solid #e5e5e0', backgroundColor: 'rgba(255,255,255,0.92)' }}>
+                        <Link href="/" className="flex items-center gap-2 font-bold text-lg mr-8 group" style={{ color: PT.heading }}>
+                            <div className="p-2 rounded-full group-hover:opacity-80 transition-colors" style={{ backgroundColor: PT.redL }}>
+                                <Sparkles className="w-5 h-5" style={{ color: PT.red }} />
                             </div>
                             <span className="font-headline tracking-tight">复利复盘</span>
                         </Link>
@@ -653,7 +665,7 @@ export default function PricingPage() {
                                         </div>
                                         <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
                                             <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                            <AvatarFallback className="text-xs" style={{ backgroundColor: PT.redL, color: PT.red }}>
                                                 {(user.displayName || 'U').substring(0, 2).toUpperCase()}
                                             </AvatarFallback>
                                         </Avatar>
@@ -672,6 +684,7 @@ export default function PricingPage() {
                                     <Button
                                         asChild
                                         className="rounded-full px-6 shadow-md hover:shadow-lg transition-all"
+                                        style={{ backgroundColor: PT.red, color: '#fff', border: 'none' }}
                                     >
                                         <Link href="/login?mode=signup">免费开始</Link>
                                     </Button>
@@ -683,10 +696,10 @@ export default function PricingPage() {
 
                 <main className="container mx-auto px-4 pt-32 pb-16 md:px-6 md:pt-40 md:pb-20 lg:pt-48 lg:pb-24 relative z-10">
                     <div className="mx-auto max-w-3xl text-center">
-                        <h1 className="text-4xl font-headline font-bold tracking-tight bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent md:text-5xl lg:text-6xl">
+                        <h1 className="text-4xl font-headline font-bold tracking-tight md:text-5xl lg:text-6xl" style={{ color: PT.heading }}>
                             解锁您的全部投资交易潜能
                         </h1>
-                        <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto leading-relaxed">
+                        <p className="mt-6 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style={{ color: PT.body }}>
                             选择一个方案，即可获得由AI驱动的深度交易洞察、模式识别和个性化改进建议，让每一笔交易都成为您持续进步的阶梯。
                         </p>
                     </div>
@@ -698,17 +711,17 @@ export default function PricingPage() {
 
                 <section className="container mx-auto px-4 py-16 md:px-6 md:py-20 lg:py-24 relative z-10">
                     <div className="mx-auto max-w-3xl text-center">
-                        <h2 className="text-3xl font-headline font-bold text-foreground">常见问题解答</h2>
-                        <p className="mt-4 text-lg text-gray-500">
-                            还有其他疑问？您可以随时 <a href="mailto:support@example.com" className="text-primary underline">联系我们</a>。
+                        <h2 className="text-3xl font-headline font-bold" style={{ color: PT.heading }}>常见问题解答</h2>
+                        <p className="mt-4 text-lg" style={{ color: PT.muted }}>
+                            还有其他疑问？您可以随时 <a href="mailto:support@example.com" className="underline" style={{ color: PT.red }}>联系我们</a>。
                         </p>
                     </div>
 
                     <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto mt-12">
                         {faqs.map((faq, i) => (
-                            <AccordionItem value={`item-${i}`} key={i} className="border-gray-100">
-                                <AccordionTrigger className="text-lg text-left hover:no-underline hover:text-blue-600 transition-colors">{faq.question}</AccordionTrigger>
-                                <AccordionContent className="text-base text-gray-600 pt-2">
+                            <AccordionItem value={`item-${i}`} key={i} className="border-[#e5e5e0]">
+                                <AccordionTrigger className="text-lg text-left hover:no-underline hover:text-[#e60023] transition-colors">{faq.question}</AccordionTrigger>
+                                <AccordionContent className="text-base pt-2" style={{ color: PT.body }}>
                                     {faq.answer}
                                 </AccordionContent>
                             </AccordionItem>
@@ -717,11 +730,11 @@ export default function PricingPage() {
                 </section>
 
                 <footer className="container mx-auto px-4 py-8 md:px-6">
-                    <div className="text-center text-sm text-gray-500">
+                    <div className="text-center text-sm" style={{ color: PT.muted }}>
                         <p>&copy; {new Date().getFullYear()} 复利复盘. All rights reserved.</p>
                         <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
-                        <p className="mt-2 text-xs text-gray-400">
-                            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">
+                        <p className="mt-2 text-xs" style={{ color: PT.muted }}>
+                            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="transition-colors" style={{ color: PT.muted }}>
                                 京ICP备2020034311号-3
                             </a>
                         </p>

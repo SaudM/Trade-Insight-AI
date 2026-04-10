@@ -24,8 +24,8 @@ type WinLossRatioChartProps = {
 
 export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatioChartProps) {
   const data = useMemo(() => [
-    { name: '盈利', value: profitableTrades, fill: 'hsl(var(--success))' },
-    { name: '亏损', value: lossTrades, fill: 'hsl(var(--destructive))' },
+    { name: '盈利', value: profitableTrades, fill: '#e8192c' },
+    { name: '亏损', value: lossTrades, fill: '#0cad45' },
   ], [profitableTrades, lossTrades]);
 
   const totalTrades = profitableTrades + lossTrades;
@@ -95,13 +95,13 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
             {/* Custom Legend/Stats Area (Grid Layout for perfect alignment) */}
             <div className="grid grid-cols-[auto_1fr_auto] gap-x-6 gap-y-3 w-max text-sm pr-4">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-success shadow-[0_0_8px_hsl(var(--success))]" />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: '#e8192c' }} />
                 <span className="whitespace-nowrap font-medium" style={{ color: PT.muted }}>盈利</span>
               </div>
               <span className="col-start-3 font-bold font-mono text-base" style={{ color: PT.heading }}>{profitableTrades}</span>
 
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-destructive shadow-[0_0_8px_hsl(var(--destructive))]" />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: '#0cad45' }} />
                 <span className="whitespace-nowrap font-medium" style={{ color: PT.muted }}>亏损</span>
               </div>
               <span className="col-start-3 font-bold font-mono text-base" style={{ color: PT.heading }}>{lossTrades}</span>

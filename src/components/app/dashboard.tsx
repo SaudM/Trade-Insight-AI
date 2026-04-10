@@ -229,7 +229,7 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                                 <Wallet className="h-3 w-3 sm:h-4 sm:w-4" style={{ color: PT.muted }} />
                             </CardHeader>
                             <CardContent>
-                                <div className={`text-lg sm:text-2xl font-bold ${totalPL >= 0 ? 'text-success' : 'text-destructive'}`}>
+                                <div className="text-lg sm:text-2xl font-bold" style={{ color: totalPL >= 0 ? '#e8192c' : '#0cad45' }}>
                                     {totalPL.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
                                 </div>
                                 <p className="text-xs" style={{ color: PT.muted }}>共 {totalTrades} 笔交易</p>
@@ -264,10 +264,10 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                         <Card style={{ background: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16, boxShadow: 'none' }}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium" style={{ color: PT.body }}>平均盈利</CardTitle>
-                                <TrendingUp className="h-4 w-4 text-success" />
+                                <TrendingUp className="h-4 w-4" style={{ color: '#e8192c' }} />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-lg sm:text-2xl font-bold text-success">
+                                <div className="text-lg sm:text-2xl font-bold" style={{ color: '#e8192c' }}>
                                     {averageProfit.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
                                 </div>
                                 <p className="text-xs" style={{ color: PT.muted }}>基于 {profitableTrades.length} 笔盈利交易</p>
@@ -278,10 +278,10 @@ export function Dashboard({ tradeLogs, setActiveView, timePeriod, setTimePeriod,
                         <Card style={{ background: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16, boxShadow: 'none' }}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-xs sm:text-sm font-medium" style={{ color: PT.body }}>平均亏损</CardTitle>
-                                <TrendingDown className="h-4 w-4 text-destructive" />
+                                <TrendingDown className="h-4 w-4" style={{ color: '#0cad45' }} />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-lg sm:text-2xl font-bold text-destructive">
+                                <div className="text-lg sm:text-2xl font-bold" style={{ color: '#0cad45' }}>
                                     {averageLoss.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
                                 </div>
                                 <p className="text-xs" style={{ color: PT.muted }}>基于 {losingTrades.length} 笔亏损交易</p>
