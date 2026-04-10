@@ -8,6 +8,21 @@ import { Loader2, Briefcase, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+    dark:    '#33332e',
+} as const;
+
 interface Position {
     asset_symbol: string;
     asset_name?: string;
@@ -73,13 +88,13 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
     const totalPnlPct = data?.total_unrealized_pnl_pct ?? 0;
 
     return (
-        <Card className="border-slate-200 shadow-sm">
+        <Card style={{ border: `1px solid ${PT.border}`, borderRadius: 16, backgroundColor: PT.bg }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2" style={{ color: PT.heading }}>
                     <Briefcase className="w-5 h-5 text-primary" />
                     当前持仓
                     {data && (
-                        <span className="text-sm font-normal text-slate-500 ml-1">
+                        <span className="text-sm font-normal ml-1" style={{ color: PT.muted }}>
                             {data.position_count} 只
                         </span>
                     )}
@@ -87,7 +102,8 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 text-slate-400 hover:text-slate-700"
+                    className="h-7 w-7 p-0"
+                    style={{ color: PT.muted }}
                     onClick={fetchData}
                     disabled={isLoading}
                 >
@@ -96,39 +112,42 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
             </CardHeader>
             <CardContent className="space-y-4">
                 {isLoading ? (
-                    <div className="h-40 flex items-center justify-center text-slate-400">
+                    <div className="h-40 flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                         <Loader2 className="w-6 h-6 animate-spin mr-2" />
                         加载中...
                     </div>
                 ) : !data || data.positions.length === 0 ? (
-                    <div className="h-40 flex items-center justify-center text-slate-400 text-sm">
+                    <div className="h-40 flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                         暂无持仓
                     </div>
                 ) : (
                     <>
                         {/* Summary strip */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-center">
-                                <p className="text-[10px] text-slate-500 mb-1">持仓数</p>
-                                <p className="text-lg font-bold text-slate-800">{data.position_count}</p>
+                            <div className="rounded-lg p-3 text-center" style={{ backgroundColor: PT.fog, border: `1px solid ${PT.border}` }}>
+                                <p className="text-[10px] mb-1" style={{ color: PT.muted }}>持仓数</p>
+                                <p className="text-lg font-bold" style={{ color: PT.heading }}>{data.position_count}</p>
                             </div>
-                            <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-center">
-                                <p className="text-[10px] text-slate-500 mb-1">持仓成本</p>
-                                <p className="text-base font-bold text-slate-800">
+                            <div className="rounded-lg p-3 text-center" style={{ backgroundColor: PT.fog, border: `1px solid ${PT.border}` }}>
+                                <p className="text-[10px] mb-1" style={{ color: PT.muted }}>持仓成本</p>
+                                <p className="text-base font-bold" style={{ color: PT.heading }}>
                                     ¥{(data.total_invested / 10000).toFixed(2)}万
                                 </p>
                             </div>
-                            <div className="rounded-lg bg-slate-50 border border-slate-100 p-3 text-center">
-                                <p className="text-[10px] text-slate-500 mb-1">当前市值</p>
-                                <p className="text-base font-bold text-slate-800">
+                            <div className="rounded-lg p-3 text-center" style={{ backgroundColor: PT.fog, border: `1px solid ${PT.border}` }}>
+                                <p className="text-[10px] mb-1" style={{ color: PT.muted }}>当前市值</p>
+                                <p className="text-base font-bold" style={{ color: PT.heading }}>
                                     ¥{(data.total_current_value / 10000).toFixed(2)}万
                                 </p>
                             </div>
-                            <div className={cn(
-                                'rounded-lg border p-3 text-center',
-                                totalPnl >= 0 ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'
-                            )}>
-                                <p className="text-[10px] text-slate-500 mb-1">未实现盈亏</p>
+                            <div
+                                className="rounded-lg p-3 text-center"
+                                style={{
+                                    backgroundColor: totalPnl >= 0 ? 'rgba(254,242,242,1)' : 'rgba(240,253,244,1)',
+                                    border: `1px solid ${totalPnl >= 0 ? 'rgba(254,202,202,1)' : 'rgba(187,247,208,1)'}`,
+                                }}
+                            >
+                                <p className="text-[10px] mb-1" style={{ color: PT.muted }}>未实现盈亏</p>
                                 <p className={cn(
                                     'text-base font-bold',
                                     totalPnl >= 0 ? 'text-red-500' : 'text-green-600'
@@ -145,19 +164,19 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                         </div>
 
                         {/* Positions table */}
-                        <div className="overflow-x-auto rounded-lg border border-slate-200">
+                        <div className="overflow-x-auto" style={{ borderRadius: 16, border: `1px solid ${PT.border}` }}>
                             <table className="w-full text-xs">
                                 <thead>
-                                    <tr className="bg-slate-50 border-b border-slate-200">
-                                        <th className="text-left px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">股票</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">买入日期</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">持天</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">买入价</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">现价</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">市值</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">浮动盈亏</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">止损参考</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">评分</th>
+                                    <tr style={{ backgroundColor: PT.fog, borderBottom: `1px solid ${PT.border}` }}>
+                                        <th className="text-left px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>股票</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>买入日期</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>持天</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>买入价</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>现价</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>市值</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>浮动盈亏</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>止损参考</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>评分</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -166,27 +185,30 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                         return (
                                             <tr
                                                 key={`${pos.asset_symbol}-${i}`}
-                                                className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
+                                                className="last:border-0 transition-colors"
+                                                style={{ borderBottom: `1px solid ${PT.border}` }}
+                                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = PT.fog)}
+                                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                                             >
                                                 <td className="px-3 py-2.5 whitespace-nowrap">
                                                     {pos.asset_name && (
-                                                        <div className="font-semibold text-slate-900 leading-tight">{pos.asset_name}</div>
+                                                        <div className="font-semibold leading-tight" style={{ color: PT.heading }}>{pos.asset_name}</div>
                                                     )}
-                                                    <div className={cn(
-                                                        'text-slate-500 leading-tight',
-                                                        pos.asset_name ? 'text-[11px]' : 'font-semibold text-slate-900'
-                                                    )}>{pos.asset_symbol}</div>
+                                                    <div
+                                                        className={cn('leading-tight', pos.asset_name ? 'text-[11px]' : 'font-semibold')}
+                                                        style={{ color: pos.asset_name ? PT.muted : PT.heading }}
+                                                    >{pos.asset_symbol}</div>
                                                     {pos.sector && (
-                                                        <div className="text-[10px] text-slate-400 mt-0.5">{pos.sector}</div>
+                                                        <div className="text-[10px] mt-0.5" style={{ color: PT.muted }}>{pos.sector}</div>
                                                     )}
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-600 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
                                                     {format(new Date(pos.entry_date), 'MM-dd')}
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-600 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
                                                     {pos.hold_days}天
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-700 font-medium whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right font-medium whitespace-nowrap" style={{ color: PT.body }}>
                                                     {fmt(pos.entry_price)}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">
@@ -194,7 +216,7 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                                         {fmt(pos.current_price)}
                                                     </span>
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-700 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
                                                     ¥{(pos.current_value / 10000).toFixed(2)}万
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
@@ -211,14 +233,14 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
                                                     <Badge
                                                         variant="secondary"
-                                                        className={cn(
-                                                            'text-[10px] px-1.5 py-0 font-semibold',
+                                                        className="text-[10px] px-1.5 py-0 font-semibold"
+                                                        style={
                                                             pos.entry_score >= 80
-                                                                ? 'bg-red-50 text-red-600 border-red-100'
+                                                                ? { backgroundColor: PT.redL, color: PT.red, border: `1px solid ${PT.border}` }
                                                                 : pos.entry_score >= 60
-                                                                ? 'bg-amber-50 text-amber-600 border-amber-100'
-                                                                : 'bg-slate-50 text-slate-500'
-                                                        )}
+                                                                ? { backgroundColor: 'rgba(255,251,235,1)', color: '#d97706', border: '1px solid rgba(253,230,138,1)' }
+                                                                : { backgroundColor: PT.fog, color: PT.muted, border: `1px solid ${PT.border}` }
+                                                        }
                                                     >
                                                         {pos.entry_score}
                                                     </Badge>
@@ -229,7 +251,7 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                 </tbody>
                             </table>
                         </div>
-                        <p className="text-xs text-slate-400 text-right">
+                        <p className="text-xs text-right" style={{ color: PT.muted }}>
                             快照日期：{data.snapshot_date ? format(new Date(data.snapshot_date), 'yyyy-MM-dd') : '--'}
                         </p>
                     </>

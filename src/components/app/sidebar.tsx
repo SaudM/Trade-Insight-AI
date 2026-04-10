@@ -49,10 +49,10 @@ export function AppSidebar({ activeView, setActiveView, isProUser, onContactSupp
     <Sidebar>
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center size-10 bg-primary rounded-xl text-primary-foreground shadow-md">
+          <div className="flex items-center justify-center size-10 rounded-xl shadow-md" style={{ backgroundColor: '#e60023', color: '#ffffff' }}>
             <UserIcon className="h-6 w-6" />
           </div>
-          <h1 className="font-headline text-2xl font-medium text-primary tracking-tight">复利复盘</h1>
+          <h1 className="font-headline text-2xl font-medium tracking-tight" style={{ color: '#211922' }}>复利复盘</h1>
         </div>
       </SidebarHeader>
       <SidebarMenu className="px-4 py-2 space-y-2">
@@ -75,7 +75,7 @@ export function AppSidebar({ activeView, setActiveView, isProUser, onContactSupp
             <FileText />
             <span className="text-base font-medium">分析报告</span>
             {!isProUser && (
-              <Badge variant="outline" className="ml-auto h-6 px-2 bg-amber-500 border-amber-500 text-white text-xs font-semibold group-data-[active=true]:bg-amber-600">
+              <Badge variant="outline" className="ml-auto h-6 px-2 text-white text-xs font-semibold" style={{ backgroundColor: '#e60023', borderColor: '#e60023' }}>
                 <Sparkles className="mr-1 h-3 w-3" />
                 升级
               </Badge>

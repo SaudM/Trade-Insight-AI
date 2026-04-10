@@ -8,6 +8,17 @@ import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
 import { isSameDay, format, subHours, subDays, parseISO } from 'date-fns';
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+} as const;
 
 const MIN_DATA_POINTS = 10;
 
@@ -96,27 +107,28 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   }, [tradeLogs, isSingleDay]);
 
   return (
-    <Card>
+    <Card style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16, boxShadow: 'none' }}>
       <CardHeader>
-        <CardTitle className="font-headline">盈亏随时间变化</CardTitle>
-        <CardDescription>可视化您的每日交易表现。</CardDescription>
+        <CardTitle className="font-headline" style={{ color: PT.heading }}>盈亏随时间变化</CardTitle>
+        <CardDescription style={{ color: PT.muted }}>可视化您的每日交易表现。</CardDescription>
       </CardHeader>
 
       <CardContent>
         <ChartContainer config={{}} className="h-64 w-full">
           <BarChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} interval={0} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={PT.border} />
+            <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} interval={0} tick={{ fill: PT.muted }} />
             <Tooltip
               cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length && payload[0].value !== null) {
                   return (
-                    <ChartTooltipContent
-                      className="w-40"
-                      label={payload[0].payload.fullDate}
-                      payload={payload.map(p => ({...p, value: p.value?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}))}
-                    />
+                    <div style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 12, padding: '8px 12px', minWidth: 160 }}>
+                      <div style={{ color: PT.muted, fontSize: 12, marginBottom: 4 }}>{payload[0].payload.fullDate}</div>
+                      <div style={{ color: (payload[0].value as number) >= 0 ? '#e8192c' : '#0cad45', fontWeight: 600 }}>
+                        {(payload[0].value as number)?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
+                      </div>
+                    </div>
                   );
                 }
                 return null;

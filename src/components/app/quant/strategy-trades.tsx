@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Loader2, History, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+    dark:    '#33332e',
+} as const;
 
 interface Trade {
     id: number;
@@ -45,15 +60,15 @@ const EXIT_REASONS: { value: string; label: string }[] = [
     { value: 'MANUAL', label: '手动' },
 ];
 
-const EXIT_REASON_STYLE: Record<string, { label: string; className: string }> = {
+const EXIT_REASON_STYLE: Record<string, { label: string; className: string; style?: React.CSSProperties }> = {
     DYNAMIC_TP:  { label: '动态止盈', className: 'bg-red-50 text-red-600 border-red-100' },
     TAKE_PROFIT: { label: '固定止盈', className: 'bg-red-50 text-red-600 border-red-100' },
     STOP_LOSS:   { label: '止损',     className: 'bg-green-50 text-green-700 border-green-100' },
     BREAK_EVEN:  { label: '保本离场', className: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
     TIME_STOP:   { label: '时间止损', className: 'bg-orange-50 text-orange-600 border-orange-100' },
     LAGGARD:     { label: '滞涨出局', className: 'bg-purple-50 text-purple-600 border-purple-100' },
-    EXPIRE:      { label: '到期',     className: 'bg-blue-50 text-blue-600 border-blue-100' },
-    MANUAL:      { label: '手动',     className: 'bg-slate-50 text-slate-600 border-slate-200' },
+    EXPIRE:      { label: '到期',     className: 'border', style: { backgroundColor: PT.redL, color: PT.red, borderColor: PT.border } },
+    MANUAL:      { label: '手动',     className: 'border', style: { backgroundColor: PT.fog, color: PT.body, borderColor: PT.border } },
 };
 
 function fmt(v: number, d = 2) {
@@ -115,13 +130,13 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
     const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
     return (
-        <Card className="border-slate-200 shadow-sm">
+        <Card style={{ border: `1px solid ${PT.border}`, borderRadius: 16, backgroundColor: PT.bg }}>
             <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2" style={{ color: PT.heading }}>
                     <History className="w-5 h-5 text-primary" />
                     历史交易
                     {data && (
-                        <span className="text-sm font-normal text-slate-500 ml-1">
+                        <span className="text-sm font-normal ml-1" style={{ color: PT.muted }}>
                             共 {data.total} 笔
                         </span>
                     )}
@@ -133,7 +148,8 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                     <select
                         value={exitReason}
                         onChange={e => setExitReason(e.target.value)}
-                        className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="h-8 rounded-md px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                    style={{ border: `1px solid ${PT.border}`, backgroundColor: PT.bg, color: PT.body }}
                     >
                         {EXIT_REASONS.map(r => (
                             <option key={r.value} value={r.value}>{r.label}</option>
@@ -151,7 +167,7 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                         onChange={e => setStartDate(e.target.value)}
                         className="h-8 w-36 text-xs"
                     />
-                    <span className="text-slate-400 text-xs">至</span>
+                    <span className="text-xs" style={{ color: PT.muted }}>至</span>
                     <Input
                         type="date"
                         value={endDate}
@@ -162,7 +178,8 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 px-2 text-xs text-slate-500"
+                            className="h-8 px-2 text-xs"
+                            style={{ color: PT.muted }}
                             onClick={resetFilters}
                         >
                             <X className="w-3 h-3 mr-1" />
@@ -172,29 +189,29 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                 </div>
 
                 {isLoading ? (
-                    <div className="h-48 flex items-center justify-center text-slate-400">
+                    <div className="h-48 flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                         <Loader2 className="w-6 h-6 animate-spin mr-2" />
                         加载中...
                     </div>
                 ) : !data || data.trades.length === 0 ? (
-                    <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+                    <div className="h-48 flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                         暂无交易记录
                     </div>
                 ) : (
                     <>
-                        <div className="overflow-x-auto rounded-lg border border-slate-200">
+                        <div className="overflow-x-auto" style={{ borderRadius: 16, border: `1px solid ${PT.border}` }}>
                             <table className="w-full text-xs">
                                 <thead>
-                                    <tr className="bg-slate-50 border-b border-slate-200">
-                                        <th className="text-left px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">股票</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">买入日期</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">卖出日期</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">持天</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">买入价</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">卖出价</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">盈亏%</th>
-                                        <th className="text-right px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">盈亏额</th>
-                                        <th className="text-center px-3 py-2 font-semibold text-slate-600 whitespace-nowrap">原因</th>
+                                    <tr style={{ backgroundColor: PT.fog, borderBottom: `1px solid ${PT.border}` }}>
+                                        <th className="text-left px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>股票</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>买入日期</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>卖出日期</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>持天</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>买入价</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>卖出价</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>盈亏%</th>
+                                        <th className="text-right px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>盈亏额</th>
+                                        <th className="text-center px-3 py-2 font-semibold whitespace-nowrap" style={{ color: PT.body }}>原因</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -202,35 +219,39 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                                         const isProfit = trade.pnl_pct >= 0;
                                         const reasonStyle = EXIT_REASON_STYLE[trade.exit_reason] ?? {
                                             label: trade.exit_reason,
-                                            className: 'bg-slate-50 text-slate-500',
+                                            className: 'border',
+                                            style: { backgroundColor: PT.fog, color: PT.muted, borderColor: PT.border },
                                         };
                                         return (
                                             <tr
                                                 key={trade.id}
-                                                className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors"
+                                                className="last:border-0 transition-colors"
+                                                style={{ borderBottom: `1px solid ${PT.border}` }}
+                                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = PT.fog)}
+                                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                                             >
                                                 <td className="px-3 py-2.5 whitespace-nowrap">
                                                     {trade.asset_name && (
-                                                        <div className="font-semibold text-slate-900 leading-tight">{trade.asset_name}</div>
+                                                        <div className="font-semibold leading-tight" style={{ color: PT.heading }}>{trade.asset_name}</div>
                                                     )}
-                                                    <div className={cn(
-                                                        'text-slate-500',
-                                                        trade.asset_name ? 'text-[11px]' : 'font-semibold text-slate-900'
-                                                    )}>{trade.asset_symbol}</div>
+                                                    <div
+                                                        className={cn(trade.asset_name ? 'text-[11px]' : 'font-semibold')}
+                                                        style={{ color: trade.asset_name ? PT.muted : PT.heading }}
+                                                    >{trade.asset_symbol}</div>
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-500 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.muted }}>
                                                     {format(new Date(trade.entry_date), 'MM-dd')}
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-500 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.muted }}>
                                                     {format(new Date(trade.exit_date), 'MM-dd')}
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-500 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.muted }}>
                                                     {trade.hold_days}天
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-700 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
                                                     {fmt(trade.entry_price)}
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right text-slate-700 whitespace-nowrap">
+                                                <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
                                                     {fmt(trade.exit_price)}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
@@ -253,6 +274,7 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                                                     <Badge
                                                         variant="outline"
                                                         className={cn('text-[10px] px-1.5 py-0', reasonStyle.className)}
+                                                        style={'style' in reasonStyle ? reasonStyle.style : undefined}
                                                     >
                                                         {reasonStyle.label}
                                                     </Badge>
@@ -267,7 +289,7 @@ export function StrategyTrades({ strategyKey }: { strategyKey: string }) {
                         {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="flex items-center justify-between pt-1">
-                                <span className="text-xs text-slate-400">
+                                <span className="text-xs" style={{ color: PT.muted }}>
                                     第 {page} / {totalPages} 页，共 {data.total} 条
                                 </span>
                                 <div className="flex items-center gap-1">

@@ -13,6 +13,21 @@ import { AdminResearchModal } from './admin-research-modal';
 import { useAuthState } from '@/components/app/auth/auth-state-manager';
 import type { ResearchReport } from '@/lib/types';
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+    dark:    '#33332e',
+} as const;
+
 export function ResearchView() {
     const { userData } = useAuthState();
     const { data: reports, isLoading, error, refetch } = useResearchReports();
@@ -47,15 +62,15 @@ export function ResearchView() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-slate-50/50 p-4 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex flex-col h-full p-4 md:p-6 space-y-4 md:space-y-6" style={{ backgroundColor: PT.fog }}>
             {/* Header */}
             <div className="flex flex-col gap-3">
                 {/* Title Row with Sidebar Trigger on Mobile */}
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="md:hidden shrink-0 -ml-2" />
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-xl md:text-3xl font-bold text-slate-900 tracking-tight truncate">个股调研报告</h1>
-                        <p className="text-slate-500 text-xs md:text-base mt-0.5 hidden md:block">深度解析市场共识与预期差</p>
+                        <h1 className="text-xl md:text-3xl font-bold tracking-tight truncate" style={{ color: PT.heading }}>个股调研报告</h1>
+                        <p className="text-xs md:text-base mt-0.5 hidden md:block" style={{ color: PT.muted }}>深度解析市场共识与预期差</p>
                     </div>
                     {/* Mobile: Only show refresh and add buttons */}
                     <div className="flex items-center gap-1.5 md:hidden">
@@ -73,11 +88,12 @@ export function ResearchView() {
                 {/* Search and Actions Row */}
                 <div className="flex items-center gap-2">
                     <div className="relative flex-1 md:flex-initial">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: PT.muted }} />
                         <input
                             type="text"
                             placeholder="搜索标题或股票代码..."
-                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="w-full md:w-64 pl-9 pr-4 py-2 text-sm focus:outline-none transition-all"
+                            style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16, color: PT.body }}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -100,7 +116,7 @@ export function ResearchView() {
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center flex-1 space-y-4">
                     <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
-                    <p className="text-slate-400 font-medium animate-pulse">正在从研报中心同步数据...</p>
+                    <p className="font-medium animate-pulse" style={{ color: PT.muted }}>正在从研报中心同步数据...</p>
                 </div>
             ) : filteredReports.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 overflow-auto pb-6">
@@ -111,7 +127,8 @@ export function ResearchView() {
                         return (
                             <div
                                 key={report.id}
-                                className="group relative bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 hover:border-primary/20"
+                                className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1"
+                                style={{ backgroundColor: PT.bg, borderRadius: 16, border: `1px solid ${PT.border}` }}
                                 onClick={() => setSelectedReport(report)}
                             >
                                 {/* Gradient Accent Bar */}
@@ -126,21 +143,21 @@ export function ResearchView() {
                                                 <UserIcon className="h-3.5 w-3.5 text-primary/70" />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-xs font-medium text-slate-700 leading-tight">
+                                                <span className="text-xs font-medium leading-tight" style={{ color: PT.body }}>
                                                     {report.author?.name || '匿名用户'}
                                                 </span>
-                                                <span className="text-[10px] text-slate-400">
+                                                <span className="text-[10px]" style={{ color: PT.muted }}>
                                                     {format(new Date(report.createdAt), 'MM月dd日')}
                                                 </span>
                                             </div>
                                         </div>
-                                        <Badge className="bg-gradient-to-r from-primary/5 to-violet-50 text-primary border-0 text-[10px] font-semibold px-2 py-0.5 shadow-sm">
+                                        <Badge className="border-0 text-[10px] font-semibold px-2 py-0.5" style={{ backgroundColor: PT.redL, color: PT.red }}>
                                             深度研报
                                         </Badge>
                                     </div>
 
                                     {/* Title */}
-                                    <h3 className="text-base font-bold text-slate-800 line-clamp-2 leading-snug mb-4 group-hover:text-primary transition-colors duration-200">
+                                    <h3 className="text-base font-bold line-clamp-2 leading-snug mb-4 transition-colors duration-200" style={{ color: PT.heading }}>
                                         {report.title}
                                     </h3>
 
@@ -149,21 +166,22 @@ export function ResearchView() {
                                         {visibleStocks.map((symbol, index) => (
                                             <span
                                                 key={`${report.id}-${symbol}-${index}`}
-                                                className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-50 text-slate-600 border border-slate-100"
+                                                className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium"
+                                                style={{ backgroundColor: PT.fog, color: PT.body, border: `1px solid ${PT.border}`, borderRadius: 8 }}
                                             >
                                                 {symbol}
                                             </span>
                                         ))}
                                         {hiddenCount > 0 && (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-50 text-slate-400 border border-slate-100">
+                                            <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium" style={{ backgroundColor: PT.fog, color: PT.muted, border: `1px solid ${PT.border}`, borderRadius: 8 }}>
                                                 +{hiddenCount}
                                             </span>
                                         )}
                                     </div>
 
                                     {/* Footer CTA */}
-                                    <div className="flex items-center justify-end pt-3 border-t border-slate-50">
-                                        <span className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 group-hover:text-primary transition-all duration-200">
+                                    <div className="flex items-center justify-end pt-3" style={{ borderTop: `1px solid ${PT.border}` }}>
+                                        <span className="flex items-center gap-1.5 text-xs font-semibold transition-all duration-200" style={{ color: PT.red }}>
                                             <span className="group-hover:underline underline-offset-2">阅读报告</span>
                                             <svg className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -176,10 +194,10 @@ export function ResearchView() {
                     })}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center flex-1 bg-white rounded-3xl border-2 border-dashed border-slate-200 p-12 text-center">
-                    <FileText className="h-16 w-16 text-slate-200 mb-4" />
-                    <h3 className="text-xl font-bold text-slate-500">暂无调研报告</h3>
-                    <p className="text-slate-400 mt-2 max-w-xs">当前还没有相关的调研报告，请关注后续更新。</p>
+                <div className="flex flex-col items-center justify-center flex-1 p-12 text-center" style={{ backgroundColor: PT.bg, borderRadius: 16, border: `2px dashed ${PT.border}` }}>
+                    <FileText className="h-16 w-16 mb-4" style={{ color: PT.sand }} />
+                    <h3 className="text-xl font-bold" style={{ color: PT.muted }}>暂无调研报告</h3>
+                    <p className="mt-2 max-w-xs" style={{ color: PT.muted }}>当前还没有相关的调研报告，请关注后续更新。</p>
                 </div>
             )}
 

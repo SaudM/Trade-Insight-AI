@@ -14,6 +14,7 @@ const config = {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
         body: ["Inter", "sans-serif"],
         headline: ["Space Grotesk", "sans-serif"],
+        mono: ["Berkeley Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"],
         code: ["monospace"],
       },
       colors: {
@@ -92,6 +93,54 @@ const config = {
           "3": "hsl(var(--chart-3))",
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
+        },
+        /* ── Pinterest design system static tokens ── */
+        pt: {
+          bg:             '#ffffff',
+          fog:            '#f6f6f3',
+          sand:           '#e5e5e0',
+          warm:           '#e0e0d9',
+          heading:        '#211922',
+          body:           '#62625b',
+          muted:          '#91918c',
+          border:         '#e5e5e0',
+          'border-hover': '#bcbcb3',
+          red:            '#e60023',
+          'red-h':        '#ad081b',
+          'red-l':        'rgba(230,0,35,0.08)',
+          dark:           '#33332e',
+          focus:          '#435ee5',
+        },
+        /* ── Stripe design system static tokens ── */
+        st: {
+          bg:           '#ffffff',
+          surface:      '#f8f9fb',
+          heading:      '#061b31',
+          label:        '#273951',
+          body:         '#64748d',
+          border:       '#e5edf5',
+          purple:       '#533afd',
+          'purple-h':   '#4434d4',
+          'purple-l':   '#b9b9f9',
+          dark:         '#1c1e54',
+          success:      '#15be53',
+          'success-t':  '#108c3d',
+        },
+        /* ── Linear design system static tokens ── */
+        ln: {
+          bg:           '#08090a',
+          panel:        '#0f1011',
+          card:         '#191a1b',
+          hover:        '#28282c',
+          text:         '#f7f8f8',
+          'text-2':     '#d0d6e0',
+          'text-3':     '#8a8f98',
+          'text-4':     '#62666d',
+          indigo:       '#5e6ad2',
+          violet:       '#7170ff',
+          'violet-h':   '#828fff',
+          'border-s':   'rgba(255,255,255,0.08)',   // border standard
+          'border-sub': 'rgba(255,255,255,0.05)',   // border subtle
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

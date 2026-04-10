@@ -4,6 +4,53 @@
 
 @layer base {
   :root {
+    /* Linear design system tokens (dark — landing page) */
+    --ln-bg: #08090a;
+    --ln-panel: #0f1011;
+    --ln-card: #191a1b;
+    --ln-hover: #28282c;
+    --ln-border: rgba(255,255,255,0.08);
+    --ln-border-sub: rgba(255,255,255,0.05);
+    --ln-text: #f7f8f8;
+    --ln-text-2: #d0d6e0;
+    --ln-text-3: #8a8f98;
+    --ln-text-4: #62666d;
+    --ln-indigo: #5e6ad2;
+    --ln-violet: #7170ff;
+    --ln-violet-hover: #828fff;
+
+    /* Stripe design system tokens (light — app interior, legacy) */
+    --st-bg: #ffffff;
+    --st-surface: #f8f9fb;
+    --st-heading: #061b31;
+    --st-label: #273951;
+    --st-body: #64748d;
+    --st-border: #e5edf5;
+    --st-purple: #533afd;
+    --st-purple-hover: #4434d4;
+    --st-purple-light: #b9b9f9;
+    --st-dark: #1c1e54;
+    --st-success: #15be53;
+    --st-success-text: #108c3d;
+    --st-shadow: rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px;
+    --st-shadow-sm: rgba(23,23,23,0.08) 0px 15px 35px 0px;
+
+    /* Pinterest design system tokens (warm light — app interior) */
+    --pt-bg: #ffffff;
+    --pt-fog: #f6f6f3;
+    --pt-sand: #e5e5e0;
+    --pt-warm: #e0e0d9;
+    --pt-heading: #211922;
+    --pt-body: #62625b;
+    --pt-muted: #91918c;
+    --pt-border: #e5e5e0;
+    --pt-border-hover: #bcbcb3;
+    --pt-red: #e60023;
+    --pt-red-hover: #ad081b;
+    --pt-red-light: rgba(230,0,35,0.08);
+    --pt-dark: #33332e;
+    --pt-focus: #435ee5;
+
     --primary: 243 75% 58%;  /* 更鲜艳的紫蓝色 */
     --on-primary: 0 0% 100%;
     --primary-container: 244 100% 93.92%;
@@ -132,7 +179,8 @@
 
   body {
     @apply bg-background text-on-background;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    /* Linear: cv01 = single-story 'a', ss03 = geometric alternates */
+    font-feature-settings: "rlig" 1, "calt" 1, "cv01" 1, "ss03" 1;
   }
 }
 

@@ -17,6 +17,21 @@ import {
 import { trackEvent } from '@/lib/tracking';
 import type { ResearchReport } from '@/lib/types';
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+    dark:    '#33332e',
+} as const;
+
 interface ResearchDetailViewProps {
     report: ResearchReport;
     onBack: () => void;
@@ -160,16 +175,16 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
     const hiddenStocksCount = (report.stocks?.length || 0) - visibleStocks.length;
 
     return (
-        <div className="flex flex-col h-full bg-slate-50/50">
+        <div className="flex flex-col h-full" style={{ backgroundColor: PT.fog }}>
             {/* Header - Optimized Layout */}
-            <div className="bg-white border-b border-slate-100 px-4 md:px-6 py-3 shrink-0 shadow-sm">
+            <div className="px-4 md:px-6 py-3 shrink-0" style={{ backgroundColor: PT.bg, borderBottom: `1px solid ${PT.border}` }}>
                 {/* Top Row: Back + Title + Actions */}
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 rounded-xl hover:bg-slate-100">
+                        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0" style={{ borderRadius: 16 }}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
-                        <h1 className="text-base md:text-lg font-bold text-slate-800 leading-tight truncate">
+                        <h1 className="text-base md:text-lg font-bold leading-tight truncate" style={{ color: PT.heading }}>
                             {report.title}
                         </h1>
                     </div>
@@ -180,7 +195,8 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 px-2.5 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50"
+                                className="h-8 px-2.5"
+                                style={{ borderRadius: 12, color: PT.red }}
                                 onClick={handleDelete}
                                 disabled={isDeleting}
                             >
@@ -191,7 +207,7 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-8 px-2.5 rounded-lg">
+                                <Button variant="outline" size="sm" className="h-8 px-2.5" style={{ borderRadius: 12 }}>
                                     <MoreHorizontal className="h-4 w-4" />
                                     <span className="ml-1.5 hidden sm:inline">更多</span>
                                 </Button>
@@ -216,7 +232,7 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
                 </div>
 
                 {/* Bottom Row: Meta Info */}
-                <div className="flex items-center gap-3 mt-2 ml-11 flex-wrap text-xs text-slate-400">
+                <div className="flex items-center gap-3 mt-2 ml-11 flex-wrap text-xs" style={{ color: PT.muted }}>
                     <div className="flex items-center gap-1 font-medium">
                         <Calendar className="h-3 w-3" />
                         {format(new Date(report.createdAt), 'yyyy-MM-dd HH:mm')}
@@ -227,12 +243,12 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
                     </div>
                     <div className="flex items-center gap-1 flex-wrap">
                         {visibleStocks.map((symbol, index) => (
-                            <Badge key={`${report.id}-${symbol}-${index}`} variant="secondary" className="bg-slate-100 text-slate-500 text-[10px] px-1.5 py-0 font-normal">
+                            <Badge key={`${report.id}-${symbol}-${index}`} variant="secondary" className="text-[10px] px-1.5 py-0 font-normal" style={{ backgroundColor: PT.fog, color: PT.muted }}>
                                 {symbol}
                             </Badge>
                         ))}
                         {hiddenStocksCount > 0 && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-slate-400">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal" style={{ color: PT.muted, borderColor: PT.border }}>
                                 +{hiddenStocksCount}
                             </Badge>
                         )}
@@ -243,9 +259,9 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
             {/* Full-width iframe for HTML content with loading state */}
             <div className="flex-1 overflow-hidden relative">
                 {isLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-60" />
-                        <p className="text-slate-400 mt-4 text-sm font-medium animate-pulse">正在加载报告内容...</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ backgroundColor: PT.bg }}>
+                        <Loader2 className="h-10 w-10 animate-spin opacity-60" style={{ color: PT.red }} />
+                        <p className="mt-4 text-sm font-medium animate-pulse" style={{ color: PT.muted }}>正在加载报告内容...</p>
                     </div>
                 )}
                 <iframe

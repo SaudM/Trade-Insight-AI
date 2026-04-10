@@ -38,6 +38,22 @@ interface StrategyDetailProps {
 
 import { Switch } from '@/components/ui/switch';
 
+const PT = {
+    bg:          '#ffffff',
+    fog:         '#f6f6f3',
+    sand:        '#e5e5e0',
+    warm:        '#e0e0d9',
+    heading:     '#211922',
+    body:        '#62625b',
+    muted:       '#91918c',
+    border:      '#e5e5e0',
+    borderHover: '#bcbcb3',
+    red:         '#e60023',
+    redH:        '#ad081b',
+    redL:        'rgba(230,0,35,0.08)',
+    dark:        '#33332e',
+} as const;
+
 type SignalEvent = 'BUY' | 'SELL';
 type SignalChannelType =
     | 'feishu'
@@ -534,12 +550,19 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 {/* Back + Title + Badges */}
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" size="icon" onClick={onBack} className="h-8 w-8 rounded-full shrink-0">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
+                    <button
+                        onClick={onBack}
+                        style={{
+                            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                            background: PT.bg, border: `1px solid ${PT.border}`,
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                    >
+                        <ArrowLeft style={{ width: 16, height: 16, color: PT.heading }} />
+                    </button>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h2 className="text-lg md:text-2xl font-bold text-slate-900 truncate">{detail.name}</h2>
+                            <h2 className="text-lg md:text-2xl truncate" style={{ fontWeight: 500, color: PT.heading, letterSpacing: '-0.3px' }}>{detail.name}</h2>
                             {isActive && (
                                 <Badge variant="default" className="bg-green-500 hover:bg-green-600 shrink-0 whitespace-nowrap shadow-sm text-xs">
                                     <Activity className="w-3 h-3 mr-1 animate-pulse" />
@@ -556,15 +579,20 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                 {/* Action Buttons - Full width & uniform spacing on mobile */}
                 <div className="flex w-full md:w-auto items-center gap-2 shrink-0">
                     <Dialog open={isSignalDialogOpen} onOpenChange={setIsSignalDialogOpen}>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 md:flex-none bg-white hover:bg-slate-50 text-slate-700 shadow-sm border-slate-200 h-9"
+                        <button
+                            className="flex-1 md:flex-none"
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                height: 36, padding: '0 14px', borderRadius: 12,
+                                fontSize: 13, fontWeight: 400, color: PT.heading,
+                                background: PT.bg, border: `1px solid ${PT.border}`,
+                                cursor: 'pointer',
+                            }}
                             onClick={openSignalDialog}
                         >
-                            <Bell className="w-4 h-4 md:mr-2" />
+                            <Bell style={{ width: 15, height: 15 }} />
                             <span className="hidden md:inline">订阅信号</span>
-                        </Button>
+                        </button>
                         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle>订阅实时交易信号</DialogTitle>
@@ -650,48 +678,63 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                     </Dialog>
 
                     {!isActive ? (
-                        <Button
-                            size="sm"
-                            className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-9"
-                            onClick={() => {
-                                toast({
-                                    title: "功能开发中",
-                                    description: "实盘跟单功能正在对接券商接口，敬请期待！",
-                                });
+                        <button
+                            className="flex-1 md:flex-none"
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                height: 36, padding: '0 14px', borderRadius: 16,
+                                fontSize: 13, fontWeight: 400, color: '#fff',
+                                background: PT.red, border: 'none', cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = PT.redH)}
+                            onMouseLeave={e => (e.currentTarget.style.background = PT.red)}
+                            onClick={() => toast({ title: "功能开发中", description: "实盘跟单功能正在对接券商接口，敬请期待！" })}
+                        >
+                            <Zap style={{ width: 15, height: 15 }} />
+                            <span className="hidden md:inline">立即跟单</span>
+                        </button>
+                    ) : (
+                        <button
+                            disabled
+                            className="flex-1 md:flex-none"
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                height: 36, padding: '0 14px', borderRadius: 16,
+                                fontSize: 13, fontWeight: 400, color: PT.body,
+                                background: PT.fog, border: `1px solid ${PT.border}`, cursor: 'not-allowed',
                             }}
                         >
-                            <Zap className="w-4 h-4 md:mr-2" />
-                            <span className="hidden md:inline">立即跟单</span>
-                        </Button>
-                    ) : (
-                        <Button disabled variant="secondary" size="sm" className="flex-1 md:flex-none h-9">
-                            <CheckCircle2 className="w-4 h-4 md:mr-2" />
+                            <CheckCircle2 style={{ width: 15, height: 15 }} />
                             <span className="hidden md:inline">已在运行</span>
-                        </Button>
+                        </button>
                     )}
                 </div>
             </div>
 
             {/* Strategy Info & Metrics */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 border-slate-200 shadow-sm">
+                <Card className="lg:col-span-2" style={{ border: `1px solid ${PT.border}`, boxShadow: 'none', background: PT.bg }}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-primary" />
+                        <CardTitle className="text-lg flex items-center gap-2" style={{ fontWeight: 500, color: PT.heading }}>
+                            <TrendingUp className="w-5 h-5" style={{ color: PT.red }} />
                             收益走势
                         </CardTitle>
                         {/* Time Range Selector - Top Right */}
                         <div className="flex gap-0.5">
                             {RANGE_OPTIONS.map(opt => (
-                                <Button
+                                <button
                                     key={opt.value}
-                                    size="sm"
-                                    variant={range === opt.value ? "default" : "ghost"}
-                                    className="h-6 px-2 text-xs"
                                     onClick={() => setRange(opt.value)}
+                                    style={{
+                                        height: 24, padding: '0 8px', borderRadius: 12,
+                                        fontSize: 12, fontWeight: 400,
+                                        background: range === opt.value ? PT.red : 'transparent',
+                                        color: range === opt.value ? '#fff' : PT.body,
+                                        border: 'none', cursor: 'pointer',
+                                    }}
                                 >
                                     {opt.label}
-                                </Button>
+                                </button>
                             ))}
                         </div>
                     </CardHeader>
@@ -847,15 +890,19 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                 </Card>
 
                 <div className="space-y-6">
-                    <Card className="border-slate-200 shadow-sm">
+                    <Card style={{ border: `1px solid ${PT.border}`, boxShadow: 'none', background: PT.bg }}>
                         <CardHeader className="pb-3">
                             <div className="flex items-start justify-between gap-2">
-                                <CardTitle className="text-lg font-bold text-slate-800">策略详情</CardTitle>
+                                <CardTitle className="text-lg" style={{ fontWeight: 500, color: PT.heading }}>策略详情</CardTitle>
                                 <div className="flex flex-wrap justify-end gap-1 max-w-[60%]">
                                     {detail.tags?.map(tag => (
-                                        <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 font-normal border-slate-200 hover:bg-slate-200/80">
+                                        <span key={tag} style={{
+                                            fontSize: 10, fontWeight: 400, color: PT.body,
+                                            background: PT.fog, border: `1px solid ${PT.sand}`,
+                                            borderRadius: 12, padding: '1px 7px',
+                                        }}>
                                             {tag}
-                                        </Badge>
+                                        </span>
                                     ))}
                                 </div>
                             </div>
@@ -904,7 +951,7 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-slate-50 border-slate-200 shadow-sm">
+                    <Card style={{ background: PT.fog, border: `1px solid ${PT.border}`, boxShadow: 'none' }}>
                         <CardContent className="pt-4 pb-3 grid grid-cols-3 gap-x-4 gap-y-2">
                             <div className="text-center">
                                 <p className="text-[10px] text-slate-500 mb-0.5">年化收益</p>
@@ -986,11 +1033,11 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
             {/* 当前持仓 Sheet */}
             <Sheet open={isPositionsOpen} onOpenChange={setIsPositionsOpen}>
                 <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto p-0">
-                    <SheetHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
-                        <SheetTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <SheetHeader style={{ padding: '20px 24px 12px', borderBottom: `1px solid ${PT.border}` }}>
+                        <SheetTitle className="flex items-center gap-2" style={{ fontSize: 16, fontWeight: 500, color: PT.heading }}>
                             当前持仓
                             {fundCurrent && (
-                                <span className="text-sm font-normal text-slate-500">
+                                <span style={{ fontSize: 13, fontWeight: 300, color: PT.body }}>
                                     · {fundCurrent.position_count} 只
                                 </span>
                             )}
@@ -1005,11 +1052,11 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
             {/* 历史交易 Sheet */}
             <Sheet open={isTradesOpen} onOpenChange={setIsTradesOpen}>
                 <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-5xl overflow-y-auto p-0">
-                    <SheetHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
-                        <SheetTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <SheetHeader style={{ padding: '20px 24px 12px', borderBottom: `1px solid ${PT.border}` }}>
+                        <SheetTitle className="flex items-center gap-2" style={{ fontSize: 16, fontWeight: 500, color: PT.heading }}>
                             历史交易明细
                             {detail.closedTrades != null && (
-                                <span className="text-sm font-normal text-slate-500">
+                                <span style={{ fontSize: 13, fontWeight: 300, color: PT.body }}>
                                     · 共 {detail.closedTrades} 笔
                                 </span>
                             )}
@@ -1024,10 +1071,10 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardCl
             {/* Signal Monitor Section */}
             <div className="space-y-4 pt-4">
                 <div className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-slate-700" />
-                    <h3 className="text-xl font-bold text-slate-900">实时信号监控</h3>
+                    <BarChart3 style={{ width: 20, height: 20, color: PT.red }} />
+                    <h3 style={{ fontSize: 18, fontWeight: 500, color: PT.heading }}>实时信号监控</h3>
                 </div>
-                <div className="h-[600px] border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
+                <div style={{ height: 600, border: `1px solid ${PT.border}`, borderRadius: 16, background: PT.bg, overflow: 'hidden' }}>
                     <SignalMonitor strategyId={detail.id} onBoardClick={onBoardClick} />
                 </div>
                 {/* Auto-scroll target */}

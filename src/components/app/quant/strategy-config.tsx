@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Activity, Clock, Loader2, Lock } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { StrategyDetail } from './strategy-detail';
 
@@ -19,8 +15,23 @@ import {
 
 export type { FollowConfig };
 
+const PT = {
+    bg:          '#ffffff',
+    fog:         '#f6f6f3',
+    sand:        '#e5e5e0',
+    warm:        '#e0e0d9',
+    heading:     '#211922',
+    body:        '#62625b',
+    muted:       '#91918c',
+    border:      '#e5e5e0',
+    borderHover: '#bcbcb3',
+    red:         '#e60023',
+    redH:        '#ad081b',
+    redL:        'rgba(230,0,35,0.08)',
+    dark:        '#33332e',
+} as const;
+
 const API_BASE = '/api';
-// 默认拉取最近一年的收益率曲线
 const LIST_ENDPOINT = `${API_BASE}/strategies?period=1y`;
 
 interface StrategyConfigProps {
@@ -29,7 +40,6 @@ interface StrategyConfigProps {
     initialStrategyId?: string | null;
     onBoardClick?: (boardName: string) => void;
 }
-
 
 export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStrategyId, onBoardClick }: StrategyConfigProps) {
     const { toast } = useToast();
@@ -49,9 +59,7 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
         setError(null);
         try {
             const res = await fetch(LIST_ENDPOINT, { cache: 'no-store' });
-            if (!res.ok) {
-                throw new Error(`接口返回状态 ${res.status}`);
-            }
+            if (!res.ok) throw new Error(`接口返回状态 ${res.status}`);
             const payload = await res.json();
             const list: ApiStrategy[] = Array.isArray(payload)
                 ? payload
@@ -61,11 +69,7 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
         } catch (err: any) {
             const message = err?.message ?? '获取策略列表失败';
             setError(message);
-            toast({
-                title: '获取策略失败',
-                description: message,
-                variant: 'destructive',
-            });
+            toast({ title: '获取策略失败', description: message, variant: 'destructive' });
         } finally {
             setIsLoading(false);
         }
@@ -81,20 +85,10 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
         if (hasHandledInitialStrategyRef.current) return;
         if (!initialStrategyId) return;
         if (!strategies.length) return;
-
         const target = strategies.find((s) => s.id === initialStrategyId);
         hasHandledInitialStrategyRef.current = true;
-
-        if (target) {
-            setSelectedStrategy(target);
-            return;
-        }
-
-        toast({
-            title: '未找到策略',
-            description: `策略 ${initialStrategyId} 不存在或暂未上线`,
-            variant: 'destructive',
-        });
+        if (target) { setSelectedStrategy(target); return; }
+        toast({ title: '未找到策略', description: `策略 ${initialStrategyId} 不存在或暂未上线`, variant: 'destructive' });
     }, [initialStrategyId, strategies, toast]);
 
     if (selectedStrategy) {
@@ -102,10 +96,7 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
             <StrategyDetail
                 strategy={selectedStrategy}
                 onBack={() => setSelectedStrategy(null)}
-                onFollow={(config) => {
-                    onFollowStrategy(config);
-                    setSelectedStrategy(null);
-                }}
+                onFollow={(config) => { onFollowStrategy(config); setSelectedStrategy(null); }}
                 isActive={activeStrategyId === selectedStrategy.id}
                 onBoardClick={onBoardClick}
             />
@@ -114,56 +105,87 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
 
     return (
         <div className="space-y-6">
+            {/* Error banner */}
             {error && (
-                <Card className="border-red-200 bg-red-50 text-red-700">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold">无法加载策略列表</CardTitle>
-                        <CardDescription className="text-xs text-red-600">{error}</CardDescription>
-                    </CardHeader>
-                    <CardFooter className="pt-0">
-                        <Button size="sm" variant="outline" onClick={fetchStrategies}>
-                            重试
-                        </Button>
-                    </CardFooter>
-                </Card>
+                <div
+                    style={{
+                        background: PT.bg,
+                        border: `1px solid #fca5a5`,
+                        borderRadius: 16,
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                    }}
+                >
+                    <div>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: '#b91c1c', marginBottom: 2 }}>无法加载策略列表</p>
+                        <p style={{ fontSize: 12, color: '#ef4444' }}>{error}</p>
+                    </div>
+                    <button
+                        onClick={fetchStrategies}
+                        style={{
+                            fontSize: 12,
+                            fontWeight: 400,
+                            padding: '5px 12px',
+                            borderRadius: 12,
+                            background: PT.bg,
+                            color: PT.heading,
+                            border: `1px solid ${PT.border}`,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        重试
+                    </button>
+                </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {isLoading && cardData.length === 0 && (
+                {/* Skeleton loading */}
+                {isLoading && cardData.length === 0 &&
                     Array.from({ length: 6 }).map((_, idx) => (
-                        <Card key={`skeleton-${idx}`} className="animate-pulse border-slate-200 bg-white">
-                            <CardHeader className="pb-2 space-y-2">
-                                <div className="h-4 w-2/3 bg-slate-200 rounded" />
-                                <div className="h-3 w-full bg-slate-100 rounded" />
-                                <div className="flex gap-1 mt-2">
-                                    <div className="h-4 w-12 bg-slate-100 rounded" />
-                                    <div className="h-4 w-10 bg-slate-100 rounded" />
+                        <div
+                            key={`skeleton-${idx}`}
+                            style={{
+                                background: PT.bg,
+                                border: `1px solid ${PT.border}`,
+                                borderRadius: 16,
+                                overflow: 'hidden',
+                                animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
+                            }}
+                        >
+                            <div style={{ padding: '20px 20px 12px' }}>
+                                <div style={{ height: 14, width: '60%', background: PT.fog, borderRadius: 4, marginBottom: 8 }} />
+                                <div style={{ height: 12, width: '90%', background: PT.fog, borderRadius: 4, marginBottom: 4 }} />
+                                <div style={{ height: 12, width: '70%', background: PT.fog, borderRadius: 4, marginBottom: 10 }} />
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                    <div style={{ height: 18, width: 44, background: PT.fog, borderRadius: 4 }} />
+                                    <div style={{ height: 18, width: 36, background: PT.fog, borderRadius: 4 }} />
                                 </div>
-                            </CardHeader>
-                            <CardContent className="pb-2 space-y-3">
-                                <div className="h-24 w-full bg-slate-100 rounded" />
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div className="h-10 bg-slate-100 rounded" />
-                                    <div className="h-10 bg-slate-100 rounded" />
-                                    <div className="h-10 bg-slate-100 rounded" />
+                            </div>
+                            <div style={{ padding: '0 20px 16px' }}>
+                                <div style={{ height: 88, background: PT.fog, borderRadius: 12, marginBottom: 12 }} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                                    <div style={{ height: 44, background: PT.fog, borderRadius: 12 }} />
+                                    <div style={{ height: 44, background: PT.fog, borderRadius: 12 }} />
+                                    <div style={{ height: 44, background: PT.fog, borderRadius: 12 }} />
                                 </div>
-                            </CardContent>
-                            <CardFooter className="pt-2">
-                                <div className="h-9 w-full bg-slate-100 rounded" />
-                            </CardFooter>
-                        </Card>
+                            </div>
+                            <div style={{ padding: '10px 20px 16px', borderTop: `1px solid ${PT.border}`, background: PT.fog }}>
+                                <div style={{ height: 34, background: PT.border, borderRadius: 12 }} />
+                            </div>
+                        </div>
                     ))
-                )}
+                }
 
                 {cardData.map((strategy) => {
                     const isActive = activeStrategyId === strategy.id;
                     const latestExcess = strategy.excessPerformanceData?.at(-1)?.value;
                     const performanceData = strategy.performanceData?.length
                         ? strategy.performanceData
-                        : [
-                            { date: 'Day 1', value: 100 },
-                            { date: 'Day 2', value: 100 },
-                        ];
+                        : [{ date: 'Day 1', value: 100 }, { date: 'Day 2', value: 100 }];
 
                     const annualized = strategy.annualizedReturn ?? 0;
                     const isPreview = strategy.availability === 'PREVIEW';
@@ -171,72 +193,127 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
                     const isDeprecated = strategy.availability === 'DEPRECATED';
                     const isNotActive = isPreview || isBeta || isDeprecated;
 
-                    // 已废弃策略不显示
                     if (isDeprecated) return null;
 
+                    const cardBorderColor = isActive ? PT.red : PT.border;
+                    const cardBg = isNotActive ? PT.fog : PT.bg;
+                    const chartColor = PT.red;
+
                     return (
-                        <Card
+                        <div
                             key={strategy.id}
-                            className={cn(
-                                'flex flex-col overflow-hidden transition-all duration-300 border-slate-200 group relative',
-                                isNotActive
-                                    ? 'opacity-70 cursor-not-allowed bg-slate-50'
-                                    : 'hover:shadow-lg cursor-pointer bg-white hover:border-primary/50',
-                                isActive ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
-                            )}
                             onClick={() => !isNotActive && setSelectedStrategy(strategy)}
+                            style={{
+                                background: cardBg,
+                                border: `1px solid ${cardBorderColor}`,
+                                borderRadius: 16,
+                                overflow: 'hidden',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                cursor: isNotActive ? 'not-allowed' : 'pointer',
+                                opacity: isNotActive ? 0.72 : 1,
+                                boxShadow: isActive ? `0 0 0 2px #e60023` : 'none',
+                                transition: 'box-shadow 0.18s, border-color 0.18s',
+                                position: 'relative',
+                            }}
+                            onMouseEnter={e => {
+                                if (!isNotActive) {
+                                    (e.currentTarget as HTMLDivElement).style.boxShadow = 'rgba(23,23,23,0.08) 0px 15px 35px 0px';
+                                    (e.currentTarget as HTMLDivElement).style.borderColor = isActive ? PT.red : PT.borderHover;
+                                }
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLDivElement).style.boxShadow = isActive ? `0 0 0 2px #e60023` : 'none';
+                                (e.currentTarget as HTMLDivElement).style.borderColor = cardBorderColor;
+                            }}
                         >
-                            {/* Preview/Coming Soon 标签 */}
+                            {/* Status ribbon */}
                             {isPreview && (
-                                <div className="absolute top-0 right-0 z-10">
-                                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg shadow-md flex items-center gap-1">
-                                        <Clock className="w-3 h-3" />
-                                        即将推出
-                                    </div>
+                                <div style={{
+                                    position: 'absolute', top: 0, right: 0, zIndex: 10,
+                                    background: 'linear-gradient(90deg,#f59e0b,#f97316)',
+                                    color: '#fff', fontSize: 11, fontWeight: 500,
+                                    padding: '3px 10px 3px 8px',
+                                    borderBottomLeftRadius: 6,
+                                    display: 'flex', alignItems: 'center', gap: 4,
+                                }}>
+                                    <Clock size={11} />即将推出
                                 </div>
                             )}
                             {isBeta && (
-                                <div className="absolute top-0 right-0 z-10">
-                                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg shadow-md flex items-center gap-1">
-                                        <Lock className="w-3 h-3" />
-                                        内测中
-                                    </div>
+                                <div style={{
+                                    position: 'absolute', top: 0, right: 0, zIndex: 10,
+                                    background: `linear-gradient(90deg,${PT.red},${PT.dark})`,
+                                    color: '#fff', fontSize: 11, fontWeight: 500,
+                                    padding: '3px 10px 3px 8px',
+                                    borderBottomLeftRadius: 6,
+                                    display: 'flex', alignItems: 'center', gap: 4,
+                                }}>
+                                    <Lock size={11} />内测中
                                 </div>
                             )}
-                            <CardHeader className="pb-2">
-                                <div className="flex justify-between items-start gap-2">
-                                    <div>
-                                        <CardTitle className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors">
+
+                            {/* Card header */}
+                            <div style={{ padding: '20px 20px 10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ fontSize: 15, fontWeight: 500, color: PT.heading, letterSpacing: '-0.15px', marginBottom: 4 }}>
                                             {strategy.name}
-                                        </CardTitle>
-                                        <CardDescription className="line-clamp-2 mt-1 min-h-[40px] text-sm">
+                                        </p>
+                                        <p style={{
+                                            fontSize: 13, fontWeight: 300, color: PT.body, lineHeight: 1.55,
+                                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                                            minHeight: 40,
+                                        }}>
                                             {strategy.description || '暂无简介'}
-                                        </CardDescription>
+                                        </p>
                                     </div>
                                     {isActive && (
-                                        <Badge variant="default" className="bg-green-500 hover:bg-green-600 shrink-0 whitespace-nowrap shadow-sm">
-                                            <Activity className="w-3 h-3 mr-1 animate-pulse" />
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: 4,
+                                            background: 'rgba(21,190,83,0.10)',
+                                            border: '1px solid rgba(21,190,83,0.3)',
+                                            borderRadius: 12, padding: '2px 8px',
+                                            fontSize: 11, fontWeight: 500, color: '#108c3d',
+                                            whiteSpace: 'nowrap', flexShrink: 0,
+                                        }}>
+                                            <Activity size={10} style={{ animation: 'pulse 2s infinite' }} />
                                             运行中
-                                        </Badge>
+                                        </div>
                                     )}
                                 </div>
-                                <div className="flex flex-wrap gap-1 mt-2">
+                                {/* Tags */}
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
                                     {(strategy.tags ?? []).map((tag) => (
-                                        <Badge key={tag} variant="secondary" className="text-xs px-2 py-0 bg-slate-100 text-slate-600 font-normal border-slate-200">
+                                        <span
+                                            key={tag}
+                                            style={{
+                                                fontSize: 11, fontWeight: 400, color: PT.body,
+                                                background: PT.fog,
+                                                border: `1px solid ${PT.sand}`,
+                                                borderRadius: 12, padding: '1px 7px',
+                                            }}
+                                        >
                                             {tag}
-                                        </Badge>
+                                        </span>
                                     ))}
                                 </div>
-                            </CardHeader>
+                            </div>
 
-                            <CardContent className="flex-1 pb-2">
-                                <div className="h-24 w-full mt-2 mb-4 bg-slate-50 rounded-lg overflow-hidden border border-slate-100/50">
+                            {/* Chart + stats */}
+                            <div style={{ flex: 1, padding: '0 20px 16px' }}>
+                                <div style={{
+                                    height: 88, width: '100%', marginBottom: 12,
+                                    background: PT.fog,
+                                    border: `1px solid ${PT.border}`,
+                                    borderRadius: 12, overflow: 'hidden',
+                                }}>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={performanceData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
                                             <defs>
                                                 <linearGradient id={`gradient-${strategy.id}`} x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor={annualized > 20 ? '#10b981' : '#3b82f6'} stopOpacity={0.3} />
-                                                    <stop offset="95%" stopColor={annualized > 20 ? '#10b981' : '#3b82f6'} stopOpacity={0} />
+                                                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
+                                                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
                                             <XAxis dataKey="date" hide />
@@ -245,58 +322,96 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
                                             <Area
                                                 type="monotone"
                                                 dataKey="value"
-                                                stroke={annualized > 20 ? '#10b981' : '#3b82f6'}
+                                                stroke={chartColor}
                                                 fill={`url(#gradient-${strategy.id})`}
-                                                strokeWidth={2}
+                                                strokeWidth={1.5}
                                             />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                    <div className="p-2 bg-slate-50 rounded-lg">
-                                        <p className="text-xs text-slate-500 mb-1">年化收益</p>
-                                        <p className={cn('text-sm font-black', (annualized ?? 0) >= 0 ? 'text-red-500' : 'text-green-500')}>
-                                            {annualized !== null && annualized !== undefined ? `${annualized > 0 ? '+' : ''}${annualized}%` : '--'}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                                    <div style={{ background: PT.fog, border: `1px solid ${PT.border}`, borderRadius: 12, padding: '8px 4px', textAlign: 'center' }}>
+                                        <p style={{ fontSize: 11, color: PT.body, marginBottom: 3 }}>年化收益</p>
+                                        <p style={{ fontSize: 13, fontWeight: 600, color: (annualized ?? 0) >= 0 ? '#e8192c' : '#0cad45' }}>
+                                            {annualized !== null && annualized !== undefined
+                                                ? `${annualized > 0 ? '+' : ''}${annualized}%`
+                                                : '--'}
                                         </p>
                                     </div>
-                                    <div className="p-2 bg-slate-50 rounded-lg">
-                                        <p className="text-xs text-slate-500 mb-1">最大回撤</p>
-                                        <p className="text-sm font-bold text-slate-700">{strategy.maxDrawdown ?? '--'}%</p>
+                                    <div style={{ background: PT.fog, border: `1px solid ${PT.border}`, borderRadius: 12, padding: '8px 4px', textAlign: 'center' }}>
+                                        <p style={{ fontSize: 11, color: PT.body, marginBottom: 3 }}>最大回撤</p>
+                                        <p style={{ fontSize: 13, fontWeight: 600, color: PT.heading }}>
+                                            {strategy.maxDrawdown ?? '--'}%
+                                        </p>
                                     </div>
-                                    <div className="p-2 bg-slate-50 rounded-lg">
-                                        <p className="text-xs text-slate-500 mb-1">超额收益</p>
-                                        <p className="text-sm font-bold text-slate-700">
-                                            {latestExcess !== undefined ? `${latestExcess > 0 ? '+' : ''}${latestExcess.toFixed(2)}%` : '--'}
+                                    <div style={{ background: PT.fog, border: `1px solid ${PT.border}`, borderRadius: 12, padding: '8px 4px', textAlign: 'center' }}>
+                                        <p style={{ fontSize: 11, color: PT.body, marginBottom: 3 }}>超额收益</p>
+                                        <p style={{ fontSize: 13, fontWeight: 600, color: PT.heading }}>
+                                            {latestExcess !== undefined
+                                                ? `${latestExcess > 0 ? '+' : ''}${latestExcess.toFixed(2)}%`
+                                                : '--'}
                                         </p>
                                     </div>
                                 </div>
-                            </CardContent>
+                            </div>
 
-                            <CardFooter className="pt-2 bg-slate-50/50 border-t border-slate-100">
-                                <Button
-                                    className={cn(
-                                        'w-full transition-colors',
-                                        isNotActive
-                                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                                            : 'bg-white text-primary border border-primary/20 hover:bg-primary hover:text-white'
-                                    )}
+                            {/* Footer CTA */}
+                            <div style={{ padding: '10px 16px 14px', borderTop: `1px solid ${PT.border}`, background: PT.fog }}>
+                                <button
                                     disabled={isNotActive}
+                                    onClick={(e) => { e.stopPropagation(); if (!isNotActive) setSelectedStrategy(strategy); }}
+                                    style={{
+                                        width: '100%',
+                                        fontSize: 13,
+                                        fontWeight: 400,
+                                        padding: '7px 0',
+                                        borderRadius: 12,
+                                        border: isNotActive ? `1px solid ${PT.border}` : `1px solid ${PT.red}`,
+                                        background: isNotActive ? PT.bg : PT.redL,
+                                        color: isNotActive ? PT.body : PT.red,
+                                        cursor: isNotActive ? 'not-allowed' : 'pointer',
+                                        transition: 'background 0.15s, color 0.15s',
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (!isNotActive) {
+                                            (e.currentTarget as HTMLButtonElement).style.background = PT.red;
+                                            (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+                                        }
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (!isNotActive) {
+                                            (e.currentTarget as HTMLButtonElement).style.background = PT.redL;
+                                            (e.currentTarget as HTMLButtonElement).style.color = PT.red;
+                                        }
+                                    }}
                                 >
                                     {isPreview ? '敬请期待' : isBeta ? '申请试用' : '查看详情'}
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                                </button>
+                            </div>
+                        </div>
                     );
                 })}
 
+                {/* Empty state */}
                 {!isLoading && cardData.length === 0 && (
-                    <Card className="col-span-full text-center border-dashed border-2 border-slate-200 bg-slate-50/40">
-                        <CardContent className="py-16 flex flex-col gap-4 items-center text-slate-500">
-                            <Loader2 className="w-8 h-8" />
-                            <p>暂无可用策略，请稍后重试。</p>
-                        </CardContent>
-                    </Card>
+                    <div
+                        className="col-span-full"
+                        style={{
+                            background: PT.bg,
+                            border: `1.5px dashed ${PT.border}`,
+                            borderRadius: 16,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 12,
+                            padding: '64px 24px',
+                        }}
+                    >
+                        <Loader2 style={{ width: 28, height: 28, color: PT.body }} />
+                        <p style={{ fontSize: 14, fontWeight: 300, color: PT.body }}>暂无可用策略，请稍后重试。</p>
+                    </div>
                 )}
             </div>
         </div>

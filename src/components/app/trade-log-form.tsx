@@ -41,6 +41,21 @@ import { HelpCircle, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  sand:    '#e5e5e0',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  borderH: '#bcbcb3',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+  dark:    '#33332e',
+} as const;
+
 // 格式化为本地 date 输入值（YYYY-MM-DD）
 function toLocalDateInputValue(date: Date) {
   const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
@@ -445,10 +460,10 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
   return (
     <>
       <DialogHeader className="space-y-4 pb-6">
-        <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+        <DialogTitle className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: PT.heading }}>
           {isEditing ? '编辑交易笔记' : '添加新的交易笔记'}
         </DialogTitle>
-        <DialogDescription className="text-sm sm:text-base text-gray-600 leading-relaxed">
+        <DialogDescription className="text-sm sm:text-base leading-relaxed" style={{ color: PT.body }}>
           {isEditing ? '修改您的交易详情，完善交易记录。' : '记录您的交易详情，以便后续分析和改进交易策略。'}
         </DialogDescription>
       </DialogHeader>
@@ -587,7 +602,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="买入价格说明">
+                          <button type="button" className="p-2 rounded-full" style={{ color: PT.red }} aria-label="买入价格说明">
                             <HelpCircle className="h-4 w-4" />
                           </button>
                         </TooltipTrigger>
@@ -627,7 +642,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="卖出价格说明">
+                          <button type="button" className="p-2 rounded-full" style={{ color: PT.red }} aria-label="卖出价格说明">
                             <HelpCircle className="h-4 w-4" />
                           </button>
                         </TooltipTrigger>
@@ -663,7 +678,8 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                                 ? '已回显买入价格，示例：10.00'
                                 : '用于盈亏估算，示例：10.00'))}
                           readOnly
-                          className={"bg-gray-50 text-gray-700 cursor-not-allowed"}
+                          className={"cursor-not-allowed"}
+                          style={{ backgroundColor: PT.fog, color: PT.body }}
                           error={fieldState.error?.message}
                           step="0.01"
                           min="0"
@@ -679,7 +695,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="参考买入价说明">
+                          <button type="button" className="p-2 rounded-full" style={{ color: PT.red }} aria-label="参考买入价说明">
                             {autoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <HelpCircle className="h-4 w-4" />}
                           </button>
                         </TooltipTrigger>
@@ -738,7 +754,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="卖出股数说明">
+                          <button type="button" className="p-2 rounded-full" style={{ color: PT.red }} aria-label="卖出股数说明">
                             <HelpCircle className="h-4 w-4" />
                           </button>
                         </TooltipTrigger>
@@ -756,19 +772,19 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
           {/* 实时盈亏区块仅在卖出方向显示，买入界面保持简洁 */}
           {isExit && (
             <div className="md:col-span-2">
-              <div className="flex items-center justify-between p-4 rounded-lg border bg-gray-50">
+              <div className="flex items-center justify-between p-4 rounded-2xl border" style={{ backgroundColor: PT.fog, borderColor: PT.border }}>
                 {canShowProfit ? (
                   <div>
-                    <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">实时盈亏 (¥)</p>
+                    <p className="text-xs font-medium uppercase tracking-wide" style={{ color: PT.body }}>实时盈亏 (¥)</p>
                     <p className={`text-xl font-bold ${computedProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{computedProfit.toFixed(2)}</p>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-600">请填写参考买入价、卖出价格与卖出股数后，系统将自动展示盈亏计算。</div>
+                  <div className="text-sm" style={{ color: PT.body }}>请填写参考买入价、卖出价格与卖出股数后，系统将自动展示盈亏计算。</div>
                 )}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-primary" aria-label="查看计算明细">
+                      <button type="button" className="p-2 rounded-full" style={{ color: PT.red }} aria-label="查看计算明细">
                         <HelpCircle className="h-5 w-5" />
                       </button>
                     </TooltipTrigger>
@@ -781,7 +797,7 @@ export function TradeLogForm({ tradeLog, onSubmit, onCancel }: TradeLogFormProps
                         ) : (
                           <div>累计盈亏统计：待选择持仓后显示</div>
                         )}
-                        <div className="text-muted-foreground">注：暂未包含手续费/印花税等费用。</div>
+                        <div style={{ color: PT.muted }}>注：暂未包含手续费/印花税等费用。</div>
                       </div>
                     </TooltipContent>
                   </Tooltip>

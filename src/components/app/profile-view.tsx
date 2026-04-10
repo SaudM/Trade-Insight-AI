@@ -122,7 +122,7 @@ export function ProfileView() {
             <AppHeader title="个人中心" />
             <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8">
                 <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
-                    <Card className="overflow-hidden border-0 shadow-sm">
+                    <Card className="overflow-hidden shadow-sm" style={{ border: '1px solid #e5e5e0', borderRadius: 16 }}>
                         <CardHeader className="relative pb-4 sm:pb-6">
                             {/* 移动端退出按钮 - 右上角 */}
                             <Button
@@ -138,9 +138,9 @@ export function ProfileView() {
                             {/* 用户信息主体 */}
                             <div className="flex flex-col items-center space-y-3 sm:space-y-4 pt-2">
                                 <div className="relative group">
-                                    <Avatar className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 ring-4 ring-primary/10 shadow-lg transition-all duration-300 group-hover:ring-primary/20 group-hover:shadow-xl">
+                                    <Avatar className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 shadow-lg transition-all duration-300 group-hover:shadow-xl" style={{ outline: '4px solid rgba(230,0,35,0.12)' }}>
                                         <AvatarImage src={firebaseUser?.photoURL || undefined} alt={user?.name || 'User'} />
-                                        <AvatarFallback className="text-lg sm:text-xl md:text-2xl font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
+                                        <AvatarFallback className="text-lg sm:text-xl md:text-2xl font-semibold" style={{ background: '#f6f6f3', color: '#62625b' }}>
                                             {getInitials(user?.name)}
                                         </AvatarFallback>
                                     </Avatar>
@@ -164,35 +164,37 @@ export function ProfileView() {
                         <CardContent className="px-4 sm:px-6">
                             <div
                                 onClick={handlePricingClick}
-                                className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-lg group cursor-pointer active:scale-[0.99] touch-manipulation ${isVipUser
-                                    ? 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-yellow-200/50'
-                                    : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/50'
-                                    }`}>
+                                className="relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-lg group cursor-pointer active:scale-[0.99] touch-manipulation"
+                                style={isVipUser
+                                    ? { background: 'linear-gradient(135deg, #fffbeb, #fef3c7, #fde68a20)', border: '1px solid rgba(251,191,36,0.4)' }
+                                    : { background: 'linear-gradient(135deg, rgba(230,0,35,0.04), rgba(230,0,35,0.08), rgba(230,0,35,0.03))', border: '1px solid rgba(230,0,35,0.18)' }
+                                }>
                                 {/* 背景装饰元素 */}
                                 <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
                                     {isVipUser ? (
                                         <Crown className="w-full h-full text-yellow-500 rotate-12" />
                                     ) : (
-                                        <Sparkles className="w-full h-full text-blue-500 rotate-12" />
+                                        <Sparkles className="w-full h-full rotate-12" style={{ color: '#e60023' }} />
                                     )}
                                 </div>
 
                                 <div className="relative flex items-center justify-between">
                                     <div className="flex items-center gap-4 sm:gap-5">
                                         {/* 图标容器 - 移动端隐藏 */}
-                                        <div className={`hidden sm:block relative p-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-105 ${isVipUser
-                                            ? 'bg-gradient-to-br from-yellow-400 to-amber-500'
-                                            : 'bg-gradient-to-br from-blue-500 to-indigo-600'
-                                            }`}>
+                                        <div
+                                            className="hidden sm:block relative p-3 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-105"
+                                            style={isVipUser
+                                                ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' }
+                                                : { backgroundColor: '#e60023' }
+                                            }>
                                             {isVipUser ? (
                                                 <Crown className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-sm" />
                                             ) : (
                                                 <Gift className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-sm" />
                                             )}
-                                            {/* 闪烁效果 */}
                                             {!isVipUser && (
                                                 <div className="absolute -top-1 -right-1">
-                                                    <Sparkles className="w-4 h-4 text-yellow-400 animate-pulse" />
+                                                    <Sparkles className="w-4 h-4 animate-pulse" style={{ color: '#e60023' }} />
                                                 </div>
                                             )}
                                         </div>
@@ -200,12 +202,11 @@ export function ProfileView() {
                                         {/* 文字信息 */}
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
-                                                <h3 className={`font-bold text-base sm:text-lg leading-tight ${isVipUser ? 'text-yellow-800' : 'text-blue-800'
-                                                    }`}>
+                                                <h3 className="font-bold text-base sm:text-lg leading-tight" style={{ color: isVipUser ? '#92400e' : '#211922' }}>
                                                     {isVipUser ? '会员用户' : '免费试用'}
                                                 </h3>
                                                 {!isVipUser && (
-                                                    <div className="flex items-center gap-1 text-blue-600">
+                                                    <div className="flex items-center gap-1" style={{ color: '#e60023' }}>
                                                         <Clock className="w-3 h-3" />
                                                         <span className="text-xs font-medium">限时</span>
                                                     </div>
@@ -213,10 +214,8 @@ export function ProfileView() {
                                             </div>
                                             {endDate && (
                                                 <div className="flex items-center gap-1.5">
-                                                    <Clock className={`w-3.5 h-3.5 ${isVipUser ? 'text-yellow-600' : 'text-blue-600'
-                                                        }`} />
-                                                    <p className={`text-xs sm:text-sm font-medium ${isVipUser ? 'text-yellow-700' : 'text-blue-700'
-                                                        }`}>
+                                                    <Clock className="w-3.5 h-3.5" style={{ color: isVipUser ? '#b45309' : '#e60023' }} />
+                                                    <p className="text-xs sm:text-sm font-medium" style={{ color: isVipUser ? '#92400e' : '#62625b' }}>
                                                         到期时间: {format(endDate, 'yyyy年MM月dd日')}
                                                     </p>
                                                 </div>
@@ -229,13 +228,13 @@ export function ProfileView() {
                                         <div className="relative">
                                             <Badge
                                                 variant="secondary"
-                                                className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 px-3 py-1.5 text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                                                className="text-white border-0 px-3 py-1.5 text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                                                style={{ backgroundColor: '#e60023' }}
                                             >
                                                 <Sparkles className="w-3 h-3 mr-1" />
                                                 试用中
                                             </Badge>
-                                            {/* 脉冲动画 */}
-                                            <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-20"></div>
+                                            <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#e60023' }}></div>
                                         </div>
                                     )}
 
@@ -243,7 +242,8 @@ export function ProfileView() {
                                         <div className="relative">
                                             <Badge
                                                 variant="secondary"
-                                                className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white border-0 px-3 py-1.5 text-xs sm:text-sm font-semibold shadow-lg"
+                                                className="text-white border-0 px-3 py-1.5 text-xs sm:text-sm font-semibold shadow-lg"
+                                                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
                                             >
                                                 <Crown className="w-3 h-3 mr-1" />
                                                 已激活
@@ -255,17 +255,17 @@ export function ProfileView() {
                         </CardContent>
 
                         <CardFooter className="px-4 sm:px-6 pb-4 sm:pb-6">
-                            <Button
-                                variant="default"
+                            <button
                                 onClick={handlePricingClick}
-                                className={`relative w-full h-12 sm:h-14 text-sm sm:text-base font-bold rounded-2xl shadow-lg hover:shadow-xl active:shadow-md active:scale-[0.98] transition-all duration-300 touch-manipulation overflow-hidden group ${isVipUser
-                                    ? 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600'
-                                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700'
-                                    }`}
+                                className="relative w-full h-12 sm:h-14 text-sm sm:text-base font-bold rounded-2xl shadow-lg hover:shadow-xl active:shadow-md active:scale-[0.98] transition-all duration-300 touch-manipulation overflow-hidden group text-white"
+                                style={isVipUser
+                                    ? { background: 'linear-gradient(135deg, #f59e0b, #d97706, #b45309)' }
+                                    : { backgroundColor: '#e60023' }
+                                }
+                                onMouseEnter={e => { if (!isVipUser) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ad081b'; }}
+                                onMouseLeave={e => { if (!isVipUser) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e60023'; }}
                             >
-                                {/* 背景光效 */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-
                                 <div className="relative flex items-center justify-center gap-2 sm:gap-3">
                                     {isVipUser ? (
                                         <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-white drop-shadow-sm" />
@@ -285,53 +285,57 @@ export function ProfileView() {
                                         </div>
                                     )}
                                 </div>
-                            </Button>
+                            </button>
                         </CardFooter>
                     </Card>
 
-                    <Card className="overflow-hidden border-0 shadow-sm">
+                    <Card className="overflow-hidden shadow-sm" style={{ border: '1px solid #e5e5e0', borderRadius: 16 }}>
                         <CardContent className="p-4 sm:p-6">
                             <div className="space-y-4 sm:space-y-6">
                                 <div className="group">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border-0 bg-muted/20 transition-all duration-200">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl transition-all duration-200" style={{ backgroundColor: '#f6f6f3', padding: '16px' }}>
                                         <div className="space-y-1">
-                                            <p className="font-medium text-sm sm:text-base flex items-center gap-2">
-                                                <Key className="h-4 w-4 text-muted-foreground" />
+                                            <p className="font-medium text-sm sm:text-base flex items-center gap-2" style={{ color: '#211922' }}>
+                                                <Key className="h-4 w-4" style={{ color: '#91918c' }} />
                                                 密码管理
                                             </p>
-                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                            <p className="text-xs sm:text-sm leading-relaxed" style={{ color: '#91918c' }}>
                                                 定期更改密码以保护您的账户安全
                                             </p>
                                         </div>
-                                        <Button
-                                            variant="outline"
+                                        <button
                                             onClick={handleResetPassword}
                                             disabled={isResetting}
-                                            className="w-full sm:w-auto h-10 sm:h-11 text-sm font-medium rounded-lg hover:bg-primary/5 active:bg-primary/10 active:scale-[0.98] transition-all duration-200 touch-manipulation disabled:active:scale-100 border-0 bg-background/80 hover:bg-background shadow-sm"
+                                            className="w-full sm:w-auto h-10 sm:h-11 text-sm font-medium transition-all duration-200 touch-manipulation disabled:opacity-50"
+                                            style={{ border: '1px solid #e5e5e0', borderRadius: 12, backgroundColor: '#ffffff', color: '#62625b', padding: '0 16px' }}
+                                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = '#bcbcb3'}
+                                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = '#e5e5e0'}
                                         >
                                             {isResetting ? "发送中..." : "重置密码"}
-                                        </Button>
+                                        </button>
                                     </div>
                                 </div>
 
                                 <div className="group">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border-0 bg-muted/20 transition-all duration-200">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl transition-all duration-200" style={{ backgroundColor: '#f6f6f3', padding: '16px' }}>
                                         <div className="space-y-1">
-                                            <p className="font-medium text-sm sm:text-base flex items-center gap-2">
-                                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                                            <p className="font-medium text-sm sm:text-base flex items-center gap-2" style={{ color: '#211922' }}>
+                                                <ShoppingBag className="h-4 w-4" style={{ color: '#91918c' }} />
                                                 订单中心
                                             </p>
-                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                            <p className="text-xs sm:text-sm leading-relaxed" style={{ color: '#91918c' }}>
                                                 查看您的订单历史和支付记录
                                             </p>
                                         </div>
-                                        <Button
-                                            variant="outline"
+                                        <button
                                             onClick={handleOrdersClick}
-                                            className="w-full sm:w-auto h-10 sm:h-11 text-sm font-medium rounded-lg hover:bg-primary/5 active:bg-primary/10 active:scale-[0.98] transition-all duration-200 touch-manipulation border-0 bg-background/80 hover:bg-background shadow-sm"
+                                            className="w-full sm:w-auto h-10 sm:h-11 text-sm font-medium transition-all duration-200 touch-manipulation"
+                                            style={{ border: '1px solid #e5e5e0', borderRadius: 12, backgroundColor: '#ffffff', color: '#62625b', padding: '0 16px' }}
+                                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = '#bcbcb3'}
+                                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = '#e5e5e0'}
                                         >
                                             查看订单
-                                        </Button>
+                                        </button>
                                     </div>
                                 </div>
                             </div>

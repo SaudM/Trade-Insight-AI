@@ -1,6 +1,21 @@
 
 "use client";
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  sand:    '#e5e5e0',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  borderH: '#bcbcb3',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+  dark:    '#33332e',
+} as const;
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -154,8 +169,8 @@ export function AdminResearchModal({ isOpen, onOpenChange, onSuccess, userId }: 
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col p-0">
-                <DialogHeader className="p-6 border-b">
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col p-0" style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: '16px' }}>
+                <DialogHeader className="p-6" style={{ borderBottom: `1px solid ${PT.border}` }}>
                     <DialogTitle className="text-xl font-bold">提报个股调研报告</DialogTitle>
                 </DialogHeader>
 
@@ -179,7 +194,7 @@ export function AdminResearchModal({ isOpen, onOpenChange, onSuccess, userId }: 
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                         />
-                        <p className="text-[10px] text-slate-400 italic">提示: 建议使用干净的 HTML 片段，系统会通过 iframe 渲染。</p>
+                        <p className="text-[10px] italic" style={{ color: PT.muted }}>提示: 建议使用干净的 HTML 片段，系统会通过 iframe 渲染。</p>
                     </div>
 
                     <div className="space-y-2">
@@ -190,7 +205,8 @@ export function AdminResearchModal({ isOpen, onOpenChange, onSuccess, userId }: 
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 text-xs text-primary hover:text-primary/80"
+                                    className="h-7 text-xs"
+                                    style={{ color: PT.red }}
                                     onClick={handleApplyExtracted}
                                 >
                                     <Sparkles className="h-3 w-3 mr-1" />
@@ -207,28 +223,28 @@ export function AdminResearchModal({ isOpen, onOpenChange, onSuccess, userId }: 
 
                         {/* Show extracted symbols preview */}
                         {extractedSymbols.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 p-3 bg-gradient-to-r from-primary/5 to-violet-50 rounded-lg border border-primary/10">
-                                <span className="text-[10px] text-slate-500 mr-1 self-center">识别到:</span>
+                            <div className="flex flex-wrap gap-1.5 p-3 rounded-lg" style={{ backgroundColor: PT.fog, border: `1px solid ${PT.border}` }}>
+                                <span className="text-[10px] mr-1 self-center" style={{ color: PT.muted }}>识别到:</span>
                                 {extractedSymbols.slice(0, 8).map((symbol, i) => (
-                                    <Badge key={i} variant="secondary" className="bg-white text-xs font-normal">
+                                    <Badge key={i} variant="secondary" className="text-xs font-normal" style={{ backgroundColor: PT.bg }}>
                                         {symbol}
                                     </Badge>
                                 ))}
                                 {extractedSymbols.length > 8 && (
-                                    <Badge variant="outline" className="text-xs font-normal text-slate-400">
+                                    <Badge variant="outline" className="text-xs font-normal" style={{ color: PT.muted }}>
                                         +{extractedSymbols.length - 8}
                                     </Badge>
                                 )}
                             </div>
                         )}
 
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px]" style={{ color: PT.muted }}>
                             支持格式: SHA:600000, NASDAQ:AAPL, HKG:00700 等 (英文逗号分隔)
                         </p>
                     </div>
                 </form>
 
-                <DialogFooter className="p-6 border-t bg-slate-50/50">
+                <DialogFooter className="p-6" style={{ borderTop: `1px solid ${PT.border}`, backgroundColor: PT.fog }}>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
                     <Button onClick={handleSubmit} disabled={isSubmitting}>
                         {isSubmitting ? (

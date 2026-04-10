@@ -1,6 +1,22 @@
 
 "use client";
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    warm:    '#e0e0d9',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+    dark:    '#33332e',
+} as const;
+
 import type { TradeLog, DailyAnalysis, WeeklyReview, MonthlySummary } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportView } from './report-view';
@@ -332,12 +348,12 @@ export function AnalysisView({
         <div className="flex flex-col h-full">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col flex-1">
                 {/* Unified Header: Title + Tabs + Actions */}
-                <div className="bg-white border-b border-slate-200/80 px-3 sm:px-4 md:px-6 shrink-0">
+                <div className="px-3 sm:px-4 md:px-6 shrink-0" style={{ backgroundColor: PT.bg, borderBottom: `1px solid ${PT.border}` }}>
                     {/* Top row: title + actions */}
                     <div className="flex items-center justify-between h-14">
                         <div className="flex items-center gap-3">
                             <SidebarTrigger className="md:hidden" />
-                            <h1 className="text-lg md:text-xl font-bold text-slate-900">分析报告</h1>
+                            <h1 className="text-lg md:text-xl font-bold" style={{ color: PT.heading }}>分析报告</h1>
                         </div>
                         <div className="flex items-center gap-2">
                             {/* 历史报告选择 */}
@@ -418,17 +434,27 @@ export function AnalysisView({
 
                     {/* Bottom row: Tabs — underline style */}
                     <TabsList className="bg-transparent h-auto p-0 gap-0 border-0 rounded-none">
-                        {(['daily', 'weekly', 'monthly'] as const).map(tab => (
-                            <TabsTrigger
-                                key={tab}
-                                value={tab}
-                                className="relative rounded-none border-0 bg-transparent px-4 pb-2.5 pt-1 text-sm font-medium text-slate-500 shadow-none transition-colors data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:bg-transparent hover:text-slate-700"
-                            >
-                                {reportNameMap[tab]}
-                                {/* Active indicator */}
-                                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary scale-x-0 transition-transform data-[state=active]:scale-x-100" data-state={activeTab === tab ? 'active' : 'inactive'} />
-                            </TabsTrigger>
-                        ))}
+                        {(['daily', 'weekly', 'monthly'] as const).map(tab => {
+                            const isActive = activeTab === tab;
+                            return (
+                                <TabsTrigger
+                                    key={tab}
+                                    value={tab}
+                                    className="relative rounded-none border-0 bg-transparent px-4 pb-2.5 pt-1 text-sm font-medium shadow-none transition-colors data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                                    style={{ color: isActive ? PT.red : PT.muted }}
+                                >
+                                    {reportNameMap[tab]}
+                                    {/* Active indicator */}
+                                    <span
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full transition-transform"
+                                        style={{
+                                            backgroundColor: PT.red,
+                                            transform: isActive ? 'scaleX(1)' : 'scaleX(0)',
+                                        }}
+                                    />
+                                </TabsTrigger>
+                            );
+                        })}
                     </TabsList>
                 </div>
 

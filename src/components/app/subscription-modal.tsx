@@ -6,14 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  sand:    '#e5e5e0',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  borderH: '#bcbcb3',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+  dark:    '#33332e',
+} as const;
+
 export function SubscriptionModal({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange: (open: boolean) => void }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: '16px' }}>
         <DialogHeader>
-          <div className="flex items-center justify-center mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10">
-            <Sparkles className="w-6 h-6 text-primary" />
+          <div className="flex items-center justify-center mx-auto mb-4 w-12 h-12 rounded-full" style={{ backgroundColor: PT.redL }}>
+            <Sparkles className="w-6 h-6" style={{ color: PT.red }} />
           </div>
           <DialogTitle className="text-2xl font-headline text-center">升级到专业版</DialogTitle>
           <DialogDescription className="text-center pt-2">

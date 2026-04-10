@@ -1,5 +1,20 @@
 'use client';
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  sand:    '#e5e5e0',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  borderH: '#bcbcb3',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+  dark:    '#33332e',
+} as const;
+
 import React, { useState } from 'react';
 import { useOrders, type OrderData } from '@/hooks/use-orders';
 import { Badge } from '@/components/ui/badge';
@@ -48,18 +63,18 @@ function formatDate(dateString: string) {
  * @returns 徽章组件
  */
 function StatusBadge({ status }: { status: OrderData['status'] }) {
-  const statusConfig = {
-    pending: { text: '待支付', className: 'bg-orange-500 hover:bg-orange-600' },
-    paid: { text: '已支付', className: 'bg-green-500 hover:bg-green-600' },
-    failed: { text: '支付失败', className: 'bg-red-500 hover:bg-red-600' },
-    cancelled: { text: '已取消', className: 'bg-gray-500 hover:bg-gray-600' },
-    refunded: { text: '已退款', className: 'bg-yellow-500 hover:bg-yellow-600' },
+  const statusConfig: Record<string, { text: string; className: string; style?: React.CSSProperties }> = {
+    pending:   { text: '待支付', className: 'bg-orange-500 hover:bg-orange-600' },
+    paid:      { text: '已支付', className: 'bg-green-500 hover:bg-green-600' },
+    failed:    { text: '支付失败', className: 'bg-red-500 hover:bg-red-600' },
+    cancelled: { text: '已取消', className: '', style: { backgroundColor: PT.muted } },
+    refunded:  { text: '已退款', className: 'bg-yellow-500 hover:bg-yellow-600' },
     completed: { text: '已完成', className: 'bg-blue-500 hover:bg-blue-600' },
   };
 
-  const config = statusConfig[status] || { text: '未知状态', className: 'bg-gray-400' };
+  const config = statusConfig[status] || { text: '未知状态', className: '', style: { backgroundColor: PT.muted } };
 
-  return <Badge className={`${config.className} text-white`}>{config.text}</Badge>;
+  return <Badge className={`${config.className} text-white`} style={config.style}>{config.text}</Badge>;
 }
 
 /**
@@ -91,20 +106,20 @@ function CopyOrderNumber({ outTradeNo }: { outTradeNo: string }) {
   return (
     <div className="flex items-center gap-2 min-w-0">
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500 mb-1">订单号</p>
+        <p className="text-xs mb-1" style={{ color: PT.muted }}>订单号</p>
         <p className="text-sm font-mono break-all leading-tight">{outTradeNo}</p>
       </div>
       <Button
         variant="ghost"
         size="sm"
         onClick={handleCopy}
-        className="h-8 w-8 p-0 flex-shrink-0 hover:bg-gray-100"
+        className="h-8 w-8 p-0 flex-shrink-0 hover:bg-[#f6f6f3]"
         title="复制订单号"
       >
         {copied ? (
           <Check className="h-4 w-4 text-green-600" />
         ) : (
-          <Copy className="h-4 w-4 text-gray-500" />
+          <Copy className="h-4 w-4" style={{ color: PT.muted }} />
         )}
       </Button>
     </div>
@@ -123,19 +138,19 @@ function OrderCard({ order }: { order: OrderData }) {
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-gray-500">商品</span>
+          <span style={{ color: PT.muted }}>商品</span>
           <span>{mapPlanName(order.planName)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">金额</span>
+          <span style={{ color: PT.muted }}>金额</span>
           <span className="font-semibold">{formatAmount(order.amount)}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-500">状态</span>
+          <span style={{ color: PT.muted }}>状态</span>
           <StatusBadge status={order.status} />
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">创建时间</span>
+          <span style={{ color: PT.muted }}>创建时间</span>
           <span>{formatDate(order.createdAt)}</span>
         </div>
       </CardContent>
@@ -153,8 +168,8 @@ export default function OrdersTable() {
   if (isLoading) {
     return (
       <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-        <p className="mt-2 text-gray-600">加载中...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: PT.heading }}></div>
+        <p className="mt-2" style={{ color: PT.body }}>加载中...</p>
       </div>
     );
   }
@@ -170,7 +185,7 @@ export default function OrdersTable() {
   if (orders.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-600">暂无订单记录</p>
+        <p style={{ color: PT.body }}>暂无订单记录</p>
       </div>
     );
   }

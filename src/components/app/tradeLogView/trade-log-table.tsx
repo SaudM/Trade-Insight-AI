@@ -1,11 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
+
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redL:    'rgba(230,0,35,0.08)',
+} as const;
 import type { TradeLog } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
-import { Button } from "@/components/ui/button";
 import { ChevronDown, Trash2, Pencil, Calendar, TrendingUp, TrendingDown, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { format } from 'date-fns';
 import {
     AlertDialog,
@@ -100,56 +110,59 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
     }, [isExpanded]);
 
     return (
-        <Card className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-md bg-white dark:bg-white overflow-hidden">
-            <CardHeader className="pb-4 space-y-4">
+        <div className="hover:shadow-lg transition-shadow duration-300 overflow-hidden" style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16 }}>
+            <div className="pb-4 space-y-4 px-6 pt-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl shadow-sm ${isProfit ? 'bg-success/15 border border-success/20' : 'bg-destructive/15 border border-destructive/20'}`}>
+                        <div className="p-3 rounded-xl shadow-sm" style={isProfit
+                            ? { backgroundColor: 'rgba(14,173,69,0.12)', border: '1px solid rgba(14,173,69,0.2)' }
+                            : { backgroundColor: 'rgba(232,25,44,0.10)', border: '1px solid rgba(232,25,44,0.2)' }}>
                             {isProfit ? (
-                                <TrendingUp className={`h-5 w-5 text-success`} />
+                                <TrendingUp className="h-5 w-5 text-success" />
                             ) : (
-                                <TrendingDown className={`h-5 w-5 text-destructive`} />
+                                <TrendingDown className="h-5 w-5 text-destructive" />
                             )}
                         </div>
                         <div className="space-y-1">
-                            <CardTitle className="text-xl font-bold tracking-tight text-gray-900">{log.symbol}</CardTitle>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <p className="text-xl font-bold tracking-tight" style={{ color: PT.heading }}>{log.symbol}</p>
+                            <div className="flex items-center gap-2 text-sm" style={{ color: PT.body }}>
                                 <Calendar className="h-4 w-4" />
                                 {formatTradeTime(log.tradeTime)}
                             </div>
                         </div>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
-                        <div className="text-xl font-bold text-gray-900 font-mono">
+                        <div className="text-xl font-bold font-mono" style={{ color: PT.heading }}>
                             {(isOpening ? log.buyPrice : log.sellPrice)?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' }) || '¥0.00'}
                         </div>
-
                         <div className="mt-1">
                             {getDirectionBadge(log.direction)}
                         </div>
                     </div>
                 </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="pt-0 space-y-5">
+            <div className="pt-0 space-y-5 px-6 pb-4">
                 <div className="grid grid-cols-2 gap-6">
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                        <Target className="h-5 w-5 text-primary" />
+                    <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: PT.fog }}>
+                        <Target className="h-5 w-5" style={{ color: PT.red }} />
                         <div>
-                            <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">仓位大小</p>
-                            <p className="font-semibold text-gray-900">{log.positionSize}</p>
+                            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: PT.body }}>仓位大小</p>
+                            <p className="font-semibold" style={{ color: PT.heading }}>{log.positionSize}</p>
                         </div>
                     </div>
 
                     {!isOpening && (
-                        <div className={`flex items-center gap-3 p-3 rounded-lg ${isProfit ? 'bg-success/10' : 'bg-destructive/10'}`}>
+                        <div className="flex items-center gap-3 p-3 rounded-lg" style={isProfit
+                            ? { backgroundColor: 'rgba(14,173,69,0.08)' }
+                            : { backgroundColor: 'rgba(232,25,44,0.08)' }}>
                             {isProfit ? (
                                 <TrendingUp className="h-5 w-5 text-success" />
                             ) : (
                                 <TrendingDown className="h-5 w-5 text-destructive" />
                             )}
                             <div>
-                                <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">{isProfit ? '盈利' : '亏损'}</p>
+                                <p className="text-xs font-medium uppercase tracking-wide" style={{ color: PT.body }}>{isProfit ? '盈利' : '亏损'}</p>
                                 <p className={`font-semibold ${isProfit ? 'text-success' : 'text-destructive'}`}>
                                     {tradeResultValue > 0 ? '+' : ''}{tradeResultValue.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
                                 </p>
@@ -160,91 +173,94 @@ const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, hand
 
                 {(log.entryReason || log.exitReason || log.mindsetState || log.lessonsLearned) && (
                     <>
-                        <Button
-                            variant="ghost"
-                            size="sm"
+                        <button
                             onClick={() => setIsExpanded(!isExpanded)}
-                            className="w-full justify-between text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg p-3 mt-5 transition-colors duration-200"
+                            className="w-full flex items-center justify-between rounded-lg p-3 mt-5 transition-colors duration-200"
+                            style={{ color: PT.body, backgroundColor: 'transparent' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.fog}
+                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'}
                         >
                             <span className="text-sm font-medium">查看详细分析</span>
                             <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isExpanded && "rotate-180")} />
-                        </Button>
+                        </button>
 
-                        {/* 详细分析内容容器 - 使用高度过渡动画 */}
                         <div
                             className="overflow-hidden transition-all duration-500 ease-in-out"
                             style={{ height: `${contentHeight}px` }}
                         >
                             <div ref={contentRef} className="space-y-5">
                                 {log.entryReason && (
-                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
-                                        <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">入场理由</p>
-                                        <p className="text-gray-700 leading-relaxed">{log.entryReason}</p>
+                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
+                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>入场理由</p>
+                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.entryReason}</p>
                                     </div>
                                 )}
                                 {log.exitReason && (
-                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
-                                        <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">出场理由</p>
-                                        <p className="text-gray-700 leading-relaxed">{log.exitReason}</p>
+                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
+                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>出场理由</p>
+                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.exitReason}</p>
                                     </div>
                                 )}
                                 {log.mindsetState && (
-                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
-                                        <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">心态/状态</p>
-                                        <p className="text-gray-700 leading-relaxed">{log.mindsetState}</p>
+                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
+                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>心态/状态</p>
+                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.mindsetState}</p>
                                     </div>
                                 )}
                                 {log.lessonsLearned && (
-                                    <div className="p-4 rounded-lg bg-gray-50 transform transition-all duration-300">
-                                        <p className="font-semibold text-gray-900 mb-2 text-sm uppercase tracking-wide">心得体会</p>
-                                        <p className="text-gray-700 leading-relaxed">{log.lessonsLearned}</p>
+                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
+                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>心得体会</p>
+                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.lessonsLearned}</p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     </>
                 )}
-            </CardContent>
+            </div>
 
-            <CardFooter className="px-6 py-4 bg-transparent flex justify-end gap-3">
-                <Button
-                    variant="outline"
-                    size="sm"
+            <div className="px-6 py-4 flex justify-end gap-3">
+                <button
                     onClick={() => handleEdit(log)}
-                    className="rounded-lg border-gray-300 text-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors duration-200"
+                    className="text-sm font-medium transition-colors duration-200"
+                    style={{ border: `1px solid ${PT.border}`, borderRadius: 12, backgroundColor: PT.bg, color: PT.body, padding: '6px 14px' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = PT.borderH}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = PT.border}
                 >
                     编辑
-                </Button>
+                </button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-0 shadow-none transition-colors duration-200"
+                        <button
+                            className="text-sm font-medium transition-colors duration-200"
+                            style={{ border: 'none', borderRadius: 12, backgroundColor: PT.redL, color: PT.red, padding: '6px 14px' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(230,0,35,0.15)'}
+                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.redL}
                         >
                             删除
-                        </Button>
+                        </button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-xl border-0 shadow-2xl bg-white">
+                    <AlertDialogContent style={{ borderRadius: 16, border: `1px solid ${PT.border}`, backgroundColor: PT.bg }}>
                         <AlertDialogHeader className="space-y-3">
-                            <AlertDialogTitle className="text-lg font-semibold text-gray-900">确认删除</AlertDialogTitle>
-                            <AlertDialogDescription className="text-gray-600 leading-relaxed">
+                            <AlertDialogTitle className="text-lg font-semibold" style={{ color: PT.heading }}>确认删除</AlertDialogTitle>
+                            <AlertDialogDescription className="leading-relaxed" style={{ color: PT.body }}>
                                 此操作无法撤销。这将永久删除该交易记录。
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="gap-3 pt-4">
-                            <AlertDialogCancel className="rounded-lg">取消</AlertDialogCancel>
+                            <AlertDialogCancel className="rounded-xl">取消</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={() => deleteTradeLog(log.id)}
-                                className="rounded-lg bg-red-600 hover:bg-red-700 text-white"
+                                className="rounded-xl text-white"
+                                style={{ backgroundColor: PT.red }}
                             >
                                 删除
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-            </CardFooter>
-        </Card>
+            </div>
+        </div>
     )
 }
 
@@ -280,12 +296,14 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
 
     if (sortedTradeLogs.length === 0) {
         return (
-            <div className="text-center text-gray-500 py-16">
+            <div className="text-center py-16" style={{ color: PT.muted }}>
                 <div className="flex flex-col items-center gap-4">
-                    <Target className="h-12 w-12 text-gray-400" />
+                    <div className="p-4 rounded-full" style={{ backgroundColor: PT.fog }}>
+                        <Target className="h-12 w-12" style={{ color: PT.muted }} />
+                    </div>
                     <div>
-                        <p className="text-lg font-medium">还没有交易记录</p>
-                        <p className="text-sm">点击"添加交易"开始记录您的交易历程</p>
+                        <p className="text-lg font-medium" style={{ color: PT.body }}>还没有交易记录</p>
+                        <p className="text-sm" style={{ color: PT.muted }}>点击"添加交易"开始记录您的交易历程</p>
                     </div>
                 </div>
             </div>
@@ -294,7 +312,7 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
 
     return (
         <div className="space-y-4">
-            <div className="text-sm text-gray-500 mb-6">
+            <div className="text-sm mb-6" style={{ color: PT.muted }}>
                 共 {sortedTradeLogs.length} 条交易记录
             </div>
             {/* 优化网格布局，使用 items-start 确保卡片顶部对齐，避免高度变化影响其他卡片 */}

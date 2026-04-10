@@ -5,6 +5,18 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemo } from 'react';
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+} as const;
+
 type WinLossRatioChartProps = {
   profitableTrades: number;
   lossTrades: number;
@@ -22,7 +34,7 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
   return (
     <>
       <CardHeader>
-        <CardTitle className="font-headline text-sm font-medium">胜/败比</CardTitle>
+        <CardTitle className="font-headline text-sm font-medium" style={{ color: PT.heading }}>胜/败比</CardTitle>
       </CardHeader>
       <CardContent className="w-full flex-1 p-0">
         {totalTrades > 0 ? (
@@ -84,19 +96,19 @@ export function WinLossRatioChart({ profitableTrades, lossTrades }: WinLossRatio
             <div className="grid grid-cols-[auto_1fr_auto] gap-x-6 gap-y-3 w-max text-sm pr-4">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-success shadow-[0_0_8px_hsl(var(--success))]" />
-                <span className="text-muted-foreground whitespace-nowrap font-medium">盈利</span>
+                <span className="whitespace-nowrap font-medium" style={{ color: PT.muted }}>盈利</span>
               </div>
-              <span className="col-start-3 font-bold font-mono text-base">{profitableTrades}</span>
+              <span className="col-start-3 font-bold font-mono text-base" style={{ color: PT.heading }}>{profitableTrades}</span>
 
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-destructive shadow-[0_0_8px_hsl(var(--destructive))]" />
-                <span className="text-muted-foreground whitespace-nowrap font-medium">亏损</span>
+                <span className="whitespace-nowrap font-medium" style={{ color: PT.muted }}>亏损</span>
               </div>
-              <span className="col-start-3 font-bold font-mono text-base">{lossTrades}</span>
+              <span className="col-start-3 font-bold font-mono text-base" style={{ color: PT.heading }}>{lossTrades}</span>
             </div>
           </div>
         ) : (
-          <div className="flex h-28 items-center justify-center text-gray-500 text-sm">
+          <div className="flex h-28 items-center justify-center text-sm" style={{ color: PT.muted }}>
             暂无交易数据
           </div>
         )}

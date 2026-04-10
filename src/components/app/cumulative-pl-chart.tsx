@@ -7,6 +7,18 @@ import type { TradeLog } from '@/lib/types';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+} as const;
+
 // 假设初始资金为10万元作为收益率计算基准
 const INITIAL_CAPITAL = 100000;
 
@@ -66,8 +78,8 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
   return (
     <>
       <CardHeader>
-        <CardTitle>累计收益率曲线</CardTitle>
-        <CardDescription>您的账户收益率随时间的变化情况（基于初始资金 ¥{INITIAL_CAPITAL.toLocaleString()}）。</CardDescription>
+        <CardTitle style={{ color: PT.heading }}>累计收益率曲线</CardTitle>
+        <CardDescription style={{ color: PT.muted }}>您的账户收益率随时间的变化情况（基于初始资金 ¥{INITIAL_CAPITAL.toLocaleString()}）。</CardDescription>
         {/* 添加调试信息显示 */}
       </CardHeader>
       <CardContent className="w-full flex-1 flex flex-col pb-4">
@@ -75,51 +87,51 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
           {chartData.length > 0 ? (
             <AreaChart data={chartData} margin={{ top: 5, right: 16, left: 40, bottom: 5 }}>
               <defs>
-                  {/* 正收益率渐变 - 红色（中国习惯） */}
+                  {/* 正收益率渐变 - Pinterest red */}
                   <linearGradient id="positiveReturn" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor={PT.red} stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor={PT.red} stopOpacity={0.03}/>
                   </linearGradient>
                   {/* 负收益率渐变 - 绿色（中国习惯） */}
                   <linearGradient id="negativeReturn" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.03}/>
                   </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis 
-                dataKey="tradeNumber" 
-                tickLine={false} 
-                axisLine={false} 
-                tickMargin={8} 
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={PT.border} />
+              <XAxis
+                dataKey="tradeNumber"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
                 type="number"
                 domain={['dataMin', 'dataMax']}
                 tickFormatter={(value) => `第${value}笔`}
-                label={{ value: "卖出收益情况", position: "insideBottom", offset: -15 }}
+                tick={{ fill: PT.muted }}
+                label={{ value: "卖出收益情况", position: "insideBottom", offset: -15, fill: PT.muted }}
               />
-              <YAxis 
-                tickLine={false} 
-                axisLine={false} 
+              <YAxis
+                tickLine={false}
+                axisLine={false}
                 tickMargin={8}
                 tickFormatter={(value) => `${value.toFixed(1)}%`}
-                label={{ value: "累计收益率(%)", angle: -90, position: "insideLeft" }}
+                tick={{ fill: PT.muted }}
+                label={{ value: "累计收益率(%)", angle: -90, position: "insideLeft", fill: PT.muted }}
               />
               {/* 添加0%基准线 */}
-              <ReferenceLine y={0} stroke="#6b7280" strokeDasharray="2 2" strokeWidth={1} />
+              <ReferenceLine y={0} stroke={PT.muted} strokeDasharray="2 2" strokeWidth={1} />
               <Tooltip
-                cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1, strokeDasharray: '3 3' }}
+                cursor={{ stroke: PT.border, strokeWidth: 1, strokeDasharray: '3 3' }}
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     const returnValue = payload[0]?.value as number;
                     return (
-                      <ChartTooltipContent
-                        label={`第 ${label} 笔交易`}
-                        payload={[{
-                          name: '累计收益率',
-                          value: `${returnValue?.toFixed(2)}%`,
-                          color: returnValue >= 0 ? '#ef4444' : '#10b981'
-                        }]}
-                      />
+                      <div style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 12, padding: '8px 12px' }}>
+                        <div style={{ color: PT.muted, fontSize: 12, marginBottom: 4 }}>{`第 ${label} 笔交易`}</div>
+                        <div style={{ color: returnValue >= 0 ? PT.red : '#10b981', fontWeight: 600 }}>
+                          累计收益率: {returnValue?.toFixed(2)}%
+                        </div>
+                      </div>
                     );
                   }
                   return null;
@@ -128,14 +140,14 @@ export function CumulativePLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
               <Area
                 type="monotone"
                 dataKey="cumulativeReturn"
-                stroke={isPositiveReturn ? "#ef4444" : "#10b981"}
+                stroke={isPositiveReturn ? PT.red : "#10b981"}
                 fill={isPositiveReturn ? "url(#positiveReturn)" : "url(#negativeReturn)"}
                 strokeWidth={2}
                 dot={false}
               />
             </AreaChart>
           ) : (
-             <div className="flex flex-1 items-center justify-center text-gray-500">
+             <div className="flex flex-1 items-center justify-center" style={{ color: PT.muted }}>
                 暂无交易数据以生成累计收益率曲线。
              </div>
           )}

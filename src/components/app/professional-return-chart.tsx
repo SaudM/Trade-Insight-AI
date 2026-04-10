@@ -25,17 +25,29 @@ import type { TradeLog } from '@/lib/types';
 import { format, parseISO, isValid } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+} as const;
+
 // 初始资金默认值（用于本地占位，真实值从服务器获取）
 const DEFAULT_INITIAL_CAPITAL = 100000;
 
 // 图表配置 - 符合中国用户习惯：红涨绿跌
 const CHART_CONFIG = {
   colors: {
-    positive: '#ef4444', // 红色 - 正收益（中国习惯）
+    positive: '#e60023', // Pinterest red - 正收益（中国习惯）
     negative: '#10b981', // 绿色 - 负收益（中国习惯）
-    neutral: '#6b7280',  // 灰色 - 基准线
-    grid: '#e5e7eb',     // 网格线
-    text: '#374151'      // 文字颜色
+    neutral: '#91918c',  // PT.muted - 基准线
+    grid: '#e5e5e0',     // PT.border - 网格线
+    text: '#91918c'      // PT.muted - 文字颜色
   },
   strokeWidth: 2,
   dotSize: 4,
@@ -63,37 +75,37 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   const isPositive = data.cumulativeReturn >= 0;
   
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px]">
-      <div className="text-sm font-medium text-gray-900 mb-2">
+    <div style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 12, padding: '12px', minWidth: 200 }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: PT.heading, marginBottom: 8 }}>
         {data.formattedDate}
       </div>
       <div className="space-y-1 text-xs">
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">交易标的:</span>
-          <span className="font-medium">{data.symbol}</span>
+          <span style={{ color: PT.body }}>交易标的:</span>
+          <span className="font-medium" style={{ color: PT.heading }}>{data.symbol}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">单笔盈亏:</span>
-          <span className={`font-medium ${data.tradeResult >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <span style={{ color: PT.body }}>单笔盈亏:</span>
+          <span className="font-medium" style={{ color: data.tradeResult >= 0 ? '#e8192c' : '#0cad45' }}>
             ¥{data.tradeResult.toLocaleString()}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">日收益率:</span>
-          <span className={`font-medium ${data.dailyReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <span style={{ color: PT.body }}>日收益率:</span>
+          <span className="font-medium" style={{ color: data.dailyReturn >= 0 ? '#e8192c' : '#0cad45' }}>
             {data.dailyReturn.toFixed(3)}%
           </span>
         </div>
-        <div className="border-t pt-1 mt-1">
+        <div style={{ borderTop: `1px solid ${PT.border}`, paddingTop: 4, marginTop: 4 }}>
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">累计收益率:</span>
-            <span className={`font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            <span style={{ color: PT.body }}>累计收益率:</span>
+            <span style={{ fontWeight: 700, color: isPositive ? PT.red : '#10b981' }}>
               {data.cumulativeReturn.toFixed(2)}%
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">账户价值:</span>
-            <span className="font-medium text-gray-900">
+            <span style={{ color: PT.body }}>账户价值:</span>
+            <span className="font-medium" style={{ color: PT.heading }}>
               ¥{data.cumulativeValue.toLocaleString()}
             </span>
           </div>
@@ -115,11 +127,11 @@ const CustomLegend = ({ finalReturn }: { finalReturn: number }) => {
           className="w-3 h-0.5 rounded"
           style={{ backgroundColor: isPositive ? CHART_CONFIG.colors.positive : CHART_CONFIG.colors.negative }}
         />
-        <span className="text-sm text-gray-600">累计收益率曲线</span>
+        <span className="text-sm" style={{ color: PT.body }}>累计收益率曲线</span>
       </div>
       <div className="flex items-center gap-1">
-        <Icon className={`w-4 h-4 ${isPositive ? 'text-green-600' : 'text-red-600'}`} />
-        <span className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+        <Icon className="w-4 h-4" style={{ color: isPositive ? PT.red : '#10b981' }} />
+        <span className="text-sm font-medium" style={{ color: isPositive ? PT.red : '#10b981' }}>
           {finalReturn.toFixed(2)}%
         </span>
       </div>
@@ -309,11 +321,11 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
 
   if (!stats) {
     return (
-      <div className="w-full h-96 flex items-center justify-center text-gray-500">
+      <div className="w-full h-96 flex items-center justify-center" style={{ color: PT.muted }}>
         <div className="text-center">
-          <TrendingUp className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-lg font-medium">暂无交易数据</p>
-          <p className="text-sm">开始交易后将显示累计收益率曲线</p>
+          <TrendingUp className="w-12 h-12 mx-auto mb-4" style={{ color: PT.muted }} />
+          <p className="text-lg font-medium" style={{ color: PT.body }}>暂无交易数据</p>
+          <p className="text-sm" style={{ color: PT.muted }}>开始交易后将显示累计收益率曲线</p>
         </div>
       </div>
     );
@@ -327,8 +339,8 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold">专业累计收益率曲线</CardTitle>
-            <CardDescription className="mt-1">
+            <CardTitle className="text-xl font-bold" style={{ color: PT.heading }}>专业累计收益率曲线</CardTitle>
+            <CardDescription className="mt-1" style={{ color: PT.muted }}>
               基于复合收益率计算的专业金融图表 (初始资金: ¥{initialCapital.toLocaleString()})
           </CardDescription>
           </div>
@@ -375,28 +387,28 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
         </div>
 
         {/* 统计信息面板 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 rounded-lg" style={{ backgroundColor: PT.fog }}>
           <div className="text-center">
-            <div className="text-xs text-gray-500">最终收益率</div>
-            <div className={`text-lg font-bold ${isPositiveReturn ? 'text-green-600' : 'text-red-600'}`}>
+            <div className="text-xs" style={{ color: PT.muted }}>最终收益率</div>
+            <div className="text-lg font-bold" style={{ color: isPositiveReturn ? PT.red : '#10b981' }}>
               {stats.finalReturn.toFixed(2)}%
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xs text-gray-500">最高收益率</div>
-            <div className="text-lg font-semibold text-green-600">
+            <div className="text-xs" style={{ color: PT.muted }}>最高收益率</div>
+            <div className="text-lg font-semibold" style={{ color: '#10b981' }}>
               {stats.maxReturn.toFixed(2)}%
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xs text-gray-500">最大回撤</div>
-            <div className="text-lg font-semibold text-red-600">
+            <div className="text-xs" style={{ color: PT.muted }}>最大回撤</div>
+            <div className="text-lg font-semibold" style={{ color: PT.red }}>
               {stats.minReturn.toFixed(2)}%
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xs text-gray-500">账户价值</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-xs" style={{ color: PT.muted }}>账户价值</div>
+            <div className="text-lg font-semibold" style={{ color: PT.heading }}>
               ¥{stats.finalValue.toLocaleString()}
             </div>
           </div>
@@ -506,7 +518,7 @@ export function ProfessionalReturnChart({ tradeLogs }: { tradeLogs: TradeLog[] }
         </div>
 
         {/* 性能指标 */}
-        <div className="mt-4 text-xs text-gray-500 text-center">
+        <div className="mt-4 text-xs text-center" style={{ color: PT.muted }}>
           交易笔数: {stats.totalTrades} | 
           波动率: {stats.volatility.toFixed(2)}% | 
           数据点: {chartData.length}个 |

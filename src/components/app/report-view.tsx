@@ -1,5 +1,21 @@
 "use client";
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    warm:    '#e0e0d9',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+    dark:    '#33332e',
+} as const;
+
 import { Button } from '@/components/ui/button';
 import { Sparkles, ExternalLink, Calendar, Clock, FileText } from 'lucide-react';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
@@ -92,18 +108,18 @@ export function ReportView({
                     <div className="space-y-5">
                         {/* Report Banner */}
                         {displayedReport && (
-                            <div className="rounded-xl bg-gradient-to-r from-slate-50 via-blue-50/40 to-violet-50/30 border border-slate-200/60 px-5 py-4">
-                                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600">
+                            <div className="rounded-2xl px-5 py-4" style={{ backgroundColor: PT.fog, border: `1px solid ${PT.border}` }}>
+                                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" style={{ color: PT.body }}>
                                     {period && (
                                         <div className="flex items-center gap-1.5">
-                                            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                            <span className="font-semibold text-slate-800">{reportType}{reportName}</span>
-                                            <span className="text-slate-400">·</span>
+                                            <Calendar className="h-3.5 w-3.5" style={{ color: PT.muted }} />
+                                            <span className="font-semibold" style={{ color: PT.heading }}>{reportType}{reportName}</span>
+                                            <span style={{ color: PT.muted }}>·</span>
                                             <span>{period}</span>
                                         </div>
                                     )}
                                     {dateStr && (
-                                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                                        <div className="flex items-center gap-1.5 text-xs" style={{ color: PT.muted }}>
                                             <Clock className="h-3 w-3" />
                                             生成于 {dateStr}
                                         </div>
@@ -141,13 +157,13 @@ export function ReportView({
                 ) : (
                     /* Empty State */
                     <div className="flex flex-col flex-1 items-center justify-center text-center p-8 min-h-[480px]">
-                        <div className="p-4 bg-slate-50 rounded-2xl mb-5">
-                            <FileText className="h-12 w-12 text-slate-300" />
+                        <div className="p-4 rounded-2xl mb-5" style={{ backgroundColor: PT.fog }}>
+                            <FileText className="h-12 w-12" style={{ color: PT.border }} />
                         </div>
-                        <h2 className="text-xl font-bold text-slate-700">
+                        <h2 className="text-xl font-bold" style={{ color: PT.body }}>
                             {`解锁您的专属 AI ${reportName}`}
                         </h2>
-                        <p className="mt-2 max-w-sm text-sm text-slate-400 leading-relaxed">
+                        <p className="mt-2 max-w-sm text-sm leading-relaxed" style={{ color: PT.muted }}>
                             升级到 Pro 版，即可获得由 AI 驱动的深度交易分析、模式识别和个性化改进建议。
                         </p>
                         <Button

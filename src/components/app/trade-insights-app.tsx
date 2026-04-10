@@ -32,6 +32,20 @@ import {
 import { SubscriptionModal } from './subscription-modal';
 import { CustomerServiceModal } from './customer-service-modal';
 
+const PT = {
+  bg:      '#ffffff',
+  fog:     '#f6f6f3',
+  sand:    '#e5e5e0',
+  heading: '#211922',
+  body:    '#62625b',
+  muted:   '#91918c',
+  border:  '#e5e5e0',
+  borderH: '#bcbcb3',
+  red:     '#e60023',
+  redH:    '#ad081b',
+  redL:    'rgba(230,0,35,0.08)',
+  dark:    '#33332e',
+} as const;
 
 export function TradeInsightsApp() {
   const searchParams = useSearchParams();
@@ -379,7 +393,7 @@ export function TradeInsightsApp() {
     if (isLoading) {
       return (
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <Loader2 className="h-12 w-12 animate-spin" style={{ color: PT.red }} />
         </div>
       );
     }
@@ -433,7 +447,7 @@ export function TradeInsightsApp() {
   return (
     <SidebarProvider>
       <TradeInsightsProvider value={{ activeView, setActiveView }}>
-        <div className="flex h-screen bg-background text-foreground w-full">
+        <div className="flex h-screen w-full" style={{ backgroundColor: PT.fog, color: PT.heading }}>
           <AppSidebar
             activeView={activeView}
             setActiveView={setActiveView}
@@ -443,7 +457,7 @@ export function TradeInsightsApp() {
           <SidebarInset className="flex flex-col h-screen">
             {renderView()}
             <Dialog open={isFormOpen} onOpenChange={handleDialogOpenChange}>
-              <DialogContent className="w-[80vw] max-w-[600px] min-w-[320px] p-0 overflow-hidden rounded-3xl shadow-2xl border-0 bg-white">
+              <DialogContent className="w-[80vw] max-w-[600px] min-w-[320px] p-0 overflow-hidden shadow-2xl" style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: '16px' }}>
                 <ScrollArea className="max-h-[85vh] w-full">
                   <div className="p-6">
                     <TradeLogForm

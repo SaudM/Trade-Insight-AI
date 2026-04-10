@@ -1,26 +1,149 @@
 'use client';
 
 import {
-  BarChart,
+  BarChart3,
   Brain,
-  Shield,
+  Bell,
   TrendingUp,
   Users,
   Star,
   ArrowRight,
   CheckCircle,
-  Bell,
-  Target,
-  LineChart,
-  Zap,
   Activity,
+  Zap,
+  ChevronRight,
+  LineChart,
+  Layers,
+  Target,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { trackEvent } from '@/lib/tracking';
 import { useEffect } from 'react';
 
+/* ─────────────────────────────────────────────
+   Linear Design Tokens (hex — from DESIGN.md)
+───────────────────────────────────────────── */
+const LN = {
+  bg:         '#08090a',   // Marketing Black — page canvas
+  panel:      '#0f1011',   // Panel Dark — nav, sidebars
+  card:       '#191a1b',   // Level 3 Surface — cards, dropdowns
+  hover:      '#28282c',   // Secondary Surface — hover
+  border:     'rgba(255,255,255,0.08)',   // Border standard
+  borderSub:  'rgba(255,255,255,0.05)',  // Border subtle
+  text:       '#f7f8f8',   // Primary text (near-white, not pure white)
+  text2:      '#d0d6e0',   // Secondary text — body, descriptions
+  text3:      '#8a8f98',   // Tertiary — placeholders, metadata
+  text4:      '#62666d',   // Quaternary — timestamps, disabled
+  indigo:     '#5e6ad2',   // Brand Indigo — CTA bg
+  violet:     '#7170ff',   // Accent Violet — links, active states
+  violetH:    '#828fff',   // Accent Hover
+} as const;
+
+/* ─────────────────────────────────────────────
+   Data
+───────────────────────────────────────────── */
+const METRICS = [
+  { value: '~40%',  label: '策略年化收益', note: '历史回测',  color: '#27a644' },
+  { value: '<15%',  label: '最大回撤',     note: '风险可控',  color: LN.violet },
+  { value: '5000+', label: '每日扫描',     note: 'A股全市场', color: LN.indigo },
+  { value: '全自动', label: '收盘即更新',  note: '无需值守',  color: LN.text3  },
+];
+
+const STEPS = [
+  {
+    num: '01',
+    color: LN.indigo,
+    title: '量化扫描全市场',
+    desc: 'MACD W底双重金叉 + 底背离检测，结合板块主力资金流强度，每日收盘后自动扫描 5000+ 股票，生成评分排行榜。',
+  },
+  {
+    num: '02',
+    color: LN.violet,
+    title: 'AI 深度复盘分析',
+    desc: '对你的每笔交易进行 AI 解析：识别成功与失败模式、情绪影响、操作纪律，生成个性化改进报告。',
+  },
+  {
+    num: '03',
+    color: LN.violetH,
+    title: '信号触发实时推送',
+    desc: '关注的策略或个股出现买入信号，第一时间推送到手机。不错过每个关键买点，告别后知后觉。',
+  },
+];
+
+const FEATURES = [
+  { icon: Activity,  color: '#27a644', bg: 'rgba(39,166,68,0.1)',   title: 'MACD W底策略',   desc: '双重金叉 + 底背离双重确认，精准捕捉趋势反转入场时机，大幅减少假信号干扰。' },
+  { icon: BarChart3, color: '#10b981', bg: 'rgba(16,185,129,0.1)', title: '板块资金流追踪', desc: '实时量化主力资金板块流向，智能筛选热点板块强势个股，顺势而为不逆水行舟。' },
+  { icon: Brain,     color: LN.violet, bg: 'rgba(113,112,255,0.1)', title: 'AI 交易复盘',    desc: '每笔盈亏背后的交易逻辑、持仓心态、时机判断全面剖析，找到你专属的薄弱环节。' },
+  { icon: Bell,      color: LN.indigo, bg: 'rgba(94,106,210,0.1)', title: '策略信号订阅',   desc: '按策略、板块、个股自定义订阅，信号触发即时推送，绝不让你在关键时刻缺席。' },
+  { icon: Target,    color: LN.violetH,bg: 'rgba(130,143,255,0.1)',title: '智能评分排序',   desc: '技术面 + 资金面多维度量化打分，自动排出买入优先级，决策有据可依，执行有章可循。' },
+  { icon: LineChart, color: '#27a644', bg: 'rgba(39,166,68,0.1)',   title: '策略回测验证',   desc: 'NAV 净值曲线 + 胜率统计完整呈现，历史表现透明公开，策略效果看得见、算得清。' },
+];
+
+const PAINS = [
+  { pain: '每天上百只股票看不过来，不知道优先关注哪只',        fix: '量化系统每日自动产出 Top 信号清单，开盘前优先级一目了然' },
+  { pain: '看到好买点时已经拉升，永远在追高买在高位',          fix: '信号订阅实时推送，策略触发第一时间通知，先人一步进场' },
+  { pain: '亏了不知道哪里错了，下次还是犯同样的错',           fix: 'AI 自动剖析失败交易，识别个人操作模式弱点并给出针对性建议' },
+  { pain: '外面策略听起来都厉害，没有真实数据不敢信',          fix: '完整回测数据 + 历史 NAV 曲线全公开，~40% 年化真实可查' },
+];
+
+const PLANS = [
+  {
+    name: '月度会员', price: '¥14', unit: '/ 月',
+    desc: '灵活体验，随时开始',
+    features: ['全功能解锁', 'AI 复盘报告', '信号实时推送', '量化策略广场'],
+    cta: '立即订阅', highlight: false,
+  },
+  {
+    name: '年度会员', price: '¥134', unit: '/ 年',
+    desc: '相当于 ¥11.2 / 月，节省 20%',
+    features: ['全功能解锁', 'AI 复盘报告', '信号实时推送', '量化策略广场', '优先客服支持', '新功能优先体验'],
+    cta: '最优惠，立即订阅', highlight: true, badge: '最受欢迎',
+  },
+  {
+    name: '季度会员', price: '¥39', unit: '/ 季',
+    desc: '相当于 ¥13 / 月',
+    features: ['全功能解锁', 'AI 复盘报告', '信号实时推送', '量化策略广场'],
+    cta: '立即订阅', highlight: false,
+  },
+];
+
+const TESTIMONIALS = [
+  { name: '张先生', role: '职业交易员 · A股 5年', text: '信号通知改变了我的交易节奏——以前总错过买点，现在策略触发手机就响。配合 AI 复盘找到了自己追高的习惯，两个月胜率从 45% 提到 62%。' },
+  { name: '李女士', role: '股票投资者 · A股 3年', text: 'MACD W底策略信号质量很高，板块资金热度帮我远离冷门板块。AI 复盘让我看到自己常在情绪化时做决定，改掉后亏损幅度明显下降了。' },
+];
+
+/* ─────────────────────────────────────────────
+   Shared Styles (Linear spec)
+───────────────────────────────────────────── */
+
+// Linear signature: Inter Variable 510 weight with OpenType features
+const ffSettings = { fontFeatureSettings: '"cv01" 1, "ss03" 1' } as const;
+
+const cardStyle: React.CSSProperties = {
+  background: `rgba(255,255,255,0.02)`,
+  border: `1px solid ${LN.border}`,
+  borderRadius: 8,
+};
+
+const cardHoverStyle: React.CSSProperties = {
+  ...cardStyle,
+  transition: 'background 150ms',
+};
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <p
+      className="text-xs font-semibold uppercase tracking-[0.2em] mb-3"
+      style={{ ...ffSettings, color: LN.violet, fontWeight: 590 }}
+    >
+      {children}
+    </p>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Component
+───────────────────────────────────────────── */
 export function LandingPage() {
   useEffect(() => {
     trackEvent('view_landing_page', { source: 'direct' });
@@ -28,527 +151,593 @@ export function LandingPage() {
 
   return (
     <div
-      className="relative min-h-screen overflow-hidden"
-      style={{ background: '#080c14', color: '#e2e8f0' }}
+      className="relative min-h-screen overflow-x-hidden"
+      style={{ ...ffSettings, background: LN.bg, color: LN.text2 }}
     >
-      {/* ── 背景层：网格线 ── */}
+      {/* ── Background: grid ── */}
       <div
-        className="pointer-events-none absolute inset-0 z-0"
+        className="pointer-events-none fixed inset-0 z-0"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(99,102,241,0.07) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(99,102,241,0.07) 1px, transparent 1px)
+            linear-gradient(${LN.borderSub} 1px, transparent 1px),
+            linear-gradient(90deg, ${LN.borderSub} 1px, transparent 1px)
           `,
-          backgroundSize: '48px 48px',
+          backgroundSize: '56px 56px',
         }}
       />
 
-      {/* ── 背景层：光晕 Orbs ── */}
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        {/* 左上蓝色 */}
+      {/* ── Background: indigo glow (one subtle orb — Linear is restrained) ── */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
-          className="animate-pulse-glow absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)',
-          }}
-        />
-        {/* 右下紫色 */}
-        <div
-          className="animate-pulse-glow absolute -bottom-60 -right-40 h-[700px] w-[700px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)',
-            animationDelay: '2s',
-          }}
-        />
-        {/* 中间绿色（量化/收益感） */}
-        <div
-          className="animate-pulse-glow absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(34,197,94,0.07) 0%, transparent 70%)',
-            animationDelay: '4s',
-          }}
+          className="absolute -left-48 -top-48 h-[600px] w-[600px] rounded-full"
+          style={{ background: `radial-gradient(circle, rgba(94,106,210,0.08) 0%, transparent 65%)` }}
         />
       </div>
 
-      {/* ── 背景层：浮动粒子 ── */}
-      <div className="pointer-events-none absolute inset-0 z-0">
-        {[
-          { top: '12%', left: '8%', size: 3, delay: '0s', color: 'rgba(99,102,241,0.6)' },
-          { top: '28%', left: '82%', size: 2, delay: '1.5s', color: 'rgba(34,197,94,0.5)' },
-          { top: '55%', left: '15%', size: 4, delay: '3s', color: 'rgba(139,92,246,0.5)' },
-          { top: '70%', left: '72%', size: 2, delay: '0.8s', color: 'rgba(59,130,246,0.6)' },
-          { top: '88%', left: '40%', size: 3, delay: '2.2s', color: 'rgba(34,197,94,0.4)' },
-          { top: '18%', left: '55%', size: 2, delay: '4s', color: 'rgba(251,191,36,0.4)' },
-          { top: '42%', left: '90%', size: 3, delay: '1s', color: 'rgba(99,102,241,0.5)' },
-          { top: '78%', left: '5%', size: 2, delay: '3.5s', color: 'rgba(139,92,246,0.4)' },
-        ].map((p, i) => (
-          <div
-            key={i}
-            className="animate-float absolute rounded-full"
-            style={{
-              top: p.top,
-              left: p.left,
-              width: p.size,
-              height: p.size,
-              background: p.color,
-              animationDelay: p.delay,
-              boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* ── 导航栏 ── */}
+      {/* ════════════════ NAV ════════════════ */}
       <nav
-        className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto"
+        className="sticky top-0 z-50"
         style={{
-          background: 'rgba(8,12,20,0.7)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(99,102,241,0.15)',
+          background: `rgba(15,16,17,0.85)`,
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${LN.borderSub}`,
         }}
       >
-        <div className="flex items-center space-x-2">
-          <div
-            className="flex items-center justify-center size-9 rounded-xl"
-            style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)' }}
-          >
-            <BarChart className="h-5 w-5 text-white" />
-          </div>
-          <span
-            className="font-headline text-xl font-bold"
-            style={{ background: 'linear-gradient(135deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-          >
-            复盘 · AI量化
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/login"
-            className="text-sm transition-colors hover:text-slate-200"
-            style={{ color: '#94a3b8' }}
-          >
-            登录
-          </Link>
-          <Link href="/signup">
-            <button
-              onClick={() => trackEvent('click_cta', { button_name: 'nav_signup', target_url: '/signup' })}
-              className="cursor-pointer whitespace-nowrap text-sm font-semibold px-4 py-2 rounded-lg transition-all hover:opacity-85 hover:scale-105"
-              style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: '#fff' }}
+        <div className="max-w-6xl mx-auto px-5 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex items-center justify-center size-7 rounded-lg"
+              style={{ background: LN.indigo }}
             >
-              免费注册
-            </button>
-          </Link>
+              <BarChart3 className="h-3.5 w-3.5 text-white" />
+            </div>
+            <span
+              className="text-[16px]"
+              style={{ ...ffSettings, fontWeight: 590, color: LN.text, letterSpacing: '-0.24px' }}
+            >
+              复盘 · AI量化
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="text-[13px] transition-colors"
+              style={{ ...ffSettings, fontWeight: 510, color: LN.text3 }}
+              onMouseEnter={e => (e.currentTarget.style.color = LN.text2)}
+              onMouseLeave={e => (e.currentTarget.style.color = LN.text3)}
+            >
+              登录
+            </Link>
+            <Link href="/signup">
+              <button
+                onClick={() => trackEvent('click_cta', { button_name: 'nav_signup' })}
+                className="cursor-pointer text-[13px] px-4 py-1.5 rounded-md transition-all hover:brightness-110"
+                style={{ ...ffSettings, fontWeight: 510, background: LN.indigo, color: '#fff', borderRadius: 6 }}
+              >
+                免费注册
+              </button>
+            </Link>
+          </div>
         </div>
       </nav>
 
-      {/* ── 主内容 ── */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+      {/* ════════════════ MAIN ════════════════ */}
+      <main className="relative z-10">
 
-        {/* 英雄区域 */}
-        <section className="text-center mb-20">
+        {/* ── Hero ── */}
+        <section className="max-w-5xl mx-auto px-5 pt-24 pb-20 text-center">
+
+          {/* Badge */}
           <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm mb-8"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs mb-10"
             style={{
-              background: 'rgba(99,102,241,0.12)',
-              border: '1px solid rgba(99,102,241,0.3)',
-              color: '#818cf8',
+              ...ffSettings,
+              fontWeight: 510,
+              background: 'rgba(94,106,210,0.1)',
+              border: `1px solid rgba(94,106,210,0.25)`,
+              color: LN.violet,
             }}
           >
-            <Zap className="h-3.5 w-3.5" />
-            AI 量化 · A股选股 · 每日自动更新
+            <Zap className="h-3 w-3 fill-current" />
+            量化策略 · AI复盘 · 信号推送 · 全自动运行
           </div>
 
+          {/* H1 — Linear Display spec: 48px / weight 510 / tracking -1.056px */}
           <h1
-            className="font-headline text-5xl md:text-7xl font-bold mb-6 leading-tight"
+            className="font-bold leading-[1.08] mb-6"
             style={{
-              background: 'linear-gradient(135deg,#f1f5f9 0%,#60a5fa 50%,#a78bfa 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              ...ffSettings,
+              fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+              fontWeight: 510,
+              letterSpacing: '-1.056px',
+              color: LN.text,
             }}
           >
-            让 AI 帮你<br />复盘选股
+            让 AI 替你盯盘<br />量化选股不凭感觉
           </h1>
 
-          <p className="text-lg max-w-2xl mx-auto mb-4 leading-relaxed" style={{ color: '#94a3b8' }}>
-            基于 MACD W底量化策略，结合板块资金流热度与智能评分，<br />
-            每日自动扫描全市场 <span style={{ color: '#f1f5f9', fontWeight: 600 }}>5000+</span> 股票，
-            精准发现高胜率买入信号，并<span style={{ color: '#34d399', fontWeight: 600 }}>实时推送到你的手机</span>。
-          </p>
-          <p className="text-sm mb-10" style={{ color: '#64748b' }}>
-            解决三大痛点：
-            <span style={{ color: '#e2e8f0' }}>不知道买什么</span> ·{' '}
-            <span style={{ color: '#e2e8f0' }}>不知道什么时候买</span> ·{' '}
-            <span style={{ color: '#e2e8f0' }}>错过信号后知后觉</span>
+          {/* Subtitle — Body Large: 18px / weight 400 / lh 1.60 / ls -0.165px */}
+          <p
+            className="max-w-2xl mx-auto leading-relaxed mb-3"
+            style={{ ...ffSettings, fontSize: 18, fontWeight: 400, letterSpacing: '-0.165px', color: LN.text3 }}
+          >
+            基于 MACD W底量化策略，结合板块主力资金流追踪与 AI 智能复盘，
+            每日自动扫描全市场{' '}
+            <strong style={{ color: LN.text, fontWeight: 590 }}>5000+</strong>{' '}
+            股票，精准发现高胜率买入信号并
+            <strong style={{ color: '#27a644', fontWeight: 590 }}>实时推送到手机</strong>。
           </p>
 
-          {/* CTA 按钮组 */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8 mb-14">
+          {/* Pain points line */}
+          <p className="text-sm mb-10" style={{ ...ffSettings, fontWeight: 400, color: LN.text4 }}>
+            解决三大痛点：
+            <span style={{ color: LN.text2 }}>不知道买什么</span>
+            <span className="mx-2" style={{ color: LN.text4 }}>·</span>
+            <span style={{ color: LN.text2 }}>不知道什么时候买</span>
+            <span className="mx-2" style={{ color: LN.text4 }}>·</span>
+            <span style={{ color: LN.text2 }}>错过信号后知后觉</span>
+          </p>
+
+          {/* CTA buttons — Linear spec: primary = #5e6ad2 / 6px radius / ghost = rgba(fff,0.02) */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/signup">
               <button
-                onClick={() => trackEvent('click_cta', { button_name: 'hero_start_free', target_url: '/signup' })}
-                className="cursor-pointer group inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98] whitespace-nowrap"
+                onClick={() => trackEvent('click_cta', { button_name: 'hero_start' })}
+                className="cursor-pointer group inline-flex items-center gap-2 px-6 py-3 rounded-md text-sm transition-all hover:brightness-110 active:scale-[0.98]"
                 style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
+                  ...ffSettings,
+                  fontWeight: 510,
+                  borderRadius: 6,
+                  background: LN.indigo,
                   color: '#fff',
-                  boxShadow: '0 0 0 1px rgba(99,102,241,0.35), 0 4px 20px rgba(99,102,241,0.4)',
+                  boxShadow: `0 0 0 1px rgba(94,106,210,0.4), 0 4px 16px rgba(94,106,210,0.25)`,
                 }}
               >
                 免费开始使用
-                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </button>
             </Link>
 
             <Link href="/login">
               <button
-                onClick={() => trackEvent('click_cta', { button_name: 'hero_login', target_url: '/login' })}
-                className="cursor-pointer inline-flex items-center gap-1.5 px-7 py-3 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] whitespace-nowrap"
+                className="cursor-pointer inline-flex items-center gap-1.5 px-6 py-3 rounded-md text-sm transition-all active:scale-[0.98]"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: '#94a3b8',
+                  ...ffSettings,
+                  fontWeight: 510,
+                  borderRadius: 6,
+                  background: 'rgba(255,255,255,0.02)',
+                  border: `1px solid rgb(36,40,44)`,
+                  color: LN.text2,
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
               >
-                已有账户&nbsp;<span style={{ color: '#60a5fa' }}>登录</span>
+                已有账户，立即登录
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </Link>
           </div>
 
-          {/* 关键数据卡片 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto mb-12">
-            {[
-              { value: '~40%', label: '策略年化收益', color: '#34d399' },
-              { value: '<15%', label: '最大回撤', color: '#60a5fa' },
-              { value: '5000+', label: '每日扫描标的', color: '#a78bfa' },
-              { value: '全自动', label: '收盘后自动更新', color: '#fbbf24' },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className="rounded-xl p-4"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-                <div className="text-xs mt-1" style={{ color: '#64748b' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* 信任指标 */}
-          <div className="flex flex-wrap justify-center gap-8" style={{ color: '#64748b' }}>
-            {[
-              { icon: <Users className="h-4 w-4" style={{ color: '#60a5fa' }} />, text: '1000+ 交易者信任' },
-              { icon: <Shield className="h-4 w-4" style={{ color: '#34d399' }} />, text: '数据安全加密' },
-              { icon: <TrendingUp className="h-4 w-4" style={{ color: '#a78bfa' }} />, text: '回测年化 ~40%' },
-            ].map((t) => (
-              <div key={t.text} className="flex items-center gap-2 text-sm">
-                {t.icon}
-                <span>{t.text}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── 三大核心能力 ── */}
-        <section className="mb-20">
-          <h2 className="text-3xl font-bold text-center mb-3" style={{ color: '#f1f5f9' }}>三大核心能力</h2>
-          <p className="text-center mb-12" style={{ color: '#64748b' }}>从选股到通知，全流程 AI 自动化</p>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: <Brain className="h-8 w-8" style={{ color: '#60a5fa' }} />,
-                iconBg: 'rgba(59,130,246,0.15)',
-                border: 'rgba(59,130,246,0.25)',
-                glow: 'rgba(59,130,246,0.08)',
-                title: 'AI 复盘',
-                desc: '每日收盘后，AI 自动分析持仓与历史交易，找出规律与不足，像专业操盘手一样给出改进建议。',
-                items: ['自动识别成功/失败交易模式', '情绪与心态影响分析', '日/周/月多维度复盘报告', '个性化改进路径推荐'],
-                checkColor: '#60a5fa',
-              },
-              {
-                icon: <Activity className="h-8 w-8" style={{ color: '#34d399' }} />,
-                iconBg: 'rgba(34,197,94,0.15)',
-                border: 'rgba(34,197,94,0.25)',
-                glow: 'rgba(34,197,94,0.06)',
-                title: '量化策略选股',
-                desc: 'MACD W底双重金叉 + 底背离检测，结合板块资金流热度与智能评分，每日自动筛出最优买入候选。',
-                items: ['MACD W底双重金叉捕捉反转', '板块资金流热度筛选强势股', '多维度智能评分自动排序', 'NAV 净值曲线回测验证'],
-                checkColor: '#34d399',
-              },
-              {
-                icon: <Bell className="h-8 w-8" style={{ color: '#a78bfa' }} />,
-                iconBg: 'rgba(139,92,246,0.15)',
-                border: 'rgba(139,92,246,0.25)',
-                glow: 'rgba(139,92,246,0.08)',
-                title: '策略信号订阅通知',
-                desc: '订阅感兴趣的量化策略或个股，信号触发后第一时间推送到手机，再也不错过关键买点。',
-                items: ['自定义策略/个股订阅', '微信/应用内实时推送', '信号强度评级+买入理由', '历史信号胜率追踪'],
-                checkColor: '#a78bfa',
-              },
-            ].map((c) => (
-              <div
-                key={c.title}
-                className="rounded-2xl p-6 transition-transform hover:-translate-y-1"
-                style={{
-                  background: `radial-gradient(ellipse at top left, ${c.glow}, transparent 60%), rgba(255,255,255,0.03)`,
-                  border: `1px solid ${c.border}`,
-                  backdropFilter: 'blur(12px)',
-                }}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 rounded-xl" style={{ background: c.iconBg }}>{c.icon}</div>
-                  <h3 className="text-lg font-bold" style={{ color: '#f1f5f9' }}>{c.title}</h3>
+          {/* Metrics strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto mt-14">
+            {METRICS.map((m) => (
+              <div key={m.label} style={{ ...cardStyle, padding: '14px 16px', textAlign: 'left' }}>
+                <div style={{ ...ffSettings, fontSize: 22, fontWeight: 590, color: m.color, letterSpacing: '-0.288px' }}>
+                  {m.value}
                 </div>
-                <p className="text-sm mb-5 leading-relaxed" style={{ color: '#94a3b8' }}>{c.desc}</p>
-                <ul className="space-y-2.5">
-                  {c.items.map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-sm" style={{ color: '#cbd5e1' }}>
-                      <CheckCircle className="h-4 w-4 shrink-0" style={{ color: c.checkColor }} />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                <div style={{ ...ffSettings, fontSize: 12, fontWeight: 510, color: LN.text3, marginTop: 2 }}>{m.label}</div>
+                <div style={{ ...ffSettings, fontSize: 11, fontWeight: 400, color: LN.text4, marginTop: 1 }}>{m.note}</div>
               </div>
             ))}
           </div>
-        </section>
 
-        {/* ── 完整功能体系（6宫格）── */}
-        <section className="mb-20">
-          <h2 className="text-3xl font-bold text-center mb-3" style={{ color: '#f1f5f9' }}>完整功能体系</h2>
-          <p className="text-center mb-12" style={{ color: '#64748b' }}>覆盖选股 · 分析 · 通知 · 复盘全流程</p>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Trust badges */}
+          <div className="flex flex-wrap justify-center gap-6 mt-10">
             {[
-              { icon: <Activity className="h-5 w-5" style={{ color: '#34d399' }} />, iconBg: 'rgba(34,197,94,0.15)', title: 'MACD W底策略', desc: '双重金叉确认 + 底背离检测，自动捕捉趋势反转最佳入场时机，减少假信号干扰。' },
-              { icon: <BarChart className="h-5 w-5" style={{ color: '#fb923c' }} />, iconBg: 'rgba(251,146,60,0.15)', title: '板块资金流热度', desc: '实时追踪主力资金流向，优先筛选热点板块中的强势个股，顺势而为。' },
-              { icon: <Target className="h-5 w-5" style={{ color: '#60a5fa' }} />, iconBg: 'rgba(59,130,246,0.15)', title: '智能评分系统', desc: '综合技术面与资金面多维度量化评分，自动排序买入优先级，决策有据可依。' },
-              { icon: <LineChart className="h-5 w-5" style={{ color: '#a78bfa' }} />, iconBg: 'rgba(139,92,246,0.15)', title: '收益曲线回测', desc: '完整历史回测与 NAV 净值曲线，年化 ~40%、最大回撤 <15%，策略表现透明可查。' },
-              { icon: <Brain className="h-5 w-5" style={{ color: '#f472b6' }} />, iconBg: 'rgba(244,114,182,0.15)', title: 'AI 复盘分析', desc: '自动分析每笔交易成败逻辑，识别个人交易盲点，提供可执行的改进建议。' },
-              { icon: <Bell className="h-5 w-5" style={{ color: '#fbbf24' }} />, iconBg: 'rgba(251,191,36,0.15)', title: '信号实时推送', desc: '量化信号触发即刻通知，支持按策略、板块、个股订阅，不遗漏每个关键买点。' },
-            ].map((f) => (
-              <div
-                key={f.title}
-                className="flex gap-4 p-5 rounded-xl transition-all hover:-translate-y-0.5"
-                style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <div className="p-2.5 rounded-lg h-fit shrink-0" style={{ background: f.iconBg }}>{f.icon}</div>
-                <div>
-                  <h3 className="font-semibold mb-1" style={{ color: '#f1f5f9' }}>{f.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: '#94a3b8' }}>{f.desc}</p>
-                </div>
+              { icon: Users,      text: '1000+ 交易者信任使用', color: LN.violet },
+              { icon: TrendingUp, text: '回测年化收益 ~40%',    color: '#27a644' },
+              { icon: Layers,     text: '全市场 A股覆盖',       color: LN.indigo },
+            ].map(({ icon: Icon, text, color }) => (
+              <div key={text} className="flex items-center gap-1.5" style={{ ...ffSettings, fontSize: 12, fontWeight: 400, color: LN.text4 }}>
+                <Icon className="h-3.5 w-3.5" style={{ color }} />
+                <span>{text}</span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── 用户痛点 ── */}
-        <section className="mb-20">
-          <h2 className="text-3xl font-bold text-center mb-3" style={{ color: '#f1f5f9' }}>你是否有这些困惑？</h2>
-          <p className="text-center mb-12" style={{ color: '#64748b' }}>复盘 AI 量化平台，逐一解决</p>
+        {/* ── How It Works ── */}
+        <section className="max-w-5xl mx-auto px-5 pb-24">
+          <div className="text-center mb-14">
+            <SectionLabel>HOW IT WORKS</SectionLabel>
+            <h2
+              className="font-bold"
+              style={{ ...ffSettings, fontSize: 32, fontWeight: 510, letterSpacing: '-0.704px', color: LN.text }}
+            >
+              三步，从选股到通知全自动
+            </h2>
+          </div>
 
-          {/* 表头 */}
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-2 gap-px mb-2 px-1">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#f87171' }}>
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px]" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>✕</span>
-                常见困惑
+          <div className="relative grid md:grid-cols-3 gap-5">
+            {/* connector line */}
+            <div
+              className="hidden md:block absolute top-10 left-[calc(33.33%+1rem)] right-[calc(33.33%+1rem)] h-px"
+              style={{ background: `linear-gradient(90deg, rgba(94,106,210,0.3) 0%, rgba(113,112,255,0.3) 100%)` }}
+            />
+
+            {STEPS.map((s) => (
+              <div key={s.num} style={{ ...cardStyle, padding: 24 }}>
+                <div
+                  className="flex items-center justify-center w-9 h-9 rounded-lg mb-5"
+                  style={{
+                    background: `rgba(94,106,210,0.08)`,
+                    border: `1px solid ${LN.borderSub}`,
+                    ...ffSettings,
+                    fontSize: 13,
+                    fontWeight: 590,
+                    color: s.color,
+                  }}
+                >
+                  {s.num}
+                </div>
+                <h3 style={{ ...ffSettings, fontSize: 16, fontWeight: 590, color: LN.text, letterSpacing: '-0.24px', marginBottom: 10 }}>
+                  {s.title}
+                </h3>
+                <p style={{ ...ffSettings, fontSize: 14, fontWeight: 400, color: LN.text3, lineHeight: 1.6, letterSpacing: '-0.182px' }}>
+                  {s.desc}
+                </p>
               </div>
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#34d399' }}>
-                <CheckCircle className="h-3.5 w-3.5" style={{ color: '#34d399' }} />
-                平台解决方案
-              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Features ── */}
+        <section style={{ borderTop: `1px solid ${LN.borderSub}`, borderBottom: `1px solid ${LN.borderSub}` }}>
+          <div className="max-w-5xl mx-auto px-5 py-24">
+            <div className="text-center mb-14">
+              <SectionLabel>FEATURES</SectionLabel>
+              <h2
+                className="font-bold mb-2"
+                style={{ ...ffSettings, fontSize: 32, fontWeight: 510, letterSpacing: '-0.704px', color: LN.text }}
+              >
+                完整功能体系
+              </h2>
+              <p style={{ ...ffSettings, fontSize: 15, fontWeight: 400, color: LN.text4 }}>
+                覆盖选股 · 分析 · 通知 · 复盘全流程
+              </p>
             </div>
 
-            {/* 分隔线 */}
-            <div className="h-px mb-4" style={{ background: 'rgba(255,255,255,0.07)' }} />
-
-            {/* 每行：左痛点 | 右方案，两列等高对齐 */}
-            <div className="flex flex-col gap-px rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-              {[
-                {
-                  pain: '每天看盘几十只，不知道优先关注哪只',
-                  solution: '量化策略每日自动筛选 Top 信号股，按评分排序，开盘前清单已就绪',
-                },
-                {
-                  pain: '看到好的买入机会，下单时已经涨了',
-                  solution: '信号订阅通知，策略触发时第一时间推送手机，不再后知后觉',
-                },
-                {
-                  pain: '亏损后不知道哪里出了问题，总犯同样的错',
-                  solution: 'AI 复盘自动分析失败模式，找出个人交易弱点并给出改进建议',
-                },
-                {
-                  pain: '市面上策略听起来很好，没有真实数据验证',
-                  solution: '完整回测 + NAV 净值曲线，~40% 年化历史表现透明公开',
-                },
-              ].map((item, idx) => (
-                <div
-                  key={item.pain}
-                  className="grid grid-cols-2 gap-px"
-                  style={{ background: 'rgba(255,255,255,0.04)' }}
-                >
-                  {/* 左列：痛点 */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {FEATURES.map((f) => {
+                const Icon = f.icon;
+                return (
                   <div
-                    className="flex items-start gap-3 px-5 py-4"
-                    style={{
-                      background: idx % 2 === 0 ? 'rgba(239,68,68,0.04)' : 'rgba(239,68,68,0.02)',
-                      borderRight: '1px solid rgba(255,255,255,0.06)',
-                    }}
+                    key={f.title}
+                    className="flex gap-4 transition-all duration-150"
+                    style={{ ...cardHoverStyle, padding: '18px 20px' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
                   >
-                    <span
-                      className="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
-                      style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}
+                    <div
+                      className="shrink-0 flex items-center justify-center w-8 h-8 rounded-md"
+                      style={{ background: f.bg }}
                     >
-                      ✕
-                    </span>
-                    <p className="text-sm leading-relaxed" style={{ color: '#94a3b8' }}>{item.pain}</p>
+                      <Icon style={{ color: f.color, width: 16, height: 16 }} />
+                    </div>
+                    <div>
+                      <h3 style={{ ...ffSettings, fontSize: 14, fontWeight: 590, color: LN.text, letterSpacing: '-0.182px', marginBottom: 6 }}>
+                        {f.title}
+                      </h3>
+                      <p style={{ ...ffSettings, fontSize: 13, fontWeight: 400, color: LN.text3, lineHeight: 1.6, letterSpacing: '-0.13px' }}>
+                        {f.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Pain vs Solution ── */}
+        <section className="max-w-4xl mx-auto px-5 py-24">
+          <div className="text-center mb-14">
+            <SectionLabel>PAIN POINTS</SectionLabel>
+            <h2
+              className="font-bold"
+              style={{ ...ffSettings, fontSize: 32, fontWeight: 510, letterSpacing: '-0.704px', color: LN.text }}
+            >
+              你是否有这些困惑？
+            </h2>
+          </div>
+
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{ border: `1px solid ${LN.border}` }}
+          >
+            {/* Header */}
+            <div className="grid grid-cols-2" style={{ borderBottom: `1px solid ${LN.border}` }}>
+              {[
+                { label: '常见困惑',    color: '#f87171', icon: '✕', bg: 'rgba(239,68,68,0.05)',   right: true },
+                { label: '平台解决方案', color: '#27a644', icon: null, bg: 'rgba(39,166,68,0.05)', right: false },
+              ].map(({ label, color, icon, bg, right }) => (
+                <div
+                  key={label}
+                  className="px-6 py-3 flex items-center gap-2"
+                  style={{
+                    ...ffSettings, fontSize: 11, fontWeight: 590,
+                    textTransform: 'uppercase', letterSpacing: '0.12em',
+                    color, background: bg,
+                    ...(right ? { borderRight: `1px solid ${LN.borderSub}` } : {}),
+                  }}
+                >
+                  {icon ? (
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px]"
+                      style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>✕</span>
+                  ) : (
+                    <CheckCircle className="h-3.5 w-3.5" />
+                  )}
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {PAINS.map((item, idx) => (
+              <div
+                key={idx}
+                className="grid grid-cols-2"
+                style={{ borderBottom: idx < PAINS.length - 1 ? `1px solid ${LN.borderSub}` : undefined }}
+              >
+                <div
+                  className="flex items-start gap-3 px-6 py-5"
+                  style={{ background: 'rgba(239,68,68,0.02)', borderRight: `1px solid ${LN.borderSub}` }}
+                >
+                  <span
+                    className="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
+                    style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', flexShrink: 0 }}
+                  >
+                    ✕
+                  </span>
+                  <p style={{ ...ffSettings, fontSize: 13, fontWeight: 400, lineHeight: 1.6, color: LN.text3 }}>
+                    {item.pain}
+                  </p>
+                </div>
+                <div className="flex items-start gap-3 px-6 py-5" style={{ background: 'rgba(39,166,68,0.02)' }}>
+                  <CheckCircle className="shrink-0 mt-0.5 h-4 w-4" style={{ color: '#27a644', flexShrink: 0 }} />
+                  <p style={{ ...ffSettings, fontSize: 13, fontWeight: 510, lineHeight: 1.6, color: LN.text2 }}>
+                    {item.fix}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Pricing ── */}
+        <section style={{ borderTop: `1px solid ${LN.borderSub}`, borderBottom: `1px solid ${LN.borderSub}` }}>
+          <div className="max-w-5xl mx-auto px-5 py-24">
+            <div className="text-center mb-14">
+              <SectionLabel>PRICING</SectionLabel>
+              <h2
+                className="font-bold mb-2"
+                style={{ ...ffSettings, fontSize: 32, fontWeight: 510, letterSpacing: '-0.704px', color: LN.text }}
+              >
+                简单透明的定价
+              </h2>
+              <p style={{ ...ffSettings, fontSize: 15, fontWeight: 400, color: LN.text4 }}>
+                先免费体验，确认有价值再付费
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              {PLANS.map((plan) => (
+                <div
+                  key={plan.name}
+                  className="relative rounded-xl flex flex-col"
+                  style={{
+                    background: plan.highlight ? 'rgba(94,106,210,0.1)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${plan.highlight ? 'rgba(94,106,210,0.4)' : LN.border}`,
+                    borderRadius: 12,
+                    padding: 24,
+                    boxShadow: plan.highlight ? '0 0 32px rgba(94,106,210,0.1)' : 'none',
+                  }}
+                >
+                  {plan.badge && (
+                    <div
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs px-3 py-1 rounded-full whitespace-nowrap"
+                      style={{ ...ffSettings, fontWeight: 510, background: LN.indigo, color: '#fff', fontSize: 11 }}
+                    >
+                      {plan.badge}
+                    </div>
+                  )}
+
+                  <div className="mb-5">
+                    <p style={{ ...ffSettings, fontSize: 13, fontWeight: 510, color: plan.highlight ? LN.violet : LN.text3, marginBottom: 4 }}>
+                      {plan.name}
+                    </p>
+                    <div className="flex items-baseline gap-1">
+                      <span style={{ ...ffSettings, fontSize: 36, fontWeight: 590, letterSpacing: '-0.704px', color: LN.text }}>
+                        {plan.price}
+                      </span>
+                      <span style={{ ...ffSettings, fontSize: 13, fontWeight: 400, color: LN.text4 }}>{plan.unit}</span>
+                    </div>
+                    <p style={{ ...ffSettings, fontSize: 12, fontWeight: 400, color: LN.text4, marginTop: 4 }}>{plan.desc}</p>
                   </div>
 
-                  {/* 右列：解决方案 */}
-                  <div
-                    className="flex items-start gap-3 px-5 py-4"
-                    style={{
-                      background: idx % 2 === 0 ? 'rgba(34,197,94,0.04)' : 'rgba(34,197,94,0.02)',
-                    }}
-                  >
-                    <CheckCircle className="shrink-0 mt-0.5 h-4 w-4" style={{ color: '#34d399' }} />
-                    <p className="text-sm font-medium leading-relaxed" style={{ color: '#e2e8f0' }}>{item.solution}</p>
-                  </div>
+                  <ul className="space-y-2.5 flex-1 mb-6">
+                    {plan.features.map((feat) => (
+                      <li key={feat} className="flex items-center gap-2">
+                        <CheckCircle className="h-3.5 w-3.5 shrink-0" style={{ color: plan.highlight ? LN.violet : LN.text4 }} />
+                        <span style={{ ...ffSettings, fontSize: 13, fontWeight: 400, color: LN.text3 }}>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link href="/signup" className="block">
+                    <button
+                      onClick={() => trackEvent('click_cta', { button_name: `pricing_${plan.name}` })}
+                      className="cursor-pointer w-full py-2.5 rounded-md text-sm transition-all hover:brightness-110"
+                      style={
+                        plan.highlight
+                          ? { ...ffSettings, fontWeight: 510, borderRadius: 6, background: LN.indigo, color: '#fff' }
+                          : { ...ffSettings, fontWeight: 510, borderRadius: 6, background: 'rgba(255,255,255,0.04)', border: `1px solid ${LN.border}`, color: LN.text3 }
+                      }
+                    >
+                      {plan.cta}
+                    </button>
+                  </Link>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── 用户评价 ── */}
-        <section className="mb-20">
-          <h2 className="text-3xl font-bold text-center mb-12" style={{ color: '#f1f5f9' }}>真实用户反馈</h2>
+        {/* ── Testimonials ── */}
+        <section className="max-w-4xl mx-auto px-5 py-24">
+          <div className="text-center mb-14">
+            <SectionLabel>TESTIMONIALS</SectionLabel>
+            <h2
+              className="font-bold"
+              style={{ ...ffSettings, fontSize: 32, fontWeight: 510, letterSpacing: '-0.704px', color: LN.text }}
+            >
+              真实用户反馈
+            </h2>
+          </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {[
-              {
-                name: '张先生 · 职业交易员', sub: 'A股市场，5年经验',
-                text: '"信号通知是最大亮点，以前总错过买点，现在策略触发手机就响。配合 AI 复盘，胜率两个月内从 45% 提升到 62%。"',
-              },
-              {
-                name: '李女士 · 股票投资者', sub: 'A股市场，3年经验',
-                text: '"MACD W底策略很准，板块资金流热度让我知道主力在哪。AI 复盘让我发现自己总在高位追涨，改掉后亏损明显减少了。"',
-              },
-            ].map((r) => (
-              <div
-                key={r.name}
-                className="p-6 rounded-2xl"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  backdropFilter: 'blur(12px)',
-                }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="font-semibold" style={{ color: '#f1f5f9' }}>{r.name}</p>
-                    <p className="text-sm" style={{ color: '#64748b' }}>{r.sub}</p>
-                  </div>
-                  <div className="flex gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            {TESTIMONIALS.map((r) => (
+              <div key={r.name} style={{ ...cardStyle, padding: 24 }}>
+                <div className="flex gap-0.5 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                  ))}
                 </div>
-                <p className="text-sm leading-relaxed" style={{ color: '#94a3b8' }}>{r.text}</p>
+                <p style={{ ...ffSettings, fontSize: 14, fontWeight: 400, lineHeight: 1.65, color: LN.text3, marginBottom: 20 }}>
+                  "{r.text}"
+                </p>
+                <div>
+                  <p style={{ ...ffSettings, fontSize: 14, fontWeight: 590, color: LN.text }}>{r.name}</p>
+                  <p style={{ ...ffSettings, fontSize: 12, fontWeight: 400, color: LN.text4, marginTop: 2 }}>{r.role}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
         {/* ── CTA ── */}
-        <section className="text-center mb-16">
+        <section className="max-w-5xl mx-auto px-5 pb-24">
           <div
-            className="max-w-4xl mx-auto rounded-2xl p-12"
+            className="relative text-center overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(139,92,246,0.12) 100%)',
-              border: '1px solid rgba(99,102,241,0.3)',
-              boxShadow: '0 0 60px rgba(99,102,241,0.1)',
+              background: 'rgba(94,106,210,0.08)',
+              border: `1px solid rgba(94,106,210,0.25)`,
+              borderRadius: 16,
+              padding: '72px 32px',
             }}
           >
-            <h2 className="text-3xl font-bold mb-4" style={{ color: '#f1f5f9' }}>立即开启 AI 量化投资之旅</h2>
-            <p className="mb-8" style={{ color: '#94a3b8' }}>
-              免费注册，体验 AI 复盘 · 量化选股 · 信号实时推送，<br />让 AI 成为你的专属量化分析师。
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-2">
-              <Link href="/signup">
-                <button
-                  onClick={() => trackEvent('click_cta', { button_name: 'footer_signup', target_url: '/signup' })}
-                  className="cursor-pointer group inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98] whitespace-nowrap"
-                  style={{
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
-                    color: '#fff',
-                    boxShadow: '0 0 0 1px rgba(99,102,241,0.35), 0 4px 20px rgba(99,102,241,0.4)',
-                  }}
-                >
-                  免费注册，立即体验
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-                </button>
-              </Link>
-              <Link href="/login">
-                <button
-                  className="cursor-pointer inline-flex items-center gap-1.5 px-7 py-3 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] whitespace-nowrap"
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    color: '#94a3b8',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-                >
-                  已有账户&nbsp;<span style={{ color: '#60a5fa' }}>登录</span>
-                </button>
-              </Link>
+            <div
+              className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 h-48 w-48 rounded-full"
+              style={{ background: `radial-gradient(circle, rgba(94,106,210,0.15), transparent)` }}
+            />
+            <div className="relative z-10">
+              <h2
+                className="font-bold mb-4"
+                style={{ ...ffSettings, fontSize: 32, fontWeight: 510, letterSpacing: '-0.704px', color: LN.text }}
+              >
+                立即开启 AI 量化投资之旅
+              </h2>
+              <p className="max-w-lg mx-auto mb-8" style={{ ...ffSettings, fontSize: 15, fontWeight: 400, color: LN.text3, lineHeight: 1.65 }}>
+                免费注册，体验 AI 复盘 · 量化选股 · 信号实时推送，<br />
+                让 AI 成为你的专属量化分析师。
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link href="/signup">
+                  <button
+                    onClick={() => trackEvent('click_cta', { button_name: 'footer_cta_signup' })}
+                    className="cursor-pointer group inline-flex items-center gap-2 px-6 py-3 rounded-md text-sm transition-all hover:brightness-110 active:scale-[0.98]"
+                    style={{
+                      ...ffSettings, fontWeight: 510, borderRadius: 6,
+                      background: LN.indigo, color: '#fff',
+                      boxShadow: `0 0 0 1px rgba(94,106,210,0.4), 0 4px 16px rgba(94,106,210,0.2)`,
+                    }}
+                  >
+                    免费注册，立即体验
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                </Link>
+                <Link href="/login">
+                  <button
+                    className="cursor-pointer inline-flex items-center gap-1.5 px-6 py-3 rounded-md text-sm transition-all active:scale-[0.98]"
+                    style={{
+                      ...ffSettings, fontWeight: 510, borderRadius: 6,
+                      background: 'rgba(255,255,255,0.02)',
+                      border: `1px solid rgb(36,40,44)`,
+                      color: LN.text3,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.color = LN.text2;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                      e.currentTarget.style.color = LN.text3;
+                    }}
+                  >
+                    已有账户&nbsp;<span style={{ color: LN.violet }}>登录</span>
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
         </section>
       </main>
 
-      {/* ── 页脚 ── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.3)' }}>
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <div
-                className="flex items-center justify-center size-8 rounded-xl"
-                style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)' }}
-              >
-                <BarChart className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-headline text-lg font-bold" style={{ color: '#94a3b8' }}>复盘 · AI量化</span>
+      {/* ════════════════ FOOTER ════════════════ */}
+      <footer style={{ borderTop: `1px solid ${LN.borderSub}` }}>
+        <div className="max-w-6xl mx-auto px-5 py-7 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div
+              className="flex items-center justify-center size-6 rounded-md"
+              style={{ background: LN.indigo }}
+            >
+              <BarChart3 className="h-3 w-3 text-white" />
             </div>
-
-            <div className="flex flex-wrap gap-6 text-sm" style={{ color: '#475569' }}>
-              <Link href="/privacy" className="hover:text-slate-300 transition-colors">隐私政策</Link>
-              <Link href="/terms" className="hover:text-slate-300 transition-colors">服务条款</Link>
-              <Link href="/contact" className="hover:text-slate-300 transition-colors">联系我们</Link>
-            </div>
+            <span style={{ ...ffSettings, fontSize: 13, fontWeight: 510, color: LN.text4 }}>
+              复盘 · AI量化
+            </span>
           </div>
 
-          <div className="text-center mt-6 text-sm" style={{ color: '#334155' }}>
-            <p>© 2024 富利时代 · 复盘平台. 保留所有权利.</p>
-            <p className="mt-1 text-xs">
-              <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 transition-colors">
-                京ICP备2020034311号-3
-              </a>
-            </p>
+          <div className="flex gap-6" style={{ ...ffSettings, fontSize: 12, fontWeight: 400, color: LN.text4 }}>
+            {[
+              { href: '/privacy', label: '隐私政策' },
+              { href: '/terms',   label: '服务条款' },
+              { href: '/contact', label: '联系我们' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="transition-colors"
+                onMouseEnter={e => (e.currentTarget.style.color = LN.text3)}
+                onMouseLeave={e => (e.currentTarget.style.color = LN.text4)}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          <div style={{ ...ffSettings, fontSize: 11, fontWeight: 400, color: '#34343a', textAlign: 'center' }}>
+            <span>© 2025 富利时代 · 复盘平台&nbsp;&nbsp;</span>
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-[#62666d]"
+            >
+              京ICP备2020034311号-3
+            </a>
           </div>
         </div>
       </footer>

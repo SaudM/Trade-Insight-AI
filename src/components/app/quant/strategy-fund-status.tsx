@@ -17,6 +17,21 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    borderH: '#bcbcb3',
+    red:     '#e60023',
+    redH:    '#ad081b',
+    redL:    'rgba(230,0,35,0.08)',
+    dark:    '#33332e',
+} as const;
+
 interface FundCurrent {
     date: string;
     nav_absolute: number;
@@ -91,9 +106,9 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
     const current = data?.current;
 
     return (
-        <Card className="border-slate-200 shadow-sm">
+        <Card style={{ border: `1px solid ${PT.border}`, borderRadius: 16, backgroundColor: PT.bg }}
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2" style={{ color: PT.heading }}>
                     <PieChart className="w-5 h-5 text-primary" />
                     资金占用
                 </CardTitle>
@@ -113,12 +128,12 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
             </CardHeader>
             <CardContent>
                 {isLoading ? (
-                    <div className="h-[220px] flex items-center justify-center text-slate-400">
+                    <div className="h-[220px] flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                         <Loader2 className="w-6 h-6 animate-spin mr-2" />
                         加载中...
                     </div>
                 ) : !data ? (
-                    <div className="h-[220px] flex items-center justify-center text-slate-400 text-sm">
+                    <div className="h-[220px] flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                         暂无资金数据
                     </div>
                 ) : (
@@ -126,11 +141,11 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
                         {/* Left: Current Snapshot */}
                         <div className="space-y-4">
                             <div>
-                                <p className="text-xs text-slate-500 mb-1">总资产净值</p>
-                                <p className="text-2xl font-black text-slate-900">
+                                <p className="text-xs mb-1" style={{ color: PT.muted }}>总资产净值</p>
+                                <p className="text-2xl font-black" style={{ color: PT.heading }}>
                                     {current ? formatMoney(current.nav_absolute) : '--'}
                                 </p>
-                                <p className="text-xs text-slate-400 mt-0.5">
+                                <p className="text-xs mt-0.5" style={{ color: PT.muted }}>
                                     持仓 {current?.position_count ?? '--'} 只
                                     &nbsp;·&nbsp;
                                     截至 {current ? format(new Date(current.date), 'MM-dd') : '--'}
@@ -142,21 +157,21 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
                                 <div>
                                     <div className="flex h-5 rounded-full overflow-hidden">
                                         <div
-                                            className="bg-blue-500 transition-all duration-500"
-                                            style={{ width: `${current.invested_ratio * 100}%` }}
+                                            className="transition-all duration-500"
+                                            style={{ width: `${current.invested_ratio * 100}%`, backgroundColor: PT.red }}
                                         />
                                         <div
-                                            className="bg-slate-200 transition-all duration-500"
-                                            style={{ width: `${current.cash_ratio * 100}%` }}
+                                            className="transition-all duration-500"
+                                            style={{ width: `${current.cash_ratio * 100}%`, backgroundColor: PT.sand }}
                                         />
                                     </div>
-                                    <div className="flex justify-between mt-1.5 text-xs text-slate-500">
+                                    <div className="flex justify-between mt-1.5 text-xs" style={{ color: PT.muted }}>
                                         <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                                            <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: PT.red }} />
                                             持仓
                                         </span>
                                         <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-slate-300 inline-block" />
+                                            <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: PT.sand }} />
                                             现金
                                         </span>
                                     </div>
@@ -164,21 +179,21 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
                             )}
 
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="rounded-lg bg-blue-50 border border-blue-100 p-3">
-                                    <p className="text-[10px] text-blue-600 font-medium mb-1">持仓市值</p>
-                                    <p className="text-sm font-bold text-blue-700">
+                                <div className="rounded-lg p-3" style={{ backgroundColor: PT.redL, border: `1px solid ${PT.border}` }}>
+                                    <p className="text-[10px] font-medium mb-1" style={{ color: PT.red }}>持仓市值</p>
+                                    <p className="text-sm font-bold" style={{ color: PT.heading }}>
                                         {current ? formatMoney(current.invested_value) : '--'}
                                     </p>
-                                    <p className="text-xs text-blue-500 mt-0.5">
+                                    <p className="text-xs mt-0.5" style={{ color: PT.red }}>
                                         {current ? `${(current.invested_ratio * 100).toFixed(1)}%` : '--'}
                                     </p>
                                 </div>
-                                <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
-                                    <p className="text-[10px] text-slate-500 font-medium mb-1">可用现金</p>
-                                    <p className="text-sm font-bold text-slate-700">
+                                <div className="rounded-lg p-3" style={{ backgroundColor: PT.fog, border: `1px solid ${PT.border}` }}>
+                                    <p className="text-[10px] font-medium mb-1" style={{ color: PT.muted }}>可用现金</p>
+                                    <p className="text-sm font-bold" style={{ color: PT.body }}>
                                         {current ? formatMoney(current.cash) : '--'}
                                     </p>
-                                    <p className="text-xs text-slate-400 mt-0.5">
+                                    <p className="text-xs mt-0.5" style={{ color: PT.muted }}>
                                         {current ? `${(current.cash_ratio * 100).toFixed(1)}%` : '--'}
                                     </p>
                                 </div>
@@ -188,7 +203,7 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
                         {/* Right: Historical Chart */}
                         <div className="lg:col-span-2 h-[220px]">
                             {chartData.length === 0 ? (
-                                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                                <div className="h-full flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                                     暂无历史数据
                                 </div>
                             ) : (
@@ -196,25 +211,25 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
                                     <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="fundInvested" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
+                                                <stop offset="5%" stopColor={PT.red} stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor={PT.red} stopOpacity={0.03} />
                                             </linearGradient>
                                             <linearGradient id="fundCash" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#94a3b8" stopOpacity={0.02} />
+                                                <stop offset="5%" stopColor={PT.sand} stopOpacity={0.5} />
+                                                <stop offset="95%" stopColor={PT.sand} stopOpacity={0.05} />
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={PT.border} />
                                         <XAxis
                                             dataKey="date"
-                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            tick={{ fontSize: 11, fill: PT.muted }}
                                             axisLine={false}
                                             tickLine={false}
                                             tickFormatter={v => format(new Date(v), 'MM-dd')}
                                             minTickGap={20}
                                         />
                                         <YAxis
-                                            tick={{ fontSize: 11, fill: '#94a3b8' }}
+                                            tick={{ fontSize: 11, fill: PT.muted }}
                                             axisLine={false}
                                             tickLine={false}
                                             domain={[0, 100]}
@@ -233,7 +248,7 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
                                         <Area
                                             type="monotone"
                                             dataKey="持仓"
-                                            stroke="#3b82f6"
+                                            stroke={PT.red}
                                             fill="url(#fundInvested)"
                                             strokeWidth={2}
                                             dot={false}
@@ -242,7 +257,7 @@ export function StrategyFundStatus({ strategyKey }: { strategyKey: string }) {
                                         <Area
                                             type="monotone"
                                             dataKey="现金"
-                                            stroke="#94a3b8"
+                                            stroke={PT.borderH}
                                             fill="url(#fundCash)"
                                             strokeWidth={2}
                                             dot={false}

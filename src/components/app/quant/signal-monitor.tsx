@@ -41,6 +41,17 @@ import { FileText } from 'lucide-react';
 
 const FASTAPI_BASE = process.env.NEXT_PUBLIC_FASTAPI_BASE || 'http://localhost:8000';
 
+const PT = {
+    bg:      '#ffffff',
+    fog:     '#f6f6f3',
+    sand:    '#e5e5e0',
+    heading: '#211922',
+    body:    '#62625b',
+    muted:   '#91918c',
+    border:  '#e5e5e0',
+    red:     '#e60023',
+} as const;
+
 type SortField = 'signal_type' | 'score' | number | null; // number represents t_day
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -235,20 +246,21 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-50/50">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-3 px-4 rounded-xl shadow-sm border border-slate-200/60 shrink-0">
+        <div className="flex flex-col h-full" style={{ background: PT.fog }}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 px-4 shrink-0" style={{ background: PT.bg, borderBottom: `1px solid ${PT.border}` }}>
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-slate-400" />
-                        <h2 className="text-sm font-semibold text-slate-700">信号日期</h2>
+                        <Filter className="h-4 w-4" style={{ color: PT.muted }} />
+                        <h2 className="text-sm font-semibold" style={{ color: PT.heading }}>信号日期</h2>
                         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant={"outline"}
                                     className={cn(
-                                        "w-[160px] h-8 text-xs justify-start text-left font-normal rounded-lg border-slate-200 focus:ring-primary/20 bg-slate-50/50 hover:bg-slate-100/50",
+                                        "w-[160px] h-8 text-xs justify-start text-left font-normal",
                                         !signalDate && "text-muted-foreground"
                                     )}
+                                    style={{ borderRadius: 12, borderColor: PT.border, background: PT.fog }}
                                 >
                                     <CalendarIcon className="mr-2 h-3 w-3 opacity-50" />
                                     {signalDate ? signalDate : <span>选择日期</span>}
@@ -283,14 +295,14 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                                 />
                             </PopoverContent>
                         </Popover>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-slate-500 hover:text-primary" onClick={() => { goLatest(); trackEvent('filter_signal_date', { selected_date: 'latest', is_latest: true }); }}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" style={{ color: PT.body }} onClick={() => { goLatest(); trackEvent('filter_signal_date', { selected_date: 'latest', is_latest: true }); }}>
                             <RotateCcw className="h-3 w-3 mr-1" />
                             最新
                         </Button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                <div className="flex items-center gap-4 text-[10px] uppercase tracking-wider font-bold" style={{ color: PT.muted }}>
                     <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded bg-red-400"></div>
                         盈利
@@ -303,20 +315,21 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
             </div>
 
             <div className="flex-1 p-4 md:p-6 lg:p-8 space-y-4 overflow-hidden flex flex-col">
-                <Card className="flex-1 overflow-hidden border-slate-200/60 shadow-sm rounded-xl bg-white flex flex-col min-w-0 w-full">
+                <Card className="flex-1 overflow-hidden flex flex-col min-w-0 w-full" style={{ border: `1px solid ${PT.border}`, borderRadius: 16, background: PT.bg, boxShadow: 'none' }}>
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center flex-1 space-y-4">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
-                            <p className="text-slate-400 text-sm font-medium animate-pulse">正在同步市场数据...</p>
+                            <Loader2 className="h-8 w-8 animate-spin opacity-50" style={{ color: PT.red }} />
+                            <p className="text-sm font-medium animate-pulse" style={{ color: PT.muted }}>正在同步市场数据...</p>
                         </div>
                     ) : data && data.data.length > 0 ? (
                         <div className="flex-1 overflow-auto min-w-0 max-w-full">
                             <Table className="relative min-w-full">
-                                <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-md">
-                                    <TableRow className="hover:bg-transparent border-slate-200">
-                                        <TableHead className="w-[200px] font-bold text-slate-700 text-xs text-left">证券/代码</TableHead>
+                                <TableHeader className="sticky top-0 z-10 backdrop-blur-md" style={{ background: PT.fog }}>
+                                    <TableRow className="hover:bg-transparent" style={{ borderColor: PT.border }}>
+                                        <TableHead className="w-[200px] text-xs text-left" style={{ fontWeight: 600, color: PT.heading }}>证券/代码</TableHead>
                                         <TableHead
-                                            className="w-[70px] font-bold text-slate-700 text-xs text-center cursor-pointer hover:bg-slate-100/50 transition-colors group"
+                                            className="w-[70px] text-xs text-center cursor-pointer transition-colors group"
+                                            style={{ fontWeight: 600, color: PT.heading }}
                                             onClick={() => handleSort('signal_type')}
                                         >
                                             <div className="flex items-center justify-center">
@@ -325,7 +338,8 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                                             </div>
                                         </TableHead>
                                         <TableHead
-                                            className="w-[80px] font-bold text-slate-700 text-xs text-center cursor-pointer hover:bg-slate-100/50 transition-colors group"
+                                            className="w-[80px] text-xs text-center cursor-pointer transition-colors group"
+                                            style={{ fontWeight: 600, color: PT.heading }}
                                             onClick={() => handleSort('score')}
                                         >
                                             <div className="flex items-center justify-center">
@@ -344,7 +358,7 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                                             return (
                                                 <TableHead
                                                     key={i}
-                                                    className="w-[85px] font-bold text-slate-700 text-xs text-center p-1 cursor-pointer hover:bg-slate-100/50 transition-colors group"
+                                                    className="w-[85px] text-xs text-center p-1 cursor-pointer transition-colors group" style={{ fontWeight: 600, color: PT.heading }}
                                                     onClick={() => handleSort(tDay)}
                                                 >
                                                     <div className="flex items-center justify-center">
@@ -358,14 +372,14 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                                 </TableHeader>
                                 <TableBody>
                                     {sortedRecommendations.map((rec) => (
-                                        <TableRow key={`${rec.symbol}-${rec.signal_date}`} className="group hover:bg-slate-50/50 transition-colors border-slate-100">
+                                        <TableRow key={`${rec.symbol}-${rec.signal_date}`} className="group transition-colors" style={{ borderColor: PT.border }}>
                                             <TableCell className="py-3 w-[200px]">
                                                 <div className="flex flex-col">
                                                     <a
                                                         href={getXueqiuUrl(rec.symbol)}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="font-bold text-slate-900 hover:text-primary hover:underline transition-all text-sm block"
+                                                        className="font-bold hover:underline transition-all text-sm block" style={{ color: PT.heading }}
                                                         title="点击查看雪球行情"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -642,10 +656,10 @@ export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) 
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center flex-1 space-y-3 opacity-60">
-                            <div className="p-3 bg-slate-50 rounded-full">
-                                <Info className="h-6 w-6 text-slate-300" />
+                            <div className="p-3 rounded-full" style={{ background: PT.fog }}>
+                                <Info className="h-6 w-6" style={{ color: PT.muted }} />
                             </div>
-                            <p className="text-slate-400 text-sm font-medium">该日期暂无推荐信号数据</p>
+                            <p className="text-sm font-medium" style={{ color: PT.muted }}>该日期暂无推荐信号数据</p>
                         </div>
                     )}
                 </Card>
