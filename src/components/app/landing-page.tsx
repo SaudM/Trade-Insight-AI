@@ -787,7 +787,7 @@ export function LandingPage() {
           </div>
 
           <div style={{ ...ff, fontSize: 12, color: PT.muted, textAlign: 'center' }}>
-            <span>© 2025 富利时代 · 复盘平台&nbsp;&nbsp;</span>
+            <span>© 2025 复利时间&nbsp;&nbsp;</span>
             <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer"
               style={{ color: PT.muted }}
               onMouseEnter={e => (e.currentTarget.style.color = PT.body)}
