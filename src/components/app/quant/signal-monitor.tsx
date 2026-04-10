@@ -60,9 +60,11 @@ const getExitReasonLabel = (reason?: string | null) =>
 
 interface SignalMonitorProps {
     strategyId?: string | null;
+    /** 点击板块标签时的回调，传入板块名称 */
+    onBoardClick?: (boardName: string) => void;
 }
 
-export function SignalMonitor({ strategyId }: SignalMonitorProps) {
+export function SignalMonitor({ strategyId, onBoardClick }: SignalMonitorProps) {
     const [data, setData] = useState<HeatmapData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [signalDate, setSignalDate] = useState<string>("");
@@ -390,10 +392,16 @@ export function SignalMonitor({ strategyId }: SignalMonitorProps) {
                                                                     }
                                                                 }}>
                                                                     <TooltipTrigger asChild>
-                                                                        <span className={cn(
-                                                                            "inline-flex items-center gap-0.5 text-[9px] font-medium cursor-pointer hover:opacity-80 transition-opacity",
-                                                                            rec.board_strength_score && rec.board_strength_score >= 2.0 ? "text-rose-500" : "text-slate-400"
-                                                                        )}>
+                                                                        <span
+                                                                            onClick={() => onBoardClick?.(rec.related_hot_board!)}
+                                                                            className={cn(
+                                                                                "inline-flex items-center gap-0.5 text-[9px] font-medium transition-opacity",
+                                                                                onBoardClick
+                                                                                    ? "cursor-pointer hover:opacity-70 underline underline-offset-2 decoration-dotted"
+                                                                                    : "cursor-default",
+                                                                                rec.board_strength_score && rec.board_strength_score >= 2.0 ? "text-rose-500" : "text-slate-400"
+                                                                            )}
+                                                                        >
                                                                             <Flame className="h-2.5 w-2.5" />
                                                                             <span className="truncate max-w-[50px]">{rec.related_hot_board}</span>
                                                                         </span>

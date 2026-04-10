@@ -9,6 +9,7 @@ import { LayoutDashboard, Compass, Activity, Settings2, BarChart3, LineChart } f
 import { StrategyConfig, FollowConfig } from './strategy-config';
 import { PositionManager } from './position-manager';
 import { SignalMonitor } from './signal-monitor';
+import { SectorFlow } from './sector-flow';
 import { AppHeader } from '../header';
 
 export function QuantDashboard() {
@@ -17,10 +18,16 @@ export function QuantDashboard() {
     const deepLinkTab = searchParams.get('quant_tab');
     const initialTab = deepLinkStrategyId
         ? 'strategies'
-        : (deepLinkTab === 'overview' || deepLinkTab === 'strategies' ? deepLinkTab : 'strategies');
+        : (deepLinkTab === 'overview' || deepLinkTab === 'strategies' || deepLinkTab === 'sectors' ? deepLinkTab : 'strategies');
 
     const [activeTab, setActiveTab] = useState(initialTab);
     const [activeStrategyConfig, setActiveStrategyConfig] = useState<FollowConfig | null>(null);
+    const [jumpBoardName, setJumpBoardName] = useState<string | null>(null);
+
+    const handleBoardClick = (boardName: string) => {
+        setJumpBoardName(boardName);
+        setActiveTab('sectors');
+    };
 
     const handleFollowStrategy = (config: FollowConfig) => {
         setActiveStrategyConfig(config);
@@ -46,6 +53,12 @@ export function QuantDashboard() {
                         >
                             我的实盘
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="sectors"
+                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none px-2 py-3 text-slate-600 hover:text-slate-800 transition-colors bg-transparent"
+                        >
+                            因子广场
+                        </TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -55,6 +68,14 @@ export function QuantDashboard() {
                             onFollowStrategy={handleFollowStrategy}
                             activeStrategyId={activeStrategyConfig?.strategyId}
                             initialStrategyId={deepLinkStrategyId}
+                            onBoardClick={handleBoardClick}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="sectors" className="outline-none m-0 h-full">
+                        <SectorFlow
+                            jumpToBoardName={jumpBoardName}
+                            onJumpHandled={() => setJumpBoardName(null)}
                         />
                     </TabsContent>
 

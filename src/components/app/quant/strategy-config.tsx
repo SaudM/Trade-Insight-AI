@@ -27,10 +27,11 @@ interface StrategyConfigProps {
     onFollowStrategy: (config: FollowConfig) => void;
     activeStrategyId?: string | null;
     initialStrategyId?: string | null;
+    onBoardClick?: (boardName: string) => void;
 }
 
 
-export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStrategyId }: StrategyConfigProps) {
+export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStrategyId, onBoardClick }: StrategyConfigProps) {
     const { toast } = useToast();
     const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
     const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -106,6 +107,7 @@ export function StrategyConfig({ onFollowStrategy, activeStrategyId, initialStra
                     setSelectedStrategy(null);
                 }}
                 isActive={activeStrategyId === selectedStrategy.id}
+                onBoardClick={onBoardClick}
             />
         );
     }

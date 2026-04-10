@@ -33,6 +33,7 @@ interface StrategyDetailProps {
     onBack: () => void;
     onFollow: (config: FollowConfig) => void;
     isActive: boolean;
+    onBoardClick?: (boardName: string) => void;
 }
 
 import { Switch } from '@/components/ui/switch';
@@ -100,7 +101,7 @@ interface FundCurrentData {
     invested_ratio: number;
 }
 
-export function StrategyDetail({ strategy, onBack, onFollow, isActive }: StrategyDetailProps) {
+export function StrategyDetail({ strategy, onBack, onFollow, isActive, onBoardClick }: StrategyDetailProps) {
     const { toast } = useToast();
     const { userData, isLoading: isUserLoading } = useUserData();
     const [capital, setCapital] = useState<number>(Math.max(strategy.minCapital ?? 0, 100000));
@@ -1027,7 +1028,7 @@ export function StrategyDetail({ strategy, onBack, onFollow, isActive }: Strateg
                     <h3 className="text-xl font-bold text-slate-900">实时信号监控</h3>
                 </div>
                 <div className="h-[600px] border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
-                    <SignalMonitor strategyId={detail.id} />
+                    <SignalMonitor strategyId={detail.id} onBoardClick={onBoardClick} />
                 </div>
                 {/* Auto-scroll target */}
                 <div ref={bottomRef} />
