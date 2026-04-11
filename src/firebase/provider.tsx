@@ -70,17 +70,34 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
     setUserAuthState({ user: null, isUserLoading: true, userError: null }); // Reset on auth instance change
 
+    // 超时兜底：Firebase 在国内可能因 Google 服务被屏蔽而导致 token 刷新挂起。
+    // 3 秒内若 onAuthStateChanged 未响应，强制结束 loading，
+    // 降级到 NextAuth session 接管认证，避免 app 无限转圈。
+    const FIREBASE_TIMEOUT_MS = 5000;
+    const timeoutId = setTimeout(() => {
+      setUserAuthState(prev => {
+        if (!prev.isUserLoading) return prev; // 已经响应，不需要超时处理
+        console.warn('[Firebase] onAuthStateChanged timeout — Firebase may be unreachable (GFW). Falling back to NextAuth session.');
+        return { user: null, isUserLoading: false, userError: null };
+      });
+    }, FIREBASE_TIMEOUT_MS);
+
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => { // Auth state determined
+        clearTimeout(timeoutId);
         setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
       },
       (error) => { // Auth listener error
+        clearTimeout(timeoutId);
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
         setUserAuthState({ user: null, isUserLoading: false, userError: error });
       }
     );
-    return () => unsubscribe(); // Cleanup
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, [auth]); // Depends on the auth instance
 
   // Memoize the context value

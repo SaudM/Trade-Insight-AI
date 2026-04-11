@@ -106,6 +106,12 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
     return allData;
   }, [tradeLogs, isSingleDay]);
 
+  // 最多显示 8 个 X 轴标签，数据多时自动抽稀
+  const xAxisInterval = useMemo(() => {
+    if (chartData.length <= 10) return 0;
+    return Math.ceil(chartData.length / 8) - 1;
+  }, [chartData.length]);
+
   return (
     <Card style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16, boxShadow: 'none' }}>
       <CardHeader>
@@ -117,7 +123,14 @@ export function PLChart({ tradeLogs }: { tradeLogs: TradeLog[] }) {
         <ChartContainer config={{}} className="h-64 w-full">
           <BarChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={PT.border} />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} interval={0} tick={{ fill: PT.muted }} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              interval={xAxisInterval}
+              tick={{ fill: PT.muted, fontSize: 11 }}
+            />
             <Tooltip
               cursor={false}
               content={({ active, payload }) => {

@@ -5,7 +5,7 @@ import { useUser } from '@/firebase/provider';
 import { useSession } from 'next-auth/react';
 import { useUserData } from '@/hooks/use-user-data';
 import { DatabaseErrorFallback } from './database-error-fallback';
-import { Loader2 } from 'lucide-react';
+import { BrandedLoading } from '@/components/app/branded-loading';
 
 interface AuthStateManagerProps {
   /** 子组件 */
@@ -41,36 +41,37 @@ export function AuthStateManager({
   const { userData, isLoading: isUserDataLoading, error: userDataError, refetch } = useUserData();
 
   // 默认加载组件
-  const defaultLoadingComponent = (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-        <p className="text-gray-600">正在加载...</p>
-      </div>
-    </div>
-  );
+  const defaultLoadingComponent = <BrandedLoading />;
 
   // 默认未认证组件
   const defaultUnauthenticatedComponent = (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#f6f6f3' }}>
       <div className="text-center">
-        <p className="text-gray-600 mb-4">请先登录以访问此页面</p>
-        <a
-          href="/login"
-          className="text-blue-600 hover:text-blue-800 underline"
-        >
-          前往登录
-        </a>
+        <p style={{ color: '#91918c', fontSize: 14, marginBottom: 12 }}>请先登录以访问此页面</p>
+        <a href="/login" style={{ color: '#e60023', fontSize: 14, fontWeight: 600 }}>前往登录</a>
       </div>
     </div>
   );
 
-  // 认证加载中
-  if (isFirebaseLoading || sessionStatus === 'loading') {
+  // 认证状态判断策略：
+  // 1. NextAuth session 读取 HTTP cookie，几乎瞬间完成，优先作为登录态依据。
+  // 2. 若 NextAuth 已确认登录（authenticated），无需等待 Firebase，直接放行。
+  //    Firebase 会在后台继续初始化，不阻塞渲染。
+  // 3. 若 NextAuth 尚未确认（loading），短暂等待（cookie 读取极快）。
+  // 4. 若 NextAuth 确认未登录（unauthenticated），再等 Firebase 作为兜底
+  //    （兼容仅用 Firebase 登录、NextAuth 未同步的场景）。
+
+  // NextAuth 还在读 cookie，短暂等待
+  if (sessionStatus === 'loading') {
     return loadingComponent || defaultLoadingComponent;
   }
 
-  // 需要认证但用户未登录
+  // NextAuth 未登录 + Firebase 还在初始化 → 等 Firebase 兜底
+  if (sessionStatus !== 'authenticated' && isFirebaseLoading) {
+    return loadingComponent || defaultLoadingComponent;
+  }
+
+  // 需要认证但用户未登录（NextAuth 和 Firebase 都确认无登录态）
   if (requireAuth && !firebaseUser && !session?.user) {
     return unauthenticatedComponent || defaultUnauthenticatedComponent;
   }
