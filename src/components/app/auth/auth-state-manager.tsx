@@ -1,11 +1,21 @@
 "use client";
 
-import { ReactNode } from 'react';
+import { ReactNode, createContext, useContext } from 'react';
 import { useUser } from '@/firebase/provider';
 import { useSession } from 'next-auth/react';
 import { useUserData } from '@/hooks/use-user-data';
+import type { UseUserDataReturn } from '@/hooks/use-user-data';
 import { DatabaseErrorFallback } from './database-error-fallback';
 import { BrandedLoading } from '@/components/app/branded-loading';
+
+/**
+ * 共享 userData Context —— AuthStateManager 在验证通过后提供，
+ * 子组件（如 TradeInsightsApp）直接消费，避免重复调用 useUserData()。
+ */
+export const UserDataContext = createContext<UseUserDataReturn | null>(null);
+
+/** 消费 UserDataContext；若不在 AuthStateManager 树内则返回 null */
+export const useSharedUserData = () => useContext(UserDataContext);
 
 interface AuthStateManagerProps {
   /** 子组件 */
@@ -100,8 +110,12 @@ export function AuthStateManager({
     }
   }
 
-  // 所有条件满足，渲染子组件
-  return <>{children}</>;
+  // 所有条件满足，通过 Context 共享 userData，子组件无需重复 fetch
+  return (
+    <UserDataContext.Provider value={{ userData, isLoading: isUserDataLoading, error: userDataError, refetch }}>
+      {children}
+    </UserDataContext.Provider>
+  );
 }
 
 /**

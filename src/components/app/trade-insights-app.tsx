@@ -22,6 +22,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TradeLogForm, type TradeLogFormValues } from './trade-log-form';
 import { useUserData } from '@/hooks/use-user-data';
+import { useSharedUserData } from '@/components/app/auth/auth-state-manager';
 import {
   useTradeLogsPostgres,
   useDailyAnalysesPostgres,
@@ -72,8 +73,11 @@ export function TradeInsightsApp() {
   // --- Customer Service Modal State ---
   const [isCustomerServiceModalOpen, setIsCustomerServiceModalOpen] = useState(false);
 
-  // --- User Data from PostgreSQL (with Firebase fallback) ---
-  const { userData, isLoading: isLoadingUserData, error: userDataError } = useUserData();
+  // --- User Data：优先使用 AuthStateManager 共享的已验证数据，避免重复 fetch ---
+  const sharedUserData = useSharedUserData();
+  // skip=true 时 useUserData 不发起 fetch，由 sharedUserData 提供数据
+  const ownUserData = useUserData(sharedUserData !== null);
+  const { userData, isLoading: isLoadingUserData, error: userDataError } = sharedUserData ?? ownUserData;
 
   // Extract user info and subscription status
   // 将试用用户也视为VIP用户，确保有效期内的用户都能使用分析功能

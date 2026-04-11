@@ -40,7 +40,7 @@ interface UserDataResponse {
   source: 'postgres' | 'connection_failed';
 }
 
-interface UseUserDataReturn {
+export interface UseUserDataReturn {
   userData: UserDataResponse | null;
   isLoading: boolean;
   error: string | null;
@@ -49,14 +49,13 @@ interface UseUserDataReturn {
 
 /**
  * 获取用户数据的自定义Hook
- * 严格要求从PostgreSQL获取用户数据，确保业务逻辑的一致性
- * 当数据库连接失败时，不提供备用数据，避免业务逻辑混乱
+ * @param skip 传入 true 时跳过所有 fetch，直接返回空状态（供有上下文共享数据时使用）
  */
-export function useUserData(): UseUserDataReturn {
+export function useUserData(skip?: boolean): UseUserDataReturn {
   const { user: firebaseUser, isUserLoading: isFirebaseLoading } = useUser();
   const { data: session, status: sessionStatus } = useSession();
   const [userData, setUserData] = useState<UserDataResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skip); // skip=true 时初始不进入 loading 状态
   const [error, setError] = useState<string | null>(null);
 
   const fetchUserData = useCallback(async () => {
@@ -152,17 +151,25 @@ export function useUserData(): UseUserDataReturn {
   }, [firebaseUser, session]); // Add session to dependency
 
   useEffect(() => {
-    // Wait for both to stop loading (or at least one to be ready?)
-    // Actually sessionStatus 'loading' is important.
+    if (skip) return; // 由上层 Context 提供数据，跳过 fetch
+
     const isSessionLoading = sessionStatus === 'loading';
-    if (!isFirebaseLoading && !isSessionLoading) {
+    if (isSessionLoading) return;
+
+    if (sessionStatus === 'authenticated') {
+      // NextAuth 已确认登录，无需等待 Firebase，立即获取用户数据
+      fetchUserData();
+    } else if (!isFirebaseLoading) {
+      // NextAuth 未登录，等待 Firebase 兜底确认后再获取
       fetchUserData();
     }
-  }, [fetchUserData, isFirebaseLoading, sessionStatus]);
+  }, [skip, fetchUserData, isFirebaseLoading, sessionStatus]);
 
   return {
     userData,
-    isLoading: isLoading || isFirebaseLoading || sessionStatus === 'loading',
+    // skip=true 时由上层 Context 负责数据，本实例不应阻塞；
+    // 否则 NextAuth 用户不等 Firebase，Firebase-only 用户等 Firebase 完成
+    isLoading: skip ? false : (isLoading || sessionStatus === 'loading' || (sessionStatus !== 'authenticated' && isFirebaseLoading)),
     error,
     refetch: fetchUserData,
   };

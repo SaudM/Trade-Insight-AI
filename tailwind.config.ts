@@ -12,8 +12,8 @@ const config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
-        body: ["Inter", "sans-serif"],
-        headline: ["Space Grotesk", "sans-serif"],
+        body: ["var(--font-inter)", "Inter", "sans-serif"],
+        headline: ["var(--font-space-grotesk)", "Space Grotesk", "sans-serif"],
         mono: ["Berkeley Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"],
         code: ["monospace"],
       },

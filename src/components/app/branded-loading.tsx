@@ -1,12 +1,10 @@
 'use client';
 
 const PT = {
-  bg:     '#ffffff',
   fog:    '#f6f6f3',
   sand:   '#e5e5e0',
   heading:'#211922',
   muted:  '#91918c',
-  border: '#e5e5e0',
   red:    '#e60023',
 } as const;
 
@@ -38,28 +36,46 @@ export function BrandedLoading() {
       </div>
 
       {/* Content */}
-      <div className="relative flex flex-col items-center gap-6">
+      <div className="relative flex flex-col items-center gap-5">
 
-        {/* Logo mark */}
+        {/* Logo mark — 条形图律动动画 */}
         <div
           className="flex items-center justify-center rounded-2xl"
-          style={{
-            width: 56,
-            height: 56,
-            background: PT.red,
-            animation: 'brand-pulse 2s ease-in-out infinite',
-          }}
+          style={{ width: 56, height: 56, background: PT.red }}
         >
-          {/* Bar chart icon */}
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6"  y1="20" x2="6"  y2="14" />
+          {/*
+            三根条形柱，锚点在底部，scaleY 从底向上律动。
+            transform-box: fill-box 让 transform-origin 相对于每个元素自身。
+          */}
+          <svg
+            width="28" height="22"
+            viewBox="0 0 28 22"
+            fill="none"
+            style={{ overflow: 'visible' }}
+          >
+            {/* 左柱 */}
+            <rect
+              x="1" y="2" width="6" height="20" rx="1.5"
+              fill="white" fillOpacity="0.9"
+              style={{ transformBox: 'fill-box', transformOrigin: 'bottom', animation: 'bar-l 1.1s ease-in-out infinite' }}
+            />
+            {/* 中柱 */}
+            <rect
+              x="11" y="2" width="6" height="20" rx="1.5"
+              fill="white"
+              style={{ transformBox: 'fill-box', transformOrigin: 'bottom', animation: 'bar-m 1.1s ease-in-out 0.18s infinite' }}
+            />
+            {/* 右柱 */}
+            <rect
+              x="21" y="2" width="6" height="20" rx="1.5"
+              fill="white" fillOpacity="0.9"
+              style={{ transformBox: 'fill-box', transformOrigin: 'bottom', animation: 'bar-r 1.1s ease-in-out 0.36s infinite' }}
+            />
           </svg>
         </div>
 
         {/* Brand name */}
-        <div className="text-center" style={{ marginTop: -2 }}>
+        <div className="text-center">
           <p style={{ ...ff, fontSize: 17, fontWeight: 590, color: PT.heading, letterSpacing: '-0.3px' }}>
             复盘 · AI量化
           </p>
@@ -67,35 +83,23 @@ export function BrandedLoading() {
             正在加载您的数据…
           </p>
         </div>
-
-        {/* Three dots */}
-        <div className="flex items-center gap-2">
-          {[0, 1, 2].map(i => (
-            <span
-              key={i}
-              style={{
-                display: 'inline-block',
-                width: 5,
-                height: 5,
-                borderRadius: '50%',
-                background: PT.red,
-                opacity: 0.3,
-                animation: `brand-dot 1.2s ease-in-out ${i * 0.2}s infinite`,
-              }}
-            />
-          ))}
-        </div>
       </div>
 
-      {/* Keyframes */}
       <style>{`
-        @keyframes brand-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(230,0,35,0.25); transform: scale(1); }
-          50%       { box-shadow: 0 0 0 10px rgba(230,0,35,0); transform: scale(1.04); }
+        /* 左柱：矮 → 高 → 矮，起始较矮 */
+        @keyframes bar-l {
+          0%, 100% { transform: scaleY(0.35); }
+          50%       { transform: scaleY(1);    }
         }
-        @keyframes brand-dot {
-          0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
-          40%            { opacity: 1;    transform: scale(1.15); }
+        /* 中柱：高 → 矮 → 高，起始最高（与 logo 原型一致） */
+        @keyframes bar-m {
+          0%, 100% { transform: scaleY(1);    }
+          50%       { transform: scaleY(0.3);  }
+        }
+        /* 右柱：中 → 高 → 中，起始中等 */
+        @keyframes bar-r {
+          0%, 100% { transform: scaleY(0.55); }
+          50%       { transform: scaleY(0.95); }
         }
       `}</style>
     </div>
