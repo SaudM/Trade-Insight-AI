@@ -61,9 +61,17 @@ export function useUserData(skip?: boolean): UseUserDataReturn {
   const fetchUserData = useCallback(async () => {
     // Check if either Firebase user OR NextAuth session user exists
     const sessionUser = session?.user;
+
+    // 没有任何认证来源 → 确认未登录
     if (!firebaseUser && !sessionUser) {
       setUserData(null);
       setIsLoading(false);
+      return;
+    }
+
+    // 有 session 但还没有可用的系统 ID，且 Firebase 也还未加载完
+    // 此时不能失败，静默等待 Firebase 就绪后由 effect 重新触发
+    if (!sessionUser?.id && !firebaseUser) {
       return;
     }
 
@@ -78,7 +86,9 @@ export function useUserData(skip?: boolean): UseUserDataReturn {
       } else if (firebaseUser) {
         response = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`);
       } else {
-        throw new Error("No user identifier found");
+        // 理论上不会走到这里（上方已守卫），防御性处理
+        setIsLoading(false);
+        return;
       }
 
       if (response.ok) {
