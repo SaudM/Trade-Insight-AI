@@ -23,6 +23,7 @@ import { Loader2 } from 'lucide-react';
 import { useUserData } from '@/hooks/use-user-data';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { trackEvent } from '@/lib/tracking';
+import { PLAN_LIST } from '@/lib/plans';
 
 const PT = {
     bg:      '#ffffff',
@@ -38,48 +39,7 @@ const PT = {
     redL:    'rgba(230,0,35,0.08)',
 } as const;
 
-const pricingPlans: PricingPlan[] = [
-    {
-        id: 'monthly',
-        name: '月度会员',
-        duration: '/月',
-        price: 14,
-        originalPrice: 28,
-        discount: '新用户专享',
-        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
-    },
-    {
-        id: 'quarterly',
-        name: '季度会员',
-        duration: '/季',
-        price: 0.01,
-        originalPrice: 84,
-        pricePerMonth: 13,
-        discount: '限时福利',
-        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
-    },
-    {
-        id: 'semi_annually',
-        name: '半年会员',
-        duration: '/半年',
-        price: 74,
-        originalPrice: 168,
-        pricePerMonth: 12.3,
-        discount: '推荐',
-        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步'],
-        isPopular: true,
-    },
-    {
-        id: 'annually',
-        name: '年度会员',
-        duration: '/年',
-        price: 134,
-        originalPrice: 336,
-        pricePerMonth: 11.2,
-        discount: '最佳性价比',
-        features: ['无限次AI分析报告', '交易模式识别', '个性化改进建议', '数据云同步', '优先客服支持', '新功能尝鲜'],
-    },
-];
+const pricingPlans: PricingPlan[] = PLAN_LIST;
 
 const faqs = [
     {
@@ -96,7 +56,7 @@ const faqs = [
     },
     {
         question: "新用户免费试用是什么？",
-        answer: "每一位新注册的用户都将自动获得30天的免费试用期，期间您可以无限制地体验所有专业版AI功能。试用期结束后，您需要订阅才能继续使用AI分析服务。"
+        answer: "每一位新注册的用户都将自动获得7天的免费试用期，期间您可以无限制地体验全部会员功能（含两大量化策略实时信号）。试用期结束后，订阅即可继续使用。"
     }
 ]
 
@@ -119,26 +79,6 @@ export default function PricingPage() {
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
     const [processedPayments, setProcessedPayments] = useState<Set<string>>(new Set());
-    const [dynamicQuarterlyPrice, setDynamicQuarterlyPrice] = useState<number>(0.01);
-
-    React.useEffect(() => {
-        // 全局统一活动开始时间：2026年3月1日 00:00:00 (北京时间)
-        const GLOBAL_START_TIME = new Date('2026-03-01T00:00:00+08:00').getTime();
-
-        const updatePrice = () => {
-            const now = Date.now();
-            const secondsPassed = Math.max(0, (now - GLOBAL_START_TIME) / 1000);
-            let newPrice = 0.01 + secondsPassed * 0.000004;
-            if (newPrice >= 39) {
-                newPrice = 39;
-            }
-            setDynamicQuarterlyPrice(newPrice);
-        };
-
-        updatePrice();
-        const interval = setInterval(updatePrice, 100);
-        return () => clearInterval(interval);
-    }, []);
 
     // --- User Data from PostgreSQL (with Firebase fallback) ---
     const { userData, isLoading: isLoadingUserData } = useUserData();
@@ -162,7 +102,7 @@ export default function PricingPage() {
             // 所以这里不需要写入数据库
             toast({
                 title: "免费试用已激活！",
-                description: "您现在可以无限制使用所有AI功能30天。",
+                description: "您现在可以无限制使用全部会员功能7天。",
             });
             setTimeout(() => {
                 router.push('/');
@@ -175,9 +115,7 @@ export default function PricingPage() {
 
 
     const handleSubscribe = async (plan: PricingPlan) => {
-        const roundedPrice = plan.id === 'quarterly'
-            ? Math.round(dynamicQuarterlyPrice * 100) / 100
-            : plan.price;
+        const roundedPrice = plan.price;
 
         trackEvent('click_subscribe', { plan_id: plan.id, price: roundedPrice, is_popular: !!plan.isPopular });
 
@@ -304,12 +242,8 @@ export default function PricingPage() {
                         const activateResponse = await fetch('/api/subscription/activate', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                userId: user.uid,
-                                planId,
-                                paymentId: data.transaction_id,
-                                amount: paymentAmount
-                            })
+                            // 仅传订单号，激活所依据的金额/套餐由服务端按已支付订单核验
+                            body: JSON.stringify({ outTradeNo })
                         });
 
                         if (!activateResponse.ok) {
@@ -483,38 +417,23 @@ export default function PricingPage() {
                     {isMonthlyTrial ? (
                         <div className="my-6 text-center flex flex-col items-center justify-center h-[90px]">
                             <Gift className="w-12 h-12 text-green-500 mb-2" />
-                            <p className="text-lg font-bold text-green-600">免费体验30天</p>
+                            <p className="text-lg font-bold text-green-600">免费体验7天</p>
                         </div>
                     ) : (
                         <div className="my-6 text-center h-[90px]">
-                            {plan.id === 'quarterly' ? (
-                                <>
-                                    <div className="flex items-baseline justify-center gap-1">
-                                        <span className="text-3xl font-bold font-mono tracking-tighter" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                                            ¥{dynamicQuarterlyPrice < 39 ? dynamicQuarterlyPrice.toFixed(6) : "39.00"}
-                                        </span>
-                                    </div>
-                                    <span style={{ color: PT.muted }}>{plan.duration}</span>
-                                    <div className="h-6 mt-1 flex flex-col items-center justify-center">
-                                        <span className="text-xs text-orange-600 font-semibold animate-pulse">随时间涨价！(实际支付四舍五入)</span>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="text-5xl font-bold">¥{plan.price}</span>
-                                    <span style={{ color: PT.muted }}>{plan.duration}</span>
-                                    <div className="h-6 mt-1">
-                                        <span className="text-sm line-through" style={{ color: PT.muted }}>原价 ¥{plan.originalPrice}</span>
-                                        {(() => {
-                                            let days = 30;
-                                            if (plan.id === 'semi_annually') days = 180;
-                                            if (plan.id === 'annually') days = 365;
-                                            const dailyPrice = plan.price / days;
-                                            return <span className="ml-2 text-sm text-orange-600 font-semibold"> (折合 ¥{dailyPrice.toFixed(2)}/天)</span>;
-                                        })()}
-                                    </div>
-                                </>
-                            )}
+                            <span className="text-5xl font-bold">¥{plan.price}</span>
+                            <span style={{ color: PT.muted }}>{plan.duration}</span>
+                            <div className="h-6 mt-1">
+                                <span className="text-sm line-through" style={{ color: PT.muted }}>原价 ¥{plan.originalPrice}</span>
+                                {(() => {
+                                    let days = 30;
+                                    if (plan.id === 'quarterly') days = 90;
+                                    if (plan.id === 'semi_annually') days = 180;
+                                    if (plan.id === 'annually') days = 365;
+                                    const dailyPrice = plan.price / days;
+                                    return <span className="ml-2 text-sm text-orange-600 font-semibold"> (折合 ¥{dailyPrice.toFixed(2)}/天)</span>;
+                                })()}
+                            </div>
                         </div>
                     )}
 
@@ -732,7 +651,7 @@ export default function PricingPage() {
                 <footer className="container mx-auto px-4 py-8 md:px-6">
                     <div className="text-center text-sm" style={{ color: PT.muted }}>
                         <p>&copy; {new Date().getFullYear()} 复利复盘. All rights reserved.</p>
-                        <p className="mt-1">新注册用户默认享有30天免费试用，无需订阅即可体验全部功能。</p>
+                        <p className="mt-1">新注册用户默认享有7天免费试用，无需订阅即可体验全部功能。</p>
                         <p className="mt-2 text-xs" style={{ color: PT.muted }}>
                             <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="transition-colors" style={{ color: PT.muted }}>
                                 京ICP备2020034311号-3

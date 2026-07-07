@@ -2,7 +2,9 @@ import { NextRequest } from 'next/server';
 import { createPayment } from '@/lib/wxpay';
 import { createOrderPostgres } from '@/lib/orders-postgres';
 import { PLAN_NAMES } from '@/lib/orders';
+import { PLANS, isValidPlanId } from '@/lib/plans';
 import { checkDatabaseConnection } from '@/lib/db';
+import { requireUid } from '@/lib/api-auth';
 
 export const runtime = 'nodejs';
 // Tell Next.js to not bundle these packages on the server.
@@ -10,17 +12,25 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    // 鉴权：下单用户一律取自 session，禁止替他人下单
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+    const userId = authed.uid;
+
     const body = await req.json();
-    const { planId, price, userId, tradeType } = body as {
+    const { planId, tradeType } = body as {
       planId: string;
-      price: number; // yuan
-      userId: string;
       tradeType: 'NATIVE' | 'H5';
     };
 
-    if (!planId || !price || !userId || !tradeType) {
+    if (!planId || !tradeType) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
+    // 价格一律取服务端定价表，客户端传入的 price 仅作展示、不参与计费
+    if (!isValidPlanId(planId)) {
+      return new Response(JSON.stringify({ error: 'Invalid planId' }), { status: 400 });
+    }
+    const price = PLANS[planId].price;
 
     // 获取客户端真实 IP
     const forwardHeader = req.headers.get('x-forwarded-for');

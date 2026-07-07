@@ -83,22 +83,22 @@ const PAINS = [
 
 const PLANS = [
   {
-    name: '月度会员', price: '¥14', unit: '/ 月',
+    name: '月度会员', price: '¥39', unit: '/ 月',
     desc: '灵活体验，随时开始',
-    features: ['全功能解锁', 'AI 复盘报告', '信号实时推送', '量化策略广场'],
+    features: ['两大量化策略实时信号', 'AI 复盘报告', '策略持仓全透明', '量化策略广场'],
     cta: '立即订阅', highlight: false,
   },
   {
-    name: '年度会员', price: '¥134', unit: '/ 年',
-    desc: '相当于 ¥11.2 / 月，节省 20%',
-    features: ['全功能解锁', 'AI 复盘报告', '信号实时推送', '量化策略广场', '优先客服支持', '新功能优先体验'],
-    cta: '最优惠，立即订阅', highlight: true, badge: '最受欢迎',
+    name: '半年会员', price: '¥169', unit: '/ 半年',
+    desc: '相当于 ¥28.2 / 月，省 28%',
+    features: ['两大量化策略实时信号', 'AI 复盘报告', '策略持仓全透明', '量化策略广场', '体制状态 / 仓位监控'],
+    cta: '最受欢迎，立即订阅', highlight: true, badge: '最受欢迎',
   },
   {
-    name: '季度会员', price: '¥39', unit: '/ 季',
-    desc: '相当于 ¥13 / 月',
-    features: ['全功能解锁', 'AI 复盘报告', '信号实时推送', '量化策略广场'],
-    cta: '立即订阅', highlight: false,
+    name: '年度会员', price: '¥299', unit: '/ 年',
+    desc: '相当于 ¥24.9 / 月，省 36%',
+    features: ['两大量化策略实时信号', 'AI 复盘报告', '策略持仓全透明', '量化策略广场', '体制状态 / 仓位监控', '优先客服支持'],
+    cta: '最佳性价比，立即订阅', highlight: false,
   },
 ];
 
