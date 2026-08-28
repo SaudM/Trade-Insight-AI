@@ -39,6 +39,8 @@ next-env.d.ts
 
 .genkit/*
 .env*
+# 保留示例配置（不含真实密钥），供部署时参考
+!.env.example
 
 # firebase
 firebase-debug.log
