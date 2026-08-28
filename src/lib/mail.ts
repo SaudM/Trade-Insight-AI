@@ -1,17 +1,28 @@
 
 import nodemailer from 'nodemailer';
 
-const SMTP_HOST = 'smtp.feishu.cn';
-const SMTP_PORT = 465;
-const SMTP_USER = 'noreply@fulitimes.com';
-const SMTP_PASS = 'VUwAbFAY1oLflqeG';
-const SMTP_FROM = `"Trade Insight" <${SMTP_USER}>`;
+// SMTP 配置全部从环境变量读取，避免把凭据硬编码在源码里。
+// 非敏感项（host/port/user）保留默认值；密码等敏感信息必须来自环境变量。
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.feishu.cn';
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+const SMTP_SECURE = process.env.SMTP_SECURE
+  ? process.env.SMTP_SECURE === 'true'
+  : SMTP_PORT === 465; // 465 端口默认使用 SSL
+const SMTP_USER = process.env.SMTP_USER || 'noreply@fulitimes.com';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const SMTP_FROM = process.env.SMTP_FROM || `Trade Insight <${SMTP_USER}>`;
+
+if (!SMTP_PASS) {
+  console.warn(
+    '[mail] 未配置 SMTP_PASS 环境变量，密码重置邮件将无法发送。请在 .env / 部署环境中设置 SMTP_PASS。'
+  );
+}
 
 // Create reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
   port: SMTP_PORT,
-  secure: true, // true for 465, false for other ports
+  secure: SMTP_SECURE, // true for 465, false for other ports
   auth: {
     user: SMTP_USER,
     pass: SMTP_PASS,
@@ -19,15 +30,36 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
+ * 解析邮件中重置链接使用的站点地址。
+ * 优先级：NEXT_PUBLIC_APP_URL > NEXTAUTH_URL > localhost 兜底。
+ * 去除结尾斜杠，避免拼出 //reset-password；生产环境若仍是本地地址会告警。
+ */
+function resolveBaseUrl(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    'http://localhost:9002';
+  const baseUrl = raw.replace(/\/+$/, '');
+  if (process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(baseUrl)) {
+    console.warn(
+      `[mail] 生产环境站点地址仍为本地地址 (${baseUrl})，密码重置链接将无法被用户访问。` +
+        '请将 NEXT_PUBLIC_APP_URL（或 NEXTAUTH_URL）设置为正式域名。'
+    );
+  }
+  return baseUrl;
+}
+
+/**
  * Send password reset email
  * @param to Recipient email
  * @param token Reset token
  */
 export async function sendPasswordResetEmail(to: string, token: string) {
-  // Determine base URL based on environment
-  // In production, this should be set in environment variables
-  // For now, we'll try to use NEXT_PUBLIC_APP_URL or fall back to localhost
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:9002';
+  if (!SMTP_PASS) {
+    throw new Error('SMTP 未配置（缺少 SMTP_PASS 环境变量），无法发送密码重置邮件');
+  }
+
+  const baseUrl = resolveBaseUrl();
   const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
   const html = `

@@ -21,18 +21,9 @@ export async function POST(req: Request) {
         });
 
         if (!user) {
-            // Return success even if user not found to prevent email enumeration
-            // But for debugging/UX we might want to be specific initially? 
-            // User request said: "也许是新的邮箱登录认证没有优化到重置密码这个环境"
-            // Let's return specific error if dev, or generic if prod?
-            // For now, adhering to user request "resolve unable to reset password", returning 404 might help debug.
-            // But standard practice is 200.
-            // However, current frontend expects error message if user not found (based on reading previous form code).
-            // Let's return 404 with specific message for now matching the form's expectation.
-            return NextResponse.json(
-                { error: 'User not found' },
-                { status: 404 }
-            );
+            // 防止邮箱枚举：即使邮箱未注册也返回统一的成功响应，
+            // 不泄露该邮箱是否存在。此处直接返回，不生成 token、不发信。
+            return NextResponse.json({ message: 'Password reset email sent' });
         }
 
         // Generate reset token
