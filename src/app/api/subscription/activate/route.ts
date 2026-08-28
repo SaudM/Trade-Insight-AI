@@ -1,109 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { activateSubscriptionPostgres } from '@/lib/subscription-postgres';
-import { UserAdapter } from '@/lib/adapters/user-adapter';
+import { findOrderByOutTradeNoPostgres } from '@/lib/orders-postgres';
 import { CacheKeys } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireUid } from '@/lib/api-auth';
 
 /**
- * 激活订阅API端点
- * 处理订阅激活请求，包括用户标识符、计划ID、支付ID和金额
- * 
- * 支持的用户标识符参数（按优先级）：
- * - uid: 系统UID（推荐用于业务逻辑）
- * - firebaseUid: Firebase UID（用于兼容性）
- * - userId: 已弃用，为向后兼容保留
+ * 激活订阅 API
+ *
+ * 安全模型（修复前：未鉴权且凭客户端传入的 planId/amount 直接开通会员 = 白嫖）：
+ * - 必须登录。
+ * - 只接受 outTradeNo；激活所依据的 userId/planId/amount 一律取自服务端订单记录，
+ *   且订单必须已被服务端核验为「已支付」(status === 'paid'，由微信验签的 notify / status 路径置位)。
+ * - 与 notify / status 路径幂等（activateSubscriptionPostgres 内部按 paymentId 去重）。
  */
 export async function POST(request: NextRequest) {
   try {
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const body = await request.json();
-    const { uid, firebaseUid, userId, planId, paymentId, amount } = body;
+    const { outTradeNo } = body ?? {};
 
-    // 确定用户标识符（按优先级）
-    const userIdentifier = uid || firebaseUid || userId;
-
-    // 验证必需参数
-    if (!userIdentifier || !planId || !paymentId || amount === undefined) {
-      return NextResponse.json(
-        { error: '缺少必需参数: uid/firebaseUid/userId, planId, paymentId, amount' },
-        { status: 400 }
-      );
+    if (!outTradeNo || typeof outTradeNo !== 'string') {
+      return NextResponse.json({ error: '缺少必需参数: outTradeNo' }, { status: 400 });
     }
 
-    // 判断是否为系统UID（UUID格式）
-    const isSystemUid = userIdentifier && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userIdentifier);
-
-    // 获取内部用户ID
-    let internalUserId = userIdentifier;
-
-    if (!isSystemUid) {
-      // 如果不是系统UID，则通过Firebase UID获取用户信息
-      try {
-        const user = await UserAdapter.getUserByFirebaseUid(userIdentifier);
-        if (user) {
-          internalUserId = user.id;
-        } else {
-          return NextResponse.json(
-            { error: '用户不存在' },
-            { status: 404 }
-          );
-        }
-      } catch (error) {
-        console.error('获取用户信息失败:', error);
-        return NextResponse.json(
-          { error: '获取用户信息失败' },
-          { status: 500 }
-        );
-      }
+    // 仅依据服务端订单记录激活，杜绝凭客户端声明开通
+    const order = await findOrderByOutTradeNoPostgres(outTradeNo);
+    if (!order) {
+      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+    }
+    if (order.status !== 'paid') {
+      return NextResponse.json({ error: '订单未支付，无法激活' }, { status: 402 });
     }
 
-    // 调用订阅激活函数
     const result = await activateSubscriptionPostgres({
-      userId: internalUserId,
-      planId,
-      paymentId,
-      amount
+      userId: order.userId,
+      planId: order.planId,
+      paymentId: order.paymentId || order.id,
+      amount: order.amount,
     });
 
-    // CRITICAL: 激活订阅后，必须清除用户缓存，确保前端能立即感知到变化
+    // 激活后清除用户缓存，确保前端立即感知
     try {
-      const cacheKeysToClear = [CacheKeys.userByUid(internalUserId)];
-
-      // 如果我们能获取到 firebaseUid，也应该清除对应的缓存
-      // 这里 userIdentifier 可能是 firebaseUid
-      if (!isSystemUid) {
-        cacheKeysToClear.push(CacheKeys.userByFirebaseUid(userIdentifier));
-      } else {
-        // 如果是 System UID，尝试获取 User 对象来清理 firebaseUid 缓存（可选，但为了健壮性建议做）
-        // 考虑到性能，如果只有 internalUserId，且客户端主要用 UID，也可以只清 UID。
-        // 但为了绝对的一致性，我们最好也清理 FirebaseUid
-        try {
-          const user = await UserAdapter.getUserByUid(internalUserId);
-          if (user && user.firebaseUid) {
-            cacheKeysToClear.push(CacheKeys.userByFirebaseUid(user.firebaseUid));
-          }
-        } catch (e) {
-          console.warn('获取用户信息以清理缓存失败', e);
-        }
-      }
-
-      CachedApiHandler.clearMultipleCacheAsync(cacheKeysToClear);
+      CachedApiHandler.clearMultipleCacheAsync([CacheKeys.userByUid(order.userId)]);
     } catch (cacheError) {
       console.warn('清理缓存失败:', cacheError);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: '订阅激活成功',
-      data: result
-    });
-
+    return NextResponse.json({ success: true, message: '订阅激活成功', data: result });
   } catch (error) {
     console.error('激活订阅失败:', error);
     return NextResponse.json(
-      {
-        error: '激活订阅失败',
-        details: error instanceof Error ? error.message : '未知错误'
-      },
+      { error: '激活订阅失败', details: error instanceof Error ? error.message : '未知错误' },
       { status: 500 }
     );
   }

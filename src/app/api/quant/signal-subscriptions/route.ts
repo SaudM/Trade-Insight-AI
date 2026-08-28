@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireUid } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,13 +70,13 @@ function normalizeConfig(strategyId: string, input: any): StrategySignalSubscrip
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const uid = searchParams.get('uid');
-    const strategyId = searchParams.get('strategyId');
+    // 鉴权：身份取自 session，禁止读取他人信号订阅（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+    const uid = authed.uid;
 
-    if (!uid) {
-      return NextResponse.json({ error: 'Missing uid' }, { status: 400 });
-    }
+    const { searchParams } = new URL(request.url);
+    const strategyId = searchParams.get('strategyId');
 
     const config = await prisma.userConfig.findFirst({
       where: { userId: uid },
@@ -117,12 +118,16 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // 鉴权：身份取自 session，禁止修改他人信号订阅（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+    const uid = authed.uid;
+
     const body = await request.json();
-    const uid = String(body?.uid ?? '').trim();
     const strategyId = String(body?.strategyId ?? '').trim();
 
-    if (!uid || !strategyId) {
-      return NextResponse.json({ error: 'Missing uid or strategyId' }, { status: 400 });
+    if (!strategyId) {
+      return NextResponse.json({ error: 'Missing strategyId' }, { status: 400 });
     }
 
     const nextConfig = normalizeConfig(strategyId, {

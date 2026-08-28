@@ -13,6 +13,7 @@ import { checkDatabaseConnection } from '@/lib/db';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireUid } from '@/lib/api-auth';
 
 /**
  * 获取用户信息和订阅状态
@@ -21,80 +22,40 @@ import { CachedApiHandler } from '@/lib/cached-api-handler';
  */
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const firebaseUid = searchParams.get('firebaseUid');
-    const uid = searchParams.get('uid');
+    // 鉴权：只允许查询当前登录用户自己的信息，uid 取自 session（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+    const uid = authed.uid;
 
-    if (!uid && !firebaseUid) {
-      return new Response(JSON.stringify({
-        error: 'Missing required parameter: firebaseUid or uid'
-      }), {
-        status: 400
-      });
+    // 通过系统UID查询当前登录用户（推荐用于业务逻辑）
+    const fetchUserByUid = async (uid: string) => {
+      return await UserAdapter.getUserWithSubscriptionByUid(uid);
+    };
+
+    const cacheOptions = CachedApiHandler.createCacheOptions(
+      CacheKeys.userByUid,        // 缓存键生成函数 (System UID)
+      CacheConfig.USER_DATA_TTL,  // TTL
+      false                       // 禁用缓存，确保订阅状态实时更新
+    );
+
+    const response = await CachedApiHandler.handleCachedGet(
+      req,
+      fetchUserByUid,
+      cacheOptions,
+      uid
+    );
+
+    if (!response.ok) {
+      return response;
     }
 
-    // 根据查询参数类型选择不同的数据获取函数
-    if (uid) {
-      // 通过系统UID查询（推荐用于业务逻辑）
-      const fetchUserByUid = async (uid: string) => {
-        return await UserAdapter.getUserWithSubscriptionByUid(uid);
-      };
-
-      const cacheOptions = CachedApiHandler.createCacheOptions(
-        CacheKeys.userByUid,        // 缓存键生成函数 (System UID)
-        CacheConfig.USER_DATA_TTL,  // TTL
-        false                       // 禁用缓存，确保订阅状态实时更新
-      );
-
-      const response = await CachedApiHandler.handleCachedGet(
-        req,
-        fetchUserByUid,
-        cacheOptions,
-        uid
-      );
-
-      if (!response.ok) {
-        return response;
-      }
-
-      // 如果数据不存在，返回 404
-      const result = await response.json();
-      if (!result.data || !result.data.user) {
-        return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
-      }
-
-      return NextResponse.json(result);
-    } else {
-      // 通过Firebase UID查询（仅用于认证）
-      const fetchUserByFirebaseUid = async (firebaseUid: string) => {
-        return await UserAdapter.getUserWithSubscription(firebaseUid);
-      };
-
-      const cacheOptions = CachedApiHandler.createCacheOptions(
-        CacheKeys.userByFirebaseUid, // 缓存键生成函数 (Firebase UID)
-        CacheConfig.USER_DATA_TTL,   // TTL
-        false                        // 禁用缓存，确保订阅状态实时更新
-      );
-
-      const response = await CachedApiHandler.handleCachedGet(
-        req,
-        fetchUserByFirebaseUid,
-        cacheOptions,
-        firebaseUid!
-      );
-
-      if (!response.ok) {
-        return response;
-      }
-
-      // 如果数据不存在，返回 404
-      const result = await response.json();
-      if (!result.data || !result.data.user) {
-        return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
-      }
-
-      return NextResponse.json(result);
+    // 如果数据不存在，返回 404
+    const result = await response.json();
+    if (!result.data || !result.data.user) {
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
     }
+
+    return NextResponse.json(result);
 
   } catch (err: any) {
     console.error('user API error:', err);

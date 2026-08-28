@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayment } from '@/lib/wxpay';
 import { activateSubscriptionPostgres } from '@/lib/subscription-postgres';
+import { findOrderByOutTradeNoPostgres, markOrderAsPaidPostgres } from '@/lib/orders-postgres';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { CacheKeys } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
@@ -123,33 +124,36 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ code: 'SUCCESS', message: '支付状态已接收' });
         }
 
-        // 从商户订单号中提取用户信息和套餐信息
+        // 根据商户订单号查找服务端订单记录，取得权威的用户/套餐/金额
+        // （此前用 outTradeNo.split('_') 解析，但订单号是无分隔符拼接串，解析必然失败、回调永远 400，
+        //   导致只能依赖前端轮询激活。改为按订单号查库，既修复 bug 又使用服务端权威数据。）
         const outTradeNo = paymentData.out_trade_no;
-        const parts = outTradeNo.split('_');
-        console.log('Parsing OutTradeNo:', outTradeNo, 'Parts:', parts);
-
-        if (parts.length < 4) {
-            console.error('商户订单号格式错误:', outTradeNo);
-            return NextResponse.json({ code: 'FAIL', message: '订单号格式错误' }, { status: 400 });
+        const order = await findOrderByOutTradeNoPostgres(outTradeNo);
+        if (!order) {
+            console.error('未找到订单:', outTradeNo);
+            return NextResponse.json({ code: 'FAIL', message: '订单不存在' }, { status: 404 });
         }
 
-        const firebaseUid = parts[1];
-        const planId = parts[2];
-        console.log('Extracted Info:', { firebaseUid, planId });
+        const userId = order.userId;
+        const planId = order.planId;
+        console.log('Order resolved:', { outTradeNo, userId, planId, amount: order.amount });
 
-        // 获取用户内部ID
-        let userId;
+        // 用于清理 firebaseUid 维度缓存（尽力而为）
+        let firebaseUid: string | undefined;
         try {
-            const user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
-            if (!user) {
-                console.error('未找到用户:', firebaseUid);
-                return NextResponse.json({ code: 'FAIL', message: '用户不存在' }, { status: 404 });
+            const user = await UserAdapter.getUserByUid(userId);
+            firebaseUid = user?.firebaseUid ?? undefined;
+        } catch {
+            // 忽略：缓存清理用，不影响激活
+        }
+
+        // 标记订单为已支付（幂等；activate 路径也依赖此状态做核验）
+        try {
+            if (order.status !== 'paid') {
+                await markOrderAsPaidPostgres(outTradeNo, paymentData.transaction_id || '');
             }
-            userId = user.id;
-            console.log('Found internal User ID:', userId);
         } catch (error) {
-            console.error('获取用户信息失败:', error);
-            return NextResponse.json({ code: 'FAIL', message: '获取用户信息失败' }, { status: 500 });
+            console.warn('标记订单为已支付失败（继续激活）:', error);
         }
 
         // 激活订阅

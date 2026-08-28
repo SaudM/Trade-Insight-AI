@@ -360,6 +360,16 @@ export const CacheKeys = {
    * @deprecated 请使用 userByFirebaseUid
    */
   userInfo: (firebaseUid: string) => `user:info:firebase:${firebaseUid}`,
+
+  /**
+   * 微信登录会话缓存键
+   */
+  wechatLoginSession: (ticket: string) => `wechat:login:${ticket}`,
+
+  /**
+   * 微信AccessToken缓存键
+   */
+  wechatAccessToken: () => `wechat:access_token`,
 };
 
 /**

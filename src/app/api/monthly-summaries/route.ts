@@ -10,6 +10,7 @@ import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { AnalysisAdapter } from '@/lib/adapters/analysis-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireUid } from '@/lib/api-auth';
 
 /**
  * 获取用户月报数据
@@ -18,37 +19,19 @@ import { CachedApiHandler } from '@/lib/cached-api-handler';
  */
 export async function GET(req: NextRequest) {
   try {
+    // 鉴权：身份取自 session，禁止读取他人月报（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const { searchParams } = new URL(req.url);
-    const uid = searchParams.get('uid');
-    const firebaseUid = searchParams.get('firebaseUid');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (!uid && !firebaseUid) {
-      return new Response(JSON.stringify({ 
-        error: 'Missing required parameter: uid or firebaseUid' 
-      }), { 
-        status: 400 
-      });
-    }
+    const userIdentifier = authed.uid;
 
-    // 确定使用的用户标识符（优先级：uid > firebaseUid）
-    const userIdentifier = uid || firebaseUid!;
-    const isSystemUid = !!uid;
-
-    // 定义数据获取函数
+    // 定义数据获取函数（直接使用当前登录用户的系统UID）
     const fetchUserMonthlySummaries = async (identifier: string) => {
-      if (isSystemUid) {
-        // 直接使用系统UID获取月报数据
-        return await AnalysisAdapter.getUserMonthlySummaries(identifier);
-      } else {
-        // 通过Firebase UID先获取用户信息，再获取月报数据
-        const user = await UserAdapter.getUserByFirebaseUid(identifier);
-        if (!user) {
-          return [];
-        }
-        return await AnalysisAdapter.getUserMonthlySummaries(user.id);
-      }
+      return await AnalysisAdapter.getUserMonthlySummaries(identifier);
     };
 
     // 配置缓存选项
@@ -80,12 +63,17 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { userId, monthStartDate, monthEndDate, performanceComparison, recurringIssues, strategyExecutionEvaluation, keyLessons, iterationSuggestions } = body;
+    // 鉴权：写入归属一律取自 session，禁止替他人写入
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+    const userId = authed.uid;
 
-    if (!userId || !monthStartDate || !monthEndDate || !performanceComparison || !recurringIssues || !strategyExecutionEvaluation || !keyLessons || !iterationSuggestions) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
-        status: 400 
+    const body = await req.json();
+    const { monthStartDate, monthEndDate, performanceComparison, recurringIssues, strategyExecutionEvaluation, keyLessons, iterationSuggestions } = body;
+
+    if (!monthStartDate || !monthEndDate || !performanceComparison || !recurringIssues || !strategyExecutionEvaluation || !keyLessons || !iterationSuggestions) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400
       });
     }
 

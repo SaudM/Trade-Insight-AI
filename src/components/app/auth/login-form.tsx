@@ -25,11 +25,13 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
+import { signIn as nextAuthSignIn } from 'next-auth/react';
 import { Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import Link from 'next/link';
 import { useUser } from '@/firebase';
 import { authenticate } from '@/lib/actions/auth-actions';
+import { WechatLoginButton } from '@/components/app/auth/wechat-login-button';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "请输入有效的邮箱地址" }),
@@ -139,19 +141,33 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
     try {
+      console.log('[GoogleLogin] step=popup_start');
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      console.log('[GoogleLogin] step=popup_ok firebaseUid=', result.user.uid);
 
       // 确保用户数据存储到PostgreSQL数据库
       await createUserInDatabase(result.user, result.user.displayName || 'Google User');
+      console.log('[GoogleLogin] step=pg_user_ok');
+
+      // 同时建立 next-auth session：取 Firebase ID Token，服务端 firebase provider 验签后写 cookie。
+      const idToken = await result.user.getIdToken();
+      console.log('[GoogleLogin] step=idToken_ok len=', idToken.length);
+
+      const signInResult = await nextAuthSignIn('firebase', { idToken, redirect: false });
+      console.log('[GoogleLogin] step=signin_done result=', signInResult);
+
+      if (signInResult?.error) {
+        throw new Error('NextAuth session 建立失败: ' + signInResult.error);
+      }
 
       // Let the useEffect handle the redirect
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('[GoogleLogin] ERROR:', error?.message || error, error);
       toast({
         variant: 'destructive',
         title: 'Google登录失败',
-        description: '无法通过Google登录，请稍后重试。',
+        description: error?.message || '无法通过Google登录，请稍后重试。',
       });
     } finally {
       setIsGoogleLoading(false);
@@ -226,6 +242,7 @@ export function LoginForm() {
         )}
         使用Google登录
       </Button>
+      <WechatLoginButton redirectUrl={redirectUrl} variant="outline" />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { checkDatabaseConnection } from '@/lib/db';
 import { TradeLogAdapter } from '@/lib/adapters/tradelog-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireUid } from '@/lib/api-auth';
 
 /**
  * 更新交易日志
@@ -19,30 +20,29 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 鉴权：身份一律取自 session，忽略客户端传入的 userId（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const { id } = await params;
     const body = await req.json();
-    const { 
-      userId, 
-      tradeTime, 
-      symbol, 
-      direction, 
-      positionSize, 
-      entryReason, 
-      exitReason, 
-      tradeResult, 
-      mindsetState, 
-      lessonsLearned 
+    const {
+      tradeTime,
+      symbol,
+      direction,
+      positionSize,
+      entryReason,
+      exitReason,
+      tradeResult,
+      mindsetState,
+      lessonsLearned
     } = body;
+    // 始终使用当前登录用户的系统 UID
+    const userId = authed.uid;
 
     if (!id) {
-      return new Response(JSON.stringify({ error: 'Missing trade log ID' }), { 
-        status: 400 
-      });
-    }
-
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing user ID' }), { 
-        status: 400 
+      return new Response(JSON.stringify({ error: 'Missing trade log ID' }), {
+        status: 400
       });
     }
 
@@ -131,19 +131,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 鉴权：身份一律取自 session，忽略客户端传入的 userId（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const { id } = await params;
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    // 始终使用当前登录用户的系统 UID
+    const userId = authed.uid;
 
     if (!id) {
-      return new Response(JSON.stringify({ error: 'Missing trade log ID' }), { 
-        status: 400 
-      });
-    }
-
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing user ID' }), { 
-        status: 400 
+      return new Response(JSON.stringify({ error: 'Missing trade log ID' }), {
+        status: 400
       });
     }
 
@@ -161,6 +159,15 @@ export async function DELETE(
     }
 
     try {
+      // 先校验记录归属，禁止删除他人的交易日志（修复越权 IDOR）
+      const existingTradeLog = await TradeLogAdapter.getTradeLogById(id);
+      if (!existingTradeLog) {
+        return new Response(JSON.stringify({ error: 'Trade log not found', id }), { status: 404 });
+      }
+      if (existingTradeLog.userId !== userId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized: Trade log does not belong to user' }), { status: 403 });
+      }
+
       // 删除交易日志
       await TradeLogAdapter.deleteTradeLog(id);
 

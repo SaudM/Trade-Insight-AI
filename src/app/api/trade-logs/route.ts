@@ -11,6 +11,7 @@ import { TradeLogAdapter } from '@/lib/adapters/tradelog-adapter';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireUid } from '@/lib/api-auth';
 
 /**
  * 获取用户的交易日志
@@ -19,36 +20,18 @@ import { CachedApiHandler } from '@/lib/cached-api-handler';
  */
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const uid = searchParams.get('uid');
-    const firebaseUid = searchParams.get('firebaseUid');
+    // 鉴权：身份一律取自 session，忽略客户端传入的 uid/firebaseUid（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
 
-    if (!uid && !firebaseUid) {
-      return new Response(JSON.stringify({
-        error: 'Missing required parameter: uid or firebaseUid'
-      }), {
-        status: 400
-      });
-    }
-
-    // 确定使用的用户标识符（优先级：uid > firebaseUid）
-    const userIdentifier = uid || firebaseUid!;
-    const isSystemUid = !!uid;
+    // 始终使用当前登录用户的系统 UID
+    const userIdentifier = authed.uid;
 
     // 定义数据获取函数
     const fetchUserTradeLogs = async (userIdentifier: string) => {
-      // 如果使用的是Firebase UID，需要先获取系统UID
-      let systemUid = userIdentifier;
-      if (!isSystemUid) {
-        const user = await UserAdapter.getUserByFirebaseUid(userIdentifier);
-        if (!user) {
-          throw new Error('User not found');
-        }
-        systemUid = user.id;
-      }
-
+      // 直接使用系统UID获取交易日志
       return await TradeLogAdapter.getUserTradeLogs({
-        userId: systemUid,
+        userId: userIdentifier,
         limit: 1000, // 限制返回数量
       });
     };
@@ -82,15 +65,21 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
+    // 鉴权：身份一律取自 session，忽略客户端传入的 userId（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const body = await req.json();
     /**
      * 动态校验入参（按方向必填）
-     * - 公共必填：userId、tradeTime、symbol、direction、tradeResult、mindsetState
+     * - 公共必填：tradeTime、symbol、direction、tradeResult、mindsetState
      * - 开仓（Buy/Long/Short）：要求 positionSize 与 buyPrice（正数）
      * - 平仓（Sell/Close）：要求 sellPrice（正数）与 sellQuantity（正整数）；positionSize 不再作为必填。
      *   为提升健壮性，若 positionSize 为空字符串或仅空白，将在存储前回退为 String(sellQuantity) 确保一致写入。
      */
-    const { userId, tradeTime, symbol, direction, positionSize, entryReason, exitReason, tradeResult, mindsetState, lessonsLearned, buyPrice, sellPrice, sellQuantity } = body;
+    const { tradeTime, symbol, direction, positionSize, entryReason, exitReason, tradeResult, mindsetState, lessonsLearned, buyPrice, sellPrice, sellQuantity } = body;
+    // 始终使用当前登录用户的系统 UID
+    const userId = authed.uid;
 
     const searchParams = new URL(req.url).searchParams;
     const headers = Object.fromEntries(req.headers.entries());
@@ -99,7 +88,7 @@ export async function POST(req: NextRequest) {
      * 公共必填校验：不包含 positionSize（由方向校验决定）
      * 说明：Buy/开仓不需要传入 tradeResult；Sell/Close/平仓可携带数值型 tradeResult 以提升体验。
      */
-    if (!userId || !tradeTime || !symbol || !direction) {
+    if (!tradeTime || !symbol || !direction) {
       console.error('400 Error - Missing required fields', {
         requestInfo: {
           method: req.method,

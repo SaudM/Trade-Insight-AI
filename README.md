@@ -193,6 +193,12 @@ your_private_key_content
 -----END PRIVATE KEY-----"
 WX_NOTIFY_URL=https://your-domain.com/api/subscription/notify
 
+# 微信公众号配置（用于扫码登录）
+WECHAT_APPID=your_wechat_mp_app_id  # 公众号AppID（可与支付共用或单独配置）
+WECHAT_APPSECRET=your_wechat_mp_app_secret  # 公众号AppSecret
+WECHAT_TOKEN=your_wechat_token  # 公众号消息Token（在后台设置）
+WECHAT_ORIGINAL_ID=gh_xxxxxxxx  # 公众号原始ID
+
 # NextAuth配置
 NEXTAUTH_URL=http://localhost:9002
 NEXTAUTH_SECRET=your_nextauth_secret

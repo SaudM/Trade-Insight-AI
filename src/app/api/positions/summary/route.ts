@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { TradeLogAdapter } from '@/lib/adapters/tradelog-adapter';
+import { requireUid } from '@/lib/api-auth';
 // 该接口当前不使用统一缓存键，避免无效键导致的类型错误；如需缓存，请在redis模块中新增专用键。
 
 /**
@@ -42,12 +43,17 @@ function parseQuantity(positionSize?: string): number {
  */
 export async function GET(request: Request) {
   try {
+    // 鉴权：身份一律取自 session，忽略客户端传入的 uid/firebaseUid（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const { searchParams } = new URL(request.url);
-    const userId = await resolveUserId(searchParams);
+    // 始终使用当前登录用户的系统 UID
+    const userId = authed.uid;
     const symbol = searchParams.get('symbol');
 
-    if (!userId || !symbol) {
-      return NextResponse.json({ error: 'Missing uid/firebaseUid or symbol' }, { status: 400 });
+    if (!symbol) {
+      return NextResponse.json({ error: 'Missing symbol' }, { status: 400 });
     }
 
     // 计算指定标的的持仓摘要（不依赖缓存，直接聚合交易日志）

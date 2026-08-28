@@ -5,24 +5,8 @@
  * 支持：GET（读取，自动创建默认100,000），POST（保存初始资金）
  */
 import { NextResponse } from 'next/server';
-import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { UserConfigAdapter } from '@/lib/adapters/user-config-adapter';
-
-/**
- * 解析查询参数中的用户标识，支持系统uid或firebaseUid。
- * @param searchParams URLSearchParams
- * @returns 系统用户ID（uid）或null
- */
-async function resolveUserId(searchParams: URLSearchParams): Promise<string | null> {
-  const uid = searchParams.get('uid');
-  const firebaseUid = searchParams.get('firebaseUid');
-  if (uid) return uid;
-  if (firebaseUid) {
-    const user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
-    return user?.id ?? null;
-  }
-  return null;
-}
+import { requireUid } from '@/lib/api-auth';
 
 /**
  * GET /api/user-config
@@ -30,11 +14,10 @@ async function resolveUserId(searchParams: URLSearchParams): Promise<string | nu
  */
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = await resolveUserId(searchParams);
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing uid or firebaseUid' }, { status: 400 });
-    }
+    // 鉴权：身份取自 session，禁止读取他人配置（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+    const userId = authed.uid;
 
     const config = await UserConfigAdapter.getOrCreateByUserId(userId);
     return NextResponse.json({
@@ -56,11 +39,10 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = await resolveUserId(searchParams);
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing uid or firebaseUid' }, { status: 400 });
-    }
+    // 鉴权：身份取自 session，禁止修改他人配置（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+    const userId = authed.uid;
 
     const body = await request.json();
     let { initialCapital } = body ?? {};

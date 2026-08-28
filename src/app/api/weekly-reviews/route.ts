@@ -10,6 +10,7 @@ import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { AnalysisAdapter } from '@/lib/adapters/analysis-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireUid } from '@/lib/api-auth';
 
 /**
  * 获取用户周报数据
@@ -18,37 +19,21 @@ import { CachedApiHandler } from '@/lib/cached-api-handler';
  */
 export async function GET(req: NextRequest) {
   try {
+    // 鉴权：身份一律取自 session，忽略客户端传入的 uid/firebaseUid（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const { searchParams } = new URL(req.url);
-    const uid = searchParams.get('uid');
-    const firebaseUid = searchParams.get('firebaseUid');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (!uid && !firebaseUid) {
-      return new Response(JSON.stringify({ 
-        error: 'Missing required parameter: uid or firebaseUid' 
-      }), { 
-        status: 400 
-      });
-    }
-
-    // 确定使用的用户标识符（优先级：uid > firebaseUid）
-    const userIdentifier = uid || firebaseUid!;
-    const isSystemUid = !!uid;
+    // 始终使用当前登录用户的系统 UID
+    const userIdentifier = authed.uid;
 
     // 定义数据获取函数
     const fetchUserWeeklyReviews = async (identifier: string) => {
-      if (isSystemUid) {
-        // 直接使用系统UID获取周报数据
-        return await AnalysisAdapter.getUserWeeklyReviews(identifier);
-      } else {
-        // 通过Firebase UID先获取用户信息，再获取周报数据
-        const user = await UserAdapter.getUserByFirebaseUid(identifier);
-        if (!user) {
-          return [];
-        }
-        return await AnalysisAdapter.getUserWeeklyReviews(user.id);
-      }
+      // 直接使用系统UID获取周报数据
+      return await AnalysisAdapter.getUserWeeklyReviews(identifier);
     };
 
     // 配置缓存选项
@@ -80,10 +65,15 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { userId, startDate, endDate, patternSummary, errorPatterns, successPatterns, positionSizingAnalysis, emotionalCorrelation, improvementPlan } = body;
+    // 鉴权：身份一律取自 session，忽略客户端传入的 userId（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
 
-    if (!userId || !startDate || !endDate || !patternSummary || !errorPatterns || !successPatterns || !positionSizingAnalysis || !emotionalCorrelation || !improvementPlan) {
+    const body = await req.json();
+    const { startDate, endDate, patternSummary, errorPatterns, successPatterns, positionSizingAnalysis, emotionalCorrelation, improvementPlan } = body;
+    const userId = authed.uid;
+
+    if (!startDate || !endDate || !patternSummary || !errorPatterns || !successPatterns || !positionSizingAnalysis || !emotionalCorrelation || !improvementPlan) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
         status: 400 
       });

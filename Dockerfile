@@ -43,5 +43,10 @@ COPY --from=builder /app/prisma ./prisma
 # 固定版本为 6.17.1，与项目保持一致，避免 Prisma 7.x 破坏性变更
 RUN npm config set registry https://registry.npmmirror.com && npm install -g prisma@6.17.1
 
+# 安全加固：以内置非 root 用户 node 运行，限制 RCE 的爆炸半径。
+# 运行期仅 .next/cache 需可写（Next standalone ISR 缓存）；prisma db push 只读 schema。
+RUN mkdir -p /app/.next/cache && chown -R node:node /app
+USER node
+
 # 启动 standalone 服务 (使用 prisma db push 更新数据库)
 CMD ["sh", "-c", "prisma db push && node server.js"]

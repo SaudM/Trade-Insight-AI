@@ -14,6 +14,11 @@ model User {
   password         String?          @db.VarChar(255)
   googleId         String?          @unique @map("google_id") @db.VarChar(255)
   firebaseUid      String?          @unique @map("firebase_uid") @db.VarChar(255)
+  // 微信相关字段
+  wechatOpenid     String?          @unique @map("wechat_openid") @db.VarChar(255)
+  wechatUnionid    String?          @unique @map("wechat_unionid") @db.VarChar(255)
+  wechatNickname   String?          @map("wechat_nickname") @db.VarChar(255)
+  wechatAvatar     String?          @map("wechat_avatar") @db.VarChar(500)
   createdAt        DateTime?        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime?        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   resetToken       String?          @map("reset_token") @db.VarChar(255)
@@ -26,6 +31,7 @@ model User {
   weeklyReviews    WeeklyReview[]
   userConfig       UserConfig?
   researchReports  ResearchReport[]
+  wechatLoginSessions WechatLoginSession[]
 
   @@map("users")
 }
@@ -275,4 +281,25 @@ enum TradeType {
   JSAPI
 
   @@map("trade_type")
+}
+
+// 微信扫码登录会话
+model WechatLoginSession {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ticket        String    @unique @map("ticket") @db.VarChar(255)      // 二维码ticket
+  sceneStr      String    @map("scene_str") @db.VarChar(255)           // 场景值（login_xxx 或 bind_xxx）
+  status        String    @default("pending") @db.VarChar(20)          // pending/scanned/confirmed/expired
+  bindingMode   Boolean   @default(false) @map("binding_mode")         // true=绑定模式, false=登录模式
+  openid        String?   @map("openid") @db.VarChar(255)              // 扫码用户的openid
+  userId        String?   @map("user_id") @db.Uuid                     // 关联的用户ID（绑定模式下为当前用户）
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)        // 过期时间
+  scannedAt     DateTime? @map("scanned_at") @db.Timestamptz(6)        // 扫码时间
+  confirmedAt   DateTime? @map("confirmed_at") @db.Timestamptz(6)      // 确认时间
+
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ticket], map: "idx_wechat_login_sessions_ticket")
+  @@index([status], map: "idx_wechat_login_sessions_status")
+  @@map("wechat_login_sessions")
 }

@@ -8,13 +8,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AppHeader } from "./header";
 import { useAuthState } from "@/components/app/auth/auth-state-manager";
 import { Badge } from "@/components/ui/badge";
-import { Crown, ExternalLink, LogOut, ShoppingBag, Key, Settings, Sparkles, Clock, Gift } from "lucide-react";
+import { Crown, ExternalLink, LogOut, ShoppingBag, Key, Settings, Sparkles, Clock, Gift, Smartphone } from "lucide-react";
 import { format } from "date-fns";
 import { getAuth, sendPasswordResetEmail, signOut as firebaseSignOut } from "firebase/auth";
 
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
+import { WechatBindButton } from '@/components/app/auth/wechat-bind-dialog';
 
 /**
  * ProfileView 组件
@@ -313,6 +314,30 @@ export function ProfileView() {
                                         >
                                             {isResetting ? "发送中..." : "重置密码"}
                                         </button>
+                                    </div>
+                                </div>
+
+                                <div className="group">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl transition-all duration-200" style={{ backgroundColor: '#f6f6f3', padding: '16px' }}>
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-sm sm:text-base flex items-center gap-2" style={{ color: '#211922' }}>
+                                                <Smartphone className="h-4 w-4" style={{ color: '#91918c' }} />
+                                                微信绑定
+                                            </p>
+                                            <p className="text-xs sm:text-sm leading-relaxed" style={{ color: '#91918c' }}>
+                                                {user?.wechatOpenid ? '已绑定微信，可使用扫码快速登录' : '绑定微信后可使用扫码快速登录'}
+                                            </p>
+                                        </div>
+                                        {user?.wechatOpenid ? (
+                                            <span
+                                                className="w-full sm:w-auto h-10 sm:h-11 text-sm font-medium flex items-center justify-center"
+                                                style={{ border: '1px solid #07C160', borderRadius: 12, backgroundColor: '#07C160', color: '#ffffff', padding: '0 16px' }}
+                                            >
+                                                已绑定
+                                            </span>
+                                        ) : (
+                                            <WechatBindButton onBindSuccess={() => router.refresh()} />
+                                        )}
                                     </div>
                                 </div>
 

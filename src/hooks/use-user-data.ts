@@ -22,6 +22,7 @@ import type { Subscription } from '@/lib/types';
  * @property {string} firebaseUid - Firebase认证标识符，仅用于认证
  * @property {string} createdAt - 创建时间
  * @property {string} updatedAt - 更新时间
+ * @property {string} wechatOpenid - 微信OpenID，用于微信扫码登录
  */
 interface UserData {
   id: string;
@@ -30,6 +31,7 @@ interface UserData {
   firebaseUid: string;
   createdAt: string;
   updatedAt: string;
+  wechatOpenid?: string | null;
 }
 
 interface UserDataResponse {
@@ -95,6 +97,15 @@ export function useUserData(skip?: boolean): UseUserDataReturn {
         const result = await response.json();
         const data = result.data;
         setUserData(data);
+        setIsLoading(false);
+        return;
+      }
+
+      // 401 = session 失效（典型场景：NEXTAUTH_SECRET 轮换或登出后旧 cookie 验签失败）。
+      // 这不是数据库错误，置空让上层走"未登录"分支（显示"前往登录"），避免误报 DB 异常。
+      if (response.status === 401) {
+        setUserData(null);
+        setError(null);
         setIsLoading(false);
         return;
       }

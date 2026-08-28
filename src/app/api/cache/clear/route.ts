@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireSession } from '@/lib/api-auth';
 
 /**
  * 清理缓存API
@@ -7,6 +8,10 @@ import { CachedApiHandler } from '@/lib/cached-api-handler';
  */
 export async function POST(req: NextRequest) {
   try {
+    // 鉴权：禁止匿名清缓存（避免被刷导致缓存击穿/DoS）
+    const authed = await requireSession();
+    if ('error' in authed) return authed.error;
+
     const body = await req.json();
     const { cacheKeys } = body;
 

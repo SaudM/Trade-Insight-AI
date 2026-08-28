@@ -25,9 +25,11 @@ import {
   signInWithPopup,
   updateProfile,
 } from 'firebase/auth';
+import { signIn as nextAuthSignIn } from 'next-auth/react';
 
 import { FcGoogle } from 'react-icons/fc';
 import { registerUser } from '@/lib/actions/auth-actions';
+import { WechatLoginButton } from '@/components/app/auth/wechat-login-button';
 
 const signupSchema = z.object({
   name: z.string().min(1, { message: "请输入您的姓名" }),
@@ -123,6 +125,14 @@ export function SignupForm() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       await createUserInDatabase(result.user, result.user.displayName || 'Google User');
+
+      // 同时建立 next-auth session（与 login-form 同理，确保后续 API 鉴权能识别）
+      const idToken = await result.user.getIdToken();
+      const signInResult = await nextAuthSignIn('firebase', { idToken, redirect: false });
+      if (signInResult?.error) {
+        throw new Error('NextAuth session 建立失败: ' + signInResult.error);
+      }
+
       router.push('/');
     } catch (error) {
       console.error(error);
@@ -212,6 +222,7 @@ export function SignupForm() {
         )}
         使用Google注册
       </Button>
+      <WechatLoginButton redirectUrl="/" variant="outline" />
     </div>
   );
 }

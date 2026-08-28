@@ -10,6 +10,7 @@ import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { SubscriptionAdapter } from '@/lib/adapters/subscription-adapter';
 import { CacheKeys, CacheConfig } from '@/lib/redis';
 import { CachedApiHandler } from '@/lib/cached-api-handler';
+import { requireUid } from '@/lib/api-auth';
 
 /**
  * 获取用户订阅记录
@@ -18,23 +19,16 @@ import { CachedApiHandler } from '@/lib/cached-api-handler';
  */
 export async function GET(req: NextRequest) {
   try {
+    // 鉴权：身份取自 session，禁止查询他人订阅记录（修复越权 IDOR）
+    const authed = await requireUid();
+    if ('error' in authed) return authed.error;
+
     const { searchParams } = new URL(req.url);
-    const uid = searchParams.get('uid');
-    const firebaseUid = searchParams.get('firebaseUid');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (!uid && !firebaseUid) {
-      return new Response(JSON.stringify({ 
-        error: 'Missing required parameter: uid or firebaseUid' 
-      }), { 
-        status: 400 
-      });
-    }
-
-    // 确定使用的用户标识符（优先级：uid > firebaseUid）
-    const userIdentifier = uid || firebaseUid!;
-    const isSystemUid = !!uid;
+    const userIdentifier = authed.uid;
+    const isSystemUid = true;
 
     // 检查数据库连接
     const isDbConnected = await checkDatabaseConnection();

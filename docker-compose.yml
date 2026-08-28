@@ -7,10 +7,12 @@ services:
     environment:
       POSTGRES_DB: trade_insight_ai
       POSTGRES_USER: trade_user
-      POSTGRES_PASSWORD: trade_password_2024
+      # 从环境变量读取，勿在仓库写明文；本地默认值仅供开发
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trade_password_2024}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
-      - "15432:5432"
+      # 仅本机可达，避免公网暴露数据库
+      - "127.0.0.1:15432:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -28,7 +30,8 @@ services:
     container_name: trade-insight-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # 仅本机可达
+      - "127.0.0.1:6379:6379"
     volumes:
       - ./redis_data:/data
     networks:
@@ -38,57 +41,40 @@ services:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
-  #     retries: 5
+      retries: 5
 
   # Next.js 应用服务
-#  app:
-#    image: submit2mxh/trade-gpt-image:latest
-#    container_name: trade-insight-app
-#    restart: unless-stopped
-#    ports:
-#      - "9002:3000"
-#    # Explicitly run migration using Prisma Native before starting the app
-#    command: >
-#      sh -c "
-#        echo 'Starting deployment process...' &&
-#        echo 'Running Prisma Native migrations...' &&
-#        npx prisma db push --accept-data-loss &&
-#        echo 'Migration successful. Starting application...' &&
-#        node server.js
-#      "
-#    environment:
-#      - NODE_ENV=production
-#      - DATABASE_URL=postgresql://trade_user:trade_password_2024@postgres:5432/trade_insight_ai
-#      - REDIS_HOST=redis
-#      - REDIS_PORT=6379
-#      # NEXTAUTH_URL 线上必须设置为域名才能正常工作 https://fupan.fulitimes.com/
-#      - NEXTAUTH_URL=http://localhost:3000
-#      - NEXTAUTH_SECRET=Nn2z8shA3wD9K7AxZ+fKoz5hbKKh8Q7e7f7A4M2jZy8=
-#      # ai
-#      - GEMINI_API_KEY=AIzaSyB-7RC3RBomvCuBiRCN3Np2BV0ohxGglJ8
-#      - AI_PROVIDER=deepseek
-#      - DEEPSEEK_API_KEY=sk-174b9391bb344cc1b81b5d9c3915f1dd
-#      - DEEPSEEK_BASE_URL=https://api.deepseek.com
-#      # Prevent proxy-agent from sniffing config files
-#      - HTTP_PROXY=
-#      - HTTPS_PROXY=
-#      # 微信支付相关环境变量
-#      - WX_NOTIFY_URL=https://fupan.fulitimes.com/api/subscription/notify
-#      - WX_V3_CODE=SDipv6oJQRraYMaghvAphpFYIR6WvGtZ
-#      - WX_SERIAL_NO=17A036A33A55AF983DAE6AF75956FCBB1A3BEF7C
-#      - WX_APPID=wx9e7c01df2746e5f0
-#      - WX_MCHID=1606234933
-#      - WX_PRIVATE_KEY='-----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDeMwoYTK8wIPabL2b8tpR+YHyJXUVFr67RCCPsJDg8ifYjXZRXnHRiSYgUT8cSVKZeYCKAQaBW2LCnrvBLc54bFxVPT28natSjuVXSG0kT+cpIddF6Bne+IEeKnZNNr1ui222GhQecl5BWp2s/kXa2bS8bGe2fBTnfx8OXEvQ1AgV8tVv5uBzC6lpzHaiQZ+3U/TtnEGeMN2XQTDL18zuFJ53b2xcEwxqn4WFMscfYeWwKefl05DyybR3bSMaw0bH4thYouANGZR2Xtby9jAd0Jb/2bQKF9dYg/IEyfwjqa3av+OirjW4E7+qIdsW9m6BYANj0HojxlLQNigCAHEMzAgMBAAECggEBAIJ86MXCavNRuGEEIm/wbR4WXaxxqNe2x2wcYrQvxRLQVksIjrAwwixiUFbVTuwV6CnuPPSjFZ1K3dtrodQ9jrEMCkisNnOoij2n/p1Hxs/DVqbdAequV63A2SKvTS1G+QKX6CcigojUfUBWS2Zmb5fMYOiCfohvkkA32UYkLGPftrwtrSbDaq6ypNzYJtaN1ToCIGgmcqNEI4FVYGo8Nv8EfwPXeqLYBP4VMWZ8lKGeLu5/LNe56L6eyG/zm1DugXetMRsR1M/MaGAFDeghBvQE3HAqCr5QJUgjGSK1yVugCiZLj9FY7FlXuV1IzpNKZLMCsu1AWE4zM3ekdz+L6EkCgYEA9tl0TSKnMPrY2Q5nkPKz/FuCdusmMgblce24Zax73QWSQQS6G7b2KHaKS8vTJdsODa3W3Bu8V6boJyMyF5X+ig1yKPJex3qRBmyLxWGTYbKPnW4KEHHzlYwW42JAot6DlBCwpq/1aFS21GwrAU8N/4TTIN8XCBxCYLnLqrgVaRUCgYEA5m+pX22MTGv7Q/MJEP402kgOTBMzI3oWShR4xYAjYnD0DERuZXsvy+mAbwrsde2tIsyHlNhIZd6eGzz16pzwGdzrjF0CELCOM3YvNwAiFGlvIHvg2P/QtsCD/TmopOULZk03frZkcOxz5SQ0HXuXL8dBm5ZIBSFCbi4/t0zifScCgYAmq9xvdR1SLAoqvvn0mEEgKMngjWg3cCMj3QUFUKc68fN+ohnx25Dmt+NkinLyvEWQWQqPAv1XkftOnlHrpgDxabfXuFim0YnEwt6GtombRZkAJcwH1YI+jGrNhofvvAJLAO5bvrcoeBUIZEW8d8EOpaVZwfleuOahNpo0jZA1HQKBgDiop+qQ0vhPbJ6OeWI2PuSU5v8JkX9dm3FnizJ0iT7BKyCBCuvk2CG5Lh0fgHiWkgWGaKfObi6uCA4GdSjUoayaR0hh7goQf0Zj/sP1QmvmaK6CBw0UCUuGFm4C6VZyAtWKkuSTECs72Fs1BaNiKhBTW+xXjSnFvcG9mWkGfIHtAoGATPwhgauj0ntU1T9G9IvNKTiZSwfmzyGlrrhbVk04tjrGl4kxAftTDZd/y/dJTDtk2nubzagt5p66t0lC0wxkD/0OcQp3lTrUMbVCSgZZzkFoyLbM3/BBBiv0NYRvAK6xcSBCflycZpjvDcNBZqviHvc78K5EPOHoJZzSSFnhbx0=-----END PRIVATE KEY-----'
-#
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#    networks:
-#      - trade-network
-#    volumes:
-#      - ./logs:/app/logs
+  # 所有密钥从 .env 读取（env_file），切勿在本文件内写明文。
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: trade-insight-app:latest
+    container_name: trade-insight-app
+    restart: unless-stopped
+    ports:
+      # 仅绑本机，必须置于 caddy/反向代理之后，禁止 0.0.0.0 公网裸露
+      - "127.0.0.1:3002:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    # 安全加固：禁止提权、丢弃所有 capability、只读根文件系统 + 可写缓存用 tmpfs
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - trade-network
 
 volumes:
   postgres_data:
