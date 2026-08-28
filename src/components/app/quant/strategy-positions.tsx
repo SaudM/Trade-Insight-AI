@@ -25,26 +25,27 @@ const PT = {
 
 interface Position {
     asset_symbol: string;
-    asset_name?: string;
-    sector: string;
+    asset_name?: string | null;
+    sector?: string | null;
     entry_date: string;
     entry_price: number;
     quantity: number;
     cost: number;
-    current_price: number;
-    current_value: number;
-    unrealized_pnl_pct: number;
-    unrealized_pnl_amount: number;
+    // 后端这些字段为 Optional[float]，未补价/停牌/轮动策略等场景可能为 null
+    current_price: number | null;
+    current_value: number | null;
+    unrealized_pnl_pct: number | null;
+    unrealized_pnl_amount: number | null;
     hold_days: number;
-    stop_loss_ref: number;
-    entry_score: number;
-    highest_price: number;
-    recommendation_id: number;
+    stop_loss_ref: number | null;
+    entry_score: number | null;
+    highest_price: number | null;
+    recommendation_id: number | null;
 }
 
 interface PositionsData {
     strategy_key: string;
-    snapshot_date: string;
+    snapshot_date: string | null;
     position_count: number;
     total_invested: number;
     total_current_value: number;
@@ -53,13 +54,24 @@ interface PositionsData {
     positions: Position[];
 }
 
-function fmt(v: number, decimals = 2) {
+const DASH = '--';
+
+function fmt(v: number | null | undefined, decimals = 2) {
+    if (v == null || Number.isNaN(v)) return DASH;
     return v.toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-function fmtMoney(v: number) {
+function fmtMoney(v: number | null | undefined) {
+    if (v == null || Number.isNaN(v)) return DASH;
     if (Math.abs(v) >= 10_000) return `${v >= 0 ? '+' : ''}¥${(v / 10000).toFixed(2)}万`;
     return `${v >= 0 ? '+' : ''}¥${v.toLocaleString()}`;
+}
+
+// date-fns 的 format 对非法日期会抛 RangeError，这里做兜底
+function fmtDate(v: string | null | undefined, pattern: string) {
+    if (!v) return DASH;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? DASH : format(d, pattern);
 }
 
 export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
@@ -116,7 +128,7 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                         <Loader2 className="w-6 h-6 animate-spin mr-2" />
                         加载中...
                     </div>
-                ) : !data || data.positions.length === 0 ? (
+                ) : !data || !data.positions || data.positions.length === 0 ? (
                     <div className="h-40 flex items-center justify-center text-sm" style={{ color: PT.muted }}>
                         暂无持仓
                     </div>
@@ -181,7 +193,8 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                 </thead>
                                 <tbody>
                                     {data.positions.map((pos, i) => {
-                                        const isPnlPositive = pos.unrealized_pnl_pct >= 0;
+                                        const hasPnl = pos.unrealized_pnl_pct != null;
+                                        const isPnlPositive = (pos.unrealized_pnl_pct ?? 0) >= 0;
                                         return (
                                             <tr
                                                 key={`${pos.asset_symbol}-${i}`}
@@ -203,7 +216,7 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                                     )}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
-                                                    {format(new Date(pos.entry_date), 'MM-dd')}
+                                                    {fmtDate(pos.entry_date, 'MM-dd')}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
                                                     {pos.hold_days}天
@@ -212,38 +225,51 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                                                     {fmt(pos.entry_price)}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">
-                                                    <span className={isPnlPositive ? 'text-red-500' : 'text-green-600'}>
+                                                    <span
+                                                        className={hasPnl ? (isPnlPositive ? 'text-red-500' : 'text-green-600') : ''}
+                                                        style={hasPnl ? undefined : { color: PT.body }}
+                                                    >
                                                         {fmt(pos.current_price)}
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: PT.body }}>
-                                                    ¥{(pos.current_value / 10000).toFixed(2)}万
+                                                    {pos.current_value != null ? `¥${(pos.current_value / 10000).toFixed(2)}万` : DASH}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                                                    <div className={cn('font-semibold', isPnlPositive ? 'text-red-500' : 'text-green-600')}>
-                                                        {isPnlPositive ? '+' : ''}{fmt(pos.unrealized_pnl_pct)}%
-                                                    </div>
-                                                    <div className={cn('text-[10px]', isPnlPositive ? 'text-red-400' : 'text-green-500')}>
-                                                        {fmtMoney(pos.unrealized_pnl_amount)}
-                                                    </div>
+                                                    {hasPnl ? (
+                                                        <>
+                                                            <div className={cn('font-semibold', isPnlPositive ? 'text-red-500' : 'text-green-600')}>
+                                                                {isPnlPositive ? '+' : ''}{fmt(pos.unrealized_pnl_pct)}%
+                                                            </div>
+                                                            <div className={cn('text-[10px]', isPnlPositive ? 'text-red-400' : 'text-green-500')}>
+                                                                {fmtMoney(pos.unrealized_pnl_amount)}
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <span style={{ color: PT.muted }}>{DASH}</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right text-orange-500 font-medium whitespace-nowrap">
                                                     {fmt(pos.stop_loss_ref)}
                                                 </td>
                                                 <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="text-[10px] px-1.5 py-0 font-semibold"
-                                                        style={
-                                                            pos.entry_score >= 80
-                                                                ? { backgroundColor: PT.redL, color: PT.red, border: `1px solid ${PT.border}` }
-                                                                : pos.entry_score >= 60
-                                                                ? { backgroundColor: 'rgba(255,251,235,1)', color: '#d97706', border: '1px solid rgba(253,230,138,1)' }
-                                                                : { backgroundColor: PT.fog, color: PT.muted, border: `1px solid ${PT.border}` }
-                                                        }
-                                                    >
-                                                        {pos.entry_score}
-                                                    </Badge>
+                                                    {pos.entry_score != null ? (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="text-[10px] px-1.5 py-0 font-semibold"
+                                                            style={
+                                                                pos.entry_score >= 80
+                                                                    ? { backgroundColor: PT.redL, color: PT.red, border: `1px solid ${PT.border}` }
+                                                                    : pos.entry_score >= 60
+                                                                    ? { backgroundColor: 'rgba(255,251,235,1)', color: '#d97706', border: '1px solid rgba(253,230,138,1)' }
+                                                                    : { backgroundColor: PT.fog, color: PT.muted, border: `1px solid ${PT.border}` }
+                                                            }
+                                                        >
+                                                            {pos.entry_score}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span style={{ color: PT.muted }}>{DASH}</span>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -252,7 +278,7 @@ export function StrategyPositions({ strategyKey }: { strategyKey: string }) {
                             </table>
                         </div>
                         <p className="text-xs text-right" style={{ color: PT.muted }}>
-                            快照日期：{data.snapshot_date ? format(new Date(data.snapshot_date), 'yyyy-MM-dd') : '--'}
+                            快照日期：{fmtDate(data.snapshot_date, 'yyyy-MM-dd')}
                         </p>
                     </>
                 )}
