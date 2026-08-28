@@ -23,6 +23,7 @@ export class DeepSeekAI {
    * 环境变量配置：
    * - DEEPSEEK_API_KEY: DeepSeek API密钥
    * - DEEPSEEK_BASE_URL: API基础URL，默认为 https://api.deepseek.com
+   * - DEEPSEEK_MODEL: 使用的模型名称，默认为 deepseek-v4-flash（可通过环境变量覆盖）
    */
   constructor(apiKey?: string) {
     this.client = new OpenAI({
@@ -49,7 +50,7 @@ export class DeepSeekAI {
     try {
       const completion = await this.client.chat.completions.create({
         messages,
-        model: options?.model || "deepseek-chat",
+        model: options?.model || process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
         temperature: options?.temperature || 0.7,
         max_tokens: options?.max_tokens || 4000,
       });

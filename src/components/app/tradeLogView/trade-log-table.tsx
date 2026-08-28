@@ -11,6 +11,8 @@ const PT = {
     borderH: '#bcbcb3',
     red:     '#e60023',
     redL:    'rgba(230,0,35,0.08)',
+    green:   '#0ead45',
+    greenL:  'rgba(14,173,69,0.10)',
 } as const;
 import type { TradeLog } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
@@ -82,193 +84,176 @@ const parseTradeResult = (tradeResult: string | number): number => {
 };
 
 /**
- * 交易笔记卡片组件
- * 统一的卡片设计，适用于所有屏幕尺寸
- * 遵循Material Design原则，提供清晰的信息层次和美观的视觉效果
- * 优化了高度自适应机制，确保只有当前卡片高度变化，不影响其他卡片
+ * 详情面板小块
+ * 用于展开区展示入场/出场理由、心态、心得等长文本
  */
-const TradeLogCard = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) => {
+const DetailBlock = ({ title, text }: { title: string; text: string }) => (
+    <div className="p-3 rounded-lg" style={{ backgroundColor: PT.fog }}>
+        <p className="font-semibold mb-1 text-xs uppercase tracking-wide" style={{ color: PT.heading }}>{title}</p>
+        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words" style={{ color: PT.body }}>{text}</p>
+    </div>
+);
+
+/**
+ * 交易笔记列表行组件
+ * 单列宽行设计：左侧盈亏色条 + 图标，主行展示标的/方向/价格/操作，
+ * 次行展示时间·仓位·盈亏，可展开查看入场理由、心态、心得等详细分析。
+ * 每行独立管理展开高度，互不影响。
+ */
+const TradeLogRow = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [contentHeight, setContentHeight] = useState(0);
     const contentRef = useRef<HTMLDivElement>(null);
+
     const tradeResultValue = parseTradeResult(log.tradeResult);
     const isProfit = tradeResultValue >= 0;
+    // 开仓方向（买入/做多/做空）尚未实现盈亏，展示为“持仓中”
     const isOpening = ['Buy', 'Long', 'Short'].includes(log.direction);
-    const displayValue = isOpening ? (log.buyPrice || 0) : tradeResultValue;
+    const hasDetails = !!(log.entryReason || log.exitReason || log.mindsetState || log.lessonsLearned);
 
-    // 计算详细内容的高度
+    // 盈亏色条 / 图标配色：持仓中=中性灰，已了结按盈亏取绿/红
+    const accent = isOpening ? PT.muted : (isProfit ? PT.green : PT.red);
+    const accentBg = isOpening ? PT.fog : (isProfit ? PT.greenL : PT.redL);
+    const Icon = isOpening ? (log.direction === 'Short' ? TrendingDown : TrendingUp) : (isProfit ? TrendingUp : TrendingDown);
+
+    const priceNum = isOpening ? log.buyPrice : log.sellPrice;
+    const priceStr = priceNum?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' }) || '¥0.00';
+    const plStr = tradeResultValue.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' });
+
+    // 展开时按内容实际高度做动画，收起时归零
     useEffect(() => {
         if (contentRef.current) {
-            if (isExpanded) {
-                // 展开时设置实际内容高度
-                setContentHeight(contentRef.current.scrollHeight);
-            } else {
-                // 收起时设置高度为0
-                setContentHeight(0);
-            }
+            setContentHeight(isExpanded ? contentRef.current.scrollHeight : 0);
         }
     }, [isExpanded]);
 
     return (
-        <div className="hover:shadow-lg transition-shadow duration-300 overflow-hidden" style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderRadius: 16 }}>
-            <div className="pb-4 space-y-4 px-6 pt-6">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl shadow-sm" style={isProfit
-                            ? { backgroundColor: 'rgba(14,173,69,0.12)', border: '1px solid rgba(14,173,69,0.2)' }
-                            : { backgroundColor: 'rgba(232,25,44,0.10)', border: '1px solid rgba(232,25,44,0.2)' }}>
-                            {isProfit ? (
-                                <TrendingUp className="h-5 w-5 text-success" />
-                            ) : (
-                                <TrendingDown className="h-5 w-5 text-destructive" />
-                            )}
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-xl font-bold tracking-tight" style={{ color: PT.heading }}>{log.symbol}</p>
-                            <div className="flex items-center gap-2 text-sm" style={{ color: PT.body }}>
-                                <Calendar className="h-4 w-4" />
-                                {formatTradeTime(log.tradeTime)}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                        <div className="text-xl font-bold font-mono" style={{ color: PT.heading }}>
-                            {(isOpening ? log.buyPrice : log.sellPrice)?.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' }) || '¥0.00'}
-                        </div>
-                        <div className="mt-1">
+        <div
+            className="transition-shadow duration-200 hover:shadow-md overflow-hidden"
+            style={{ backgroundColor: PT.bg, border: `1px solid ${PT.border}`, borderLeft: `4px solid ${accent}`, borderRadius: 12 }}
+        >
+            <div className="flex items-start gap-3 px-4 py-3 md:px-5 md:py-4">
+                {/* 盈亏图标 */}
+                <div className="shrink-0 mt-0.5 p-2 rounded-lg" style={{ backgroundColor: accentBg }}>
+                    <Icon className="h-5 w-5" style={{ color: accent }} />
+                </div>
+
+                {/* 主内容区 */}
+                <div className="flex-1 min-w-0">
+                    {/* 主行：标的 + 方向 ...... 价格 + 操作 */}
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-bold text-base md:text-lg truncate" style={{ color: PT.heading }}>{log.symbol}</span>
                             {getDirectionBadge(log.direction)}
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="pt-0 space-y-5 px-6 pb-4">
-                <div className="grid grid-cols-2 gap-6">
-                    <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: PT.fog }}>
-                        <Target className="h-5 w-5" style={{ color: PT.red }} />
-                        <div>
-                            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: PT.body }}>仓位大小</p>
-                            <p className="font-semibold" style={{ color: PT.heading }}>{log.positionSize}</p>
-                        </div>
-                    </div>
-
-                    {!isOpening && (
-                        <div className="flex items-center gap-3 p-3 rounded-lg" style={isProfit
-                            ? { backgroundColor: 'rgba(14,173,69,0.08)' }
-                            : { backgroundColor: 'rgba(232,25,44,0.08)' }}>
-                            {isProfit ? (
-                                <TrendingUp className="h-5 w-5 text-success" />
-                            ) : (
-                                <TrendingDown className="h-5 w-5 text-destructive" />
-                            )}
-                            <div>
-                                <p className="text-xs font-medium uppercase tracking-wide" style={{ color: PT.body }}>{isProfit ? '盈利' : '亏损'}</p>
-                                <p className={`font-semibold ${isProfit ? 'text-success' : 'text-destructive'}`}>
-                                    {tradeResultValue > 0 ? '+' : ''}{tradeResultValue.toLocaleString('zh-CN', { style: 'currency', currency: 'CNY' })}
-                                </p>
+                        <div className="flex items-center gap-1 shrink-0">
+                            <div className="text-right mr-1">
+                                <div className="font-mono font-bold text-sm md:text-base leading-tight" style={{ color: PT.heading }}>{priceStr}</div>
+                                <div className="text-[10px] leading-tight" style={{ color: PT.muted }}>{isOpening ? '买入价' : '卖出价'}</div>
                             </div>
-                        </div>
-                    )}
-                </div>
-
-                {(log.entryReason || log.exitReason || log.mindsetState || log.lessonsLearned) && (
-                    <>
-                        <button
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="w-full flex items-center justify-between rounded-lg p-3 mt-5 transition-colors duration-200"
-                            style={{ color: PT.body, backgroundColor: 'transparent' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.fog}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'}
-                        >
-                            <span className="text-sm font-medium">查看详细分析</span>
-                            <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isExpanded && "rotate-180")} />
-                        </button>
-
-                        <div
-                            className="overflow-hidden transition-all duration-500 ease-in-out"
-                            style={{ height: `${contentHeight}px` }}
-                        >
-                            <div ref={contentRef} className="space-y-5">
-                                {log.entryReason && (
-                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
-                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>入场理由</p>
-                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.entryReason}</p>
-                                    </div>
-                                )}
-                                {log.exitReason && (
-                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
-                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>出场理由</p>
-                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.exitReason}</p>
-                                    </div>
-                                )}
-                                {log.mindsetState && (
-                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
-                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>心态/状态</p>
-                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.mindsetState}</p>
-                                    </div>
-                                )}
-                                {log.lessonsLearned && (
-                                    <div className="p-4 rounded-lg transform transition-all duration-300" style={{ backgroundColor: PT.fog }}>
-                                        <p className="font-semibold mb-2 text-sm uppercase tracking-wide" style={{ color: PT.heading }}>心得体会</p>
-                                        <p className="leading-relaxed" style={{ color: PT.body }}>{log.lessonsLearned}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
-
-            <div className="px-6 py-4 flex justify-end gap-3">
-                <button
-                    onClick={() => handleEdit(log)}
-                    className="text-sm font-medium transition-colors duration-200"
-                    style={{ border: `1px solid ${PT.border}`, borderRadius: 12, backgroundColor: PT.bg, color: PT.body, padding: '6px 14px' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = PT.borderH}
-                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = PT.border}
-                >
-                    编辑
-                </button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <button
-                            className="text-sm font-medium transition-colors duration-200"
-                            style={{ border: 'none', borderRadius: 12, backgroundColor: PT.redL, color: PT.red, padding: '6px 14px' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(230,0,35,0.15)'}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.redL}
-                        >
-                            删除
-                        </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent style={{ borderRadius: 16, border: `1px solid ${PT.border}`, backgroundColor: PT.bg }}>
-                        <AlertDialogHeader className="space-y-3">
-                            <AlertDialogTitle className="text-lg font-semibold" style={{ color: PT.heading }}>确认删除</AlertDialogTitle>
-                            <AlertDialogDescription className="leading-relaxed" style={{ color: PT.body }}>
-                                此操作无法撤销。这将永久删除该交易记录。
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="gap-3 pt-4">
-                            <AlertDialogCancel className="rounded-xl">取消</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={() => deleteTradeLog(log.id)}
-                                className="rounded-xl text-white"
-                                style={{ backgroundColor: PT.red }}
+                            <button
+                                onClick={() => handleEdit(log)}
+                                title="编辑"
+                                aria-label="编辑"
+                                className="p-2 rounded-lg transition-colors"
+                                style={{ color: PT.body, backgroundColor: 'transparent' }}
+                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.fog}
+                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'}
                             >
-                                删除
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                                <Pencil className="h-4 w-4" />
+                            </button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <button
+                                        title="删除"
+                                        aria-label="删除"
+                                        className="p-2 rounded-lg transition-colors"
+                                        style={{ color: PT.red, backgroundColor: 'transparent' }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.redL}
+                                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent style={{ borderRadius: 16, border: `1px solid ${PT.border}`, backgroundColor: PT.bg }}>
+                                    <AlertDialogHeader className="space-y-3">
+                                        <AlertDialogTitle className="text-lg font-semibold" style={{ color: PT.heading }}>确认删除</AlertDialogTitle>
+                                        <AlertDialogDescription className="leading-relaxed" style={{ color: PT.body }}>
+                                            此操作无法撤销。这将永久删除该交易记录。
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="gap-3 pt-4">
+                                        <AlertDialogCancel className="rounded-xl">取消</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => deleteTradeLog(log.id)}
+                                            className="rounded-xl text-white"
+                                            style={{ backgroundColor: PT.red }}
+                                        >
+                                            删除
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+
+                    {/* 次行：时间 · 仓位 · 盈亏 ...... 展开 */}
+                    <div className="flex items-center justify-between gap-2 mt-1.5">
+                        <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs md:text-sm min-w-0" style={{ color: PT.body }}>
+                            <span className="inline-flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5" style={{ color: PT.muted }} />
+                                {formatTradeTime(log.tradeTime)}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                                <Target className="h-3.5 w-3.5" style={{ color: PT.muted }} />
+                                仓位 {log.positionSize}
+                            </span>
+                            {isOpening ? (
+                                <span style={{ color: PT.muted }}>持仓中</span>
+                            ) : (
+                                <span className={cn('font-semibold', isProfit ? 'text-success' : 'text-destructive')}>
+                                    {isProfit ? `盈利 +${plStr}` : `亏损 ${plStr}`}
+                                </span>
+                            )}
+                        </div>
+                        {hasDetails && (
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="inline-flex items-center gap-1 shrink-0 text-xs font-medium rounded-lg px-2 py-1 transition-colors"
+                                style={{ color: PT.body, backgroundColor: 'transparent' }}
+                                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = PT.fog}
+                                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'}
+                            >
+                                详情
+                                <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isExpanded && "rotate-180")} />
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
+
+            {/* 展开区：详细分析 */}
+            {hasDetails && (
+                <div
+                    className="overflow-hidden transition-all duration-500 ease-in-out"
+                    style={{ height: `${contentHeight}px` }}
+                >
+                    <div ref={contentRef} className="px-4 md:px-5 pb-4 pt-1 space-y-3">
+                        {log.entryReason && <DetailBlock title="入场理由" text={log.entryReason} />}
+                        {log.exitReason && <DetailBlock title="出场理由" text={log.exitReason} />}
+                        {log.mindsetState && <DetailBlock title="心态/状态" text={log.mindsetState} />}
+                        {log.lessonsLearned && <DetailBlock title="心得体会" text={log.lessonsLearned} />}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
 
 /**
- * 交易笔记表格组件
- * 使用统一的卡片布局设计，适配所有屏幕尺寸
- * 提供清晰的信息展示和良好的用户体验
- * 优化了网格布局，确保卡片高度变化时保持页面布局稳定
+ * 交易笔记列表组件
+ * 单列宽行列表布局：按创建时间降序排列，最新记录在最上方。
+ * 每条交易一行，信息横向排布，可逐条展开查看详细分析。
  */
 export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { tradeLogs: TradeLog[], handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) {
     // 客户端排序逻辑：按创建时间降序排列，确保最新记录显示在最前面
@@ -311,14 +296,14 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
     }
 
     return (
-        <div className="space-y-4">
-            <div className="text-sm mb-6" style={{ color: PT.muted }}>
+        <div>
+            <div className="text-sm mb-4" style={{ color: PT.muted }}>
                 共 {sortedTradeLogs.length} 条交易记录
             </div>
-            {/* 优化网格布局，使用 items-start 确保卡片顶部对齐，避免高度变化影响其他卡片 */}
-            <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 items-start">
+            {/* 单列宽行列表：逐行纵向排列 */}
+            <div className="space-y-3">
                 {sortedTradeLogs.map(log => (
-                    <TradeLogCard key={log.id} log={log} handleEdit={handleEdit} deleteTradeLog={deleteTradeLog} />
+                    <TradeLogRow key={log.id} log={log} handleEdit={handleEdit} deleteTradeLog={deleteTradeLog} />
                 ))}
             </div>
         </div>
