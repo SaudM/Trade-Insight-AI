@@ -252,7 +252,7 @@ const TradeLogRow = ({ log, handleEdit, deleteTradeLog }: { log: TradeLog, handl
 
 /**
  * 交易笔记列表组件
- * 单列宽行列表布局：按创建时间降序排列，最新记录在最上方。
+ * 响应式列表布局：窄屏单列，宽屏(≥xl)双列；按创建时间降序排列，最新记录在最上方。
  * 每条交易一行，信息横向排布，可逐条展开查看详细分析。
  */
 export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { tradeLogs: TradeLog[], handleEdit: (log: TradeLog) => void, deleteTradeLog: (id: string) => void }) {
@@ -300,8 +300,8 @@ export function TradeLogTable({ tradeLogs, handleEdit, deleteTradeLog }: { trade
             <div className="text-sm mb-4" style={{ color: PT.muted }}>
                 共 {sortedTradeLogs.length} 条交易记录
             </div>
-            {/* 单列宽行列表：逐行纵向排列 */}
-            <div className="space-y-3">
+            {/* 列表布局：窄屏单列，宽屏(≥xl)双列，提高宽屏空间利用率 */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
                 {sortedTradeLogs.map(log => (
                     <TradeLogRow key={log.id} log={log} handleEdit={handleEdit} deleteTradeLog={deleteTradeLog} />
                 ))}

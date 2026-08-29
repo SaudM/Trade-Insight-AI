@@ -103,7 +103,7 @@ export function ReportView({
 
     return (
         <div className="flex flex-col h-full w-full">
-            <main className="w-full max-w-6xl mx-auto p-4 md:p-6 lg:p-8 flex-1 flex flex-col">
+            <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 flex-1 flex flex-col">
                 {(isLoading || displayedReport) ? (
                     <div className="space-y-5">
                         {/* Report Banner */}
@@ -129,7 +129,7 @@ export function ReportView({
                         )}
 
                         {/* Masonry Cards — CSS columns 瀑布流，卡片紧密贴合 */}
-                        <div className="columns-1 lg:columns-2 gap-5">
+                        <div className="columns-1 lg:columns-2 2xl:columns-3 gap-5">
                             {cards.filter(c => !c.colSpan || c.colSpan < 2).map(card => (
                                 <div key={card.id} className="break-inside-avoid mb-5">
                                     <AiAnalysisCard
