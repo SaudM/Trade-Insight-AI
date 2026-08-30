@@ -393,8 +393,16 @@ export function TradeInsightsApp() {
 
   const isLoading = isLoadingLogs || isLoadingDaily || isLoadingWeekly || isLoadingMonthly || isLoadingSubscription;
 
+  // 首屏数据加载完成后锁定为 true：此后由「生成报告」等操作触发的 refetch 虽会短暂把
+  // isLoading 置真，但不再整屏 spinner 卸载视图，改由各区域（如分析报告区）局部更新，
+  // 避免「生成报告时整页刷新、当前 Tab 被重置」。
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  useEffect(() => {
+    if (!isLoading) setHasLoadedOnce(true);
+  }, [isLoading]);
+
   const renderView = () => {
-    if (isLoading) {
+    if (isLoading && !hasLoadedOnce) {
       return (
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin" style={{ color: PT.red }} />
