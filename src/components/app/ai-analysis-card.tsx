@@ -26,6 +26,8 @@ type AiAnalysisCardProps = {
   isLoading: boolean;
   content: string | { [key: string]: string } | null;
   accentColor?: string;
+  /** 可选：限制正文区最大宽度的 Tailwind class（如 "max-w-5xl"）；用于满宽长文卡控制行宽可读，不传则占满卡片宽度。 */
+  contentMaxWidthClass?: string;
 };
 
 /**
@@ -108,7 +110,7 @@ const ACCENT_STYLES: Record<string, AccentStyle> = {
   slate:  { border: 'border-l-slate-400',  iconBg: 'bg-slate-100', iconText: 'text-slate-500' },
 };
 
-export function AiAnalysisCard({ title, icon: Icon, isLoading, content, accentColor = 'blue' }: AiAnalysisCardProps) {
+export function AiAnalysisCard({ title, icon: Icon, isLoading, content, accentColor = 'blue', contentMaxWidthClass }: AiAnalysisCardProps) {
   const accent = ACCENT_STYLES[accentColor] ?? ACCENT_STYLES.blue;
 
   const renderContent = () => {
@@ -182,7 +184,7 @@ export function AiAnalysisCard({ title, icon: Icon, isLoading, content, accentCo
       {/* Divider */}
       <div className="mx-5" style={{ borderTop: `1px solid ${PT.border}` }} />
       {/* Content */}
-      <div className="px-5 pt-3 pb-5">
+      <div className={cn("px-5 pt-3 pb-5", contentMaxWidthClass)}>
         {renderContent()}
       </div>
     </div>
