@@ -45,7 +45,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
  */
 export function AnalysisView({
     tradeLogs,
-    filteredTradeLogs,
+    // filteredTradeLogs 现由报告侧按选中报告周期精确 scope（scopeLogsToReport），此处不再消费；
+    // 仍保留在 props 类型中以兼容调用方传参。
     dailyAnalyses,
     weeklyReviews,
     monthlySummaries,
@@ -346,7 +347,7 @@ export function AnalysisView({
 
     return (
         <div className="flex flex-col h-full">
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col flex-1">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col flex-1 min-h-0">
                 {/* Unified Header: Title + Tabs + Actions */}
                 <div className="px-3 sm:px-4 md:px-6 shrink-0" style={{ backgroundColor: PT.bg, borderBottom: `1px solid ${PT.border}` }}>
                     {/* Top row: title + actions */}
@@ -459,14 +460,14 @@ export function AnalysisView({
                 </div>
 
                 {/* Tab Content */}
-                <TabsContent value="daily" className="flex-1 mt-0 flex flex-col">
+                <TabsContent value="daily" className="flex-1 mt-0 flex flex-col min-h-0">
                     <ReportView
                         reportType="每日"
                         reportName="分析"
                         reports={localDailyAnalyses}
                         selectedReportId={selectedReportId}
                         isLoading={isGenerating}
-                        tradeLogs={filteredTradeLogs}
+                        tradeLogs={tradeLogs}
                         getReportDate={(r) => (r as DailyAnalysis).createdAt}
                         isProUser={isProUser}
                         cards={[
@@ -478,14 +479,14 @@ export function AnalysisView({
                         ]}
                     />
                 </TabsContent>
-                <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col">
+                <TabsContent value="weekly" className="flex-1 mt-0 flex flex-col min-h-0">
                     <ReportView
                         reportType="每周"
                         reportName="回顾"
                         reports={localWeeklyReviews}
                         selectedReportId={selectedReportId}
                         isLoading={isGenerating}
-                        tradeLogs={filteredTradeLogs}
+                        tradeLogs={tradeLogs}
                         getReportDate={(r) => (r as WeeklyReview).createdAt}
                         isProUser={isProUser}
                         cards={[
@@ -497,7 +498,7 @@ export function AnalysisView({
                         ]}
                     />
                 </TabsContent>
-                <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col">
+                <TabsContent value="monthly" className="flex-1 mt-0 flex flex-col min-h-0">
                     <ReportView
                         reportType="月度"
                         reportName="总结"
