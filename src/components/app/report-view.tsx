@@ -103,7 +103,7 @@ export function ReportView({
 
     return (
         <div className="flex flex-col h-full w-full">
-            <main className="w-full max-w-7xl mx-auto p-4 md:p-6 lg:p-8 flex-1 flex flex-col">
+            <main className="w-full max-w-[100rem] mx-auto p-4 md:p-6 lg:p-8 flex-1 flex flex-col">
                 {(isLoading || displayedReport) ? (
                     <div className="space-y-5">
                         {/* Report Banner */}
@@ -128,21 +128,20 @@ export function ReportView({
                             </div>
                         )}
 
-                        {/* Masonry Cards — CSS columns 瀑布流，卡片紧密贴合 */}
-                        <div className="columns-1 lg:columns-2 2xl:columns-3 gap-5">
+                        {/* 诊断卡：CSS Grid 仪表盘布局 —— 窄屏单列 → ≥lg 双列 → ≥2xl 四列，等宽对齐，提高宽屏利用率 */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-5 items-start">
                             {cards.filter(c => !c.colSpan || c.colSpan < 2).map(card => (
-                                <div key={card.id} className="break-inside-avoid mb-5">
-                                    <AiAnalysisCard
-                                        title={card.title}
-                                        icon={card.icon}
-                                        isLoading={isLoading && !displayedReport}
-                                        content={displayedReport ? (card.content(displayedReport) || null) : null}
-                                        accentColor={card.accentColor}
-                                    />
-                                </div>
+                                <AiAnalysisCard
+                                    key={card.id}
+                                    title={card.title}
+                                    icon={card.icon}
+                                    isLoading={isLoading && !displayedReport}
+                                    content={displayedReport ? (card.content(displayedReport) || null) : null}
+                                    accentColor={card.accentColor}
+                                />
                             ))}
                         </div>
-                        {/* Full-width Cards（colSpan=2 的卡片在瀑布流外独立展示） */}
+                        {/* 长文卡（colSpan=2）：独占整行，内部正文限宽（max-w-5xl）保证行宽可读，避免超宽屏单行字数过多 */}
                         {cards.filter(c => c.colSpan === 2).map(card => (
                             <AiAnalysisCard
                                 key={card.id}
@@ -151,6 +150,7 @@ export function ReportView({
                                 isLoading={isLoading && !displayedReport}
                                 content={displayedReport ? (card.content(displayedReport) || null) : null}
                                 accentColor={card.accentColor}
+                                contentMaxWidthClass="max-w-5xl"
                             />
                         ))}
                     </div>
