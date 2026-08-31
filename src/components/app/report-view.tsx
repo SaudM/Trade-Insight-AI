@@ -19,6 +19,7 @@ const PT = {
 
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, ExternalLink, Calendar, Clock, FileText } from 'lucide-react';
 import { AiAnalysisCard } from '@/components/app/ai-analysis-card';
 import { ReportMetricStrip } from '@/components/app/report/report-metric-strip';
@@ -186,9 +187,9 @@ export function ReportView({
     const longCards = cards.filter(c => c.colSpan === 2);
 
     return (
-        <div className="flex flex-col flex-1 min-h-0 w-full">
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-                <main className="w-full max-w-[100rem] mx-auto p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col flex-1 w-full">
+            <ScrollArea className="flex-1">
+                <main className="w-full max-w-[100rem] mx-auto p-4 md:p-6 lg:p-8 overflow-x-hidden">
                     {(showQuant || showAi) ? (
                         <div className="space-y-5 md:space-y-6">
                             {/* Banner：报告周期 / 生成时间 + 右侧 headline 净盈亏 */}
@@ -280,7 +281,7 @@ export function ReportView({
                         <InsightsUpsell reportName={reportName} variant="page" />
                     )}
                 </main>
-            </div>
+            </ScrollArea>
         </div>
     );
 }
