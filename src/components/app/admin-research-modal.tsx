@@ -30,7 +30,8 @@ interface AdminResearchModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
-    userId: string;
+    /** 已不再使用：作者由服务端从登录会话取得 */
+    userId?: string;
 }
 
 /**
@@ -104,7 +105,7 @@ function extractStockSymbols(html: string): string[] {
     return Array.from(found);
 }
 
-export function AdminResearchModal({ isOpen, onOpenChange, onSuccess, userId }: AdminResearchModalProps) {
+export function AdminResearchModal({ isOpen, onOpenChange, onSuccess }: AdminResearchModalProps) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [symbols, setSymbols] = useState('');
@@ -147,7 +148,7 @@ export function AdminResearchModal({ isOpen, onOpenChange, onSuccess, userId }: 
             const response = await fetch('/api/research-reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content, symbols: symbolsArray, authorId: userId }),
+                body: JSON.stringify({ title, content, symbols: symbolsArray }),
             });
 
             if (!response.ok) throw new Error('提交失败');
