@@ -4,13 +4,20 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { WechatLoginAdapter } from '@/lib/adapters/wechat-login-adapter';
+import { consumeRateLimit, getClientIp, tooManyRequests } from '@/lib/rate-limit';
+
+// 前端每 2 秒轮询一次（每分钟 30 次），留出多开几个页面的余量
+const IP_RULE = { name: 'wechat-login-status:ip', limit: 120, windowSeconds: 60 };
 
 export async function GET(request: NextRequest) {
   try {
+    const ipLimit = await consumeRateLimit(IP_RULE, getClientIp(request));
+    if (!ipLimit.allowed) return tooManyRequests(ipLimit);
+
     const { searchParams } = new URL(request.url);
     const ticket = searchParams.get('ticket');
 
-    if (!ticket) {
+    if (!ticket || ticket.length > 255) {
       return NextResponse.json(
         {
           success: false,
@@ -33,12 +40,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // 不返回 openid、userId：前端只用到状态和昵称，没必要把身份标识交给任何持有 ticket 的人
     return NextResponse.json({
       success: true,
       data: {
         status: session.status,
-        openid: session.openid,
-        userId: session.userId,
         bindingMode: session.bindingMode,
         expiresAt: session.expiresAt,
         scannedAt: session.scannedAt,
