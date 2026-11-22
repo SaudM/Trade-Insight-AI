@@ -12,7 +12,8 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    # 生产服务器 2026-11-22 起迁到 47.92.171.94（ARM64），用原生 ARM runner 构建，不走 QEMU 模拟
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -45,7 +46,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # 明确指定 x86 架构
-          platforms: linux/amd64
+          # 生产服务器是 ARM64（47.92.171.94）
+          platforms: linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
