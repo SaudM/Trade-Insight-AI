@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -196,7 +197,31 @@ async function dispatchToChannel(channel: string, target: string, message: Recor
   throw new Error(`Unsupported channel: ${channelType}`);
 }
 
+/** Analyzer（modules/notification/signal_events.py）发送信号时带的共享密钥请求头 */
+const SIGNAL_SECRET_HEADER = 'x-quant-signal-secret';
+
+/**
+ * 常数时间比较共享密钥。先各自做 SHA-256，长度固定后再 timingSafeEqual，
+ * 比较耗时与密钥内容、长度都无关。
+ */
+function isValidSignalSecret(provided: string | null, expected: string): boolean {
+  if (!provided) return false;
+  const a = crypto.createHash('sha256').update(provided).digest();
+  const b = crypto.createHash('sha256').update(expected).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 export async function POST(request: NextRequest) {
+  // 只有持有共享密钥的 Analyzer 能发布信号
+  const expectedSecret = process.env.QUANT_SIGNAL_SECRET?.trim();
+  if (!expectedSecret) {
+    console.error('[signal-events] 未配置 QUANT_SIGNAL_SECRET，拒绝所有信号发布请求');
+    return NextResponse.json({ error: 'Signal publishing is not configured' }, { status: 503 });
+  }
+  if (!isValidSignalSecret(request.headers.get(SIGNAL_SECRET_HEADER), expectedSecret)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = (await request.json()) as SignalPublishRequest;
     const eventId = normalizeUuid(body.event_id ?? '');
