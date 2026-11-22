@@ -113,16 +113,16 @@ export function useUserData(skip?: boolean): UseUserDataReturn {
       // 如果用户不存在，尝试创建用户 (Only for Firebase users, NextAuth users are created on registration)
       if (response.status === 404) {
         if (firebaseUser) {
+          // 身份由服务端校验 Firebase ID token 得出，请求体只传 name
+          const idToken = await firebaseUser.getIdToken();
           const createResponse = await fetch('/api/user', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              Authorization: `Bearer ${idToken}`,
             },
             body: JSON.stringify({
-              firebaseUid: firebaseUser.uid,
-              email: firebaseUser.email,
               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
-              googleId: firebaseUser.providerData.find(p => p.providerId === 'google.com')?.uid,
             }),
           });
 
