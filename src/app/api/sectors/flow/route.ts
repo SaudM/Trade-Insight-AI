@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { clampInt, QueryBounds } from '@/lib/query-bounds';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,10 +14,11 @@ export async function GET(request: Request) {
     const limit = searchParams.get('limit');
     const date = searchParams.get('date');
 
-    if (boardType) params.set('board_type', boardType);
-    if (sortBy) params.set('sort_by', sortBy);
-    if (limit) params.set('limit', limit);
-    if (date) params.set('date', date);
+    if (boardType) params.set('board_type', boardType.slice(0, 20));
+    if (sortBy) params.set('sort_by', sortBy.slice(0, 40));
+    // limit 夹到 Analyzer 允许的 1~100
+    if (limit) params.set('limit', String(clampInt(limit, QueryBounds.sectorFlowLimit)));
+    if (date) params.set('date', date.slice(0, 20));
 
     const targetUrl = `${baseUrl}/api/v1/sectors/flow?${params.toString()}`;
 

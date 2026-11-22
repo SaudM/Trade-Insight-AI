@@ -32,6 +32,42 @@ const PT = {
     dark:    '#33332e',
 } as const;
 
+/** 研报正文在页面内 iframe 和新窗口里使用同一组 sandbox 权限（不含 allow-same-origin） */
+const REPORT_IFRAME_SANDBOX = 'allow-scripts allow-popups allow-forms';
+
+/** 把纯文本（标题、作者名）转义后再拼进 HTML */
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * 在新窗口里用 sandbox iframe 展示研报 HTML。
+ *
+ * 研报 HTML 由用户提交，不能直接 document.write 进新窗口：新开的 about:blank 窗口和本站同源，
+ * 里面的脚本能带着当前用户的登录态调用接口。放进不含 allow-same-origin 的 sandbox iframe 后，
+ * 脚本只能在隔离的源里运行。
+ */
+function openSandboxedWindow(title: string, srcdoc: string, sandbox: string): Window | null {
+    const win = window.open('', '_blank');
+    if (!win) return null;
+    // 切断新窗口到本页面的引用
+    win.opener = null;
+    const doc = win.document;
+    doc.title = title;
+    doc.body.style.margin = '0';
+    const iframe = doc.createElement('iframe');
+    iframe.setAttribute('sandbox', sandbox);
+    iframe.style.cssText = 'border:0;width:100vw;height:100vh;display:block;background:#fff;';
+    iframe.srcdoc = srcdoc;
+    doc.body.appendChild(iframe);
+    return win;
+}
+
 interface ResearchDetailViewProps {
     report: ResearchReport;
     onBack: () => void;
@@ -51,7 +87,7 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
 
         setIsDeleting(true);
         try {
-            const response = await fetch(`/api/research-reports/${report.id}?userId=${currentUserId}`, {
+            const response = await fetch(`/api/research-reports/${report.id}`, {
                 method: 'DELETE',
             });
 
@@ -71,11 +107,7 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
     };
 
     const handleOpenInNewWindow = () => {
-        const newWindow = window.open('about:blank', '_blank');
-        if (newWindow) {
-            newWindow.document.write(report.content);
-            newWindow.document.close();
-        }
+        openSandboxedWindow(report.title, report.content, REPORT_IFRAME_SANDBOX);
     };
 
     const handleShare = async () => {
@@ -125,18 +157,14 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
     const handleDownloadPDF = () => {
         trackEvent('download_research_pdf', { symbol: report.stocks?.[0] || 'unknown', report_title: report.title });
 
-        // Create a new window with the report content and trigger print dialog
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            toast({ variant: 'destructive', title: '下载失败', description: '请允许弹窗后重试。' });
-            return;
-        }
-
-        printWindow.document.write(`
+        // 打印页同样放进 sandbox iframe，由 iframe 内的脚本调用 print()（需要 allow-modals），
+        // 只打印研报本身。标题、作者名是纯文本，转义后再拼进 HTML。
+        const printDoc = `
             <!DOCTYPE html>
             <html>
             <head>
-                <title>${report.title}</title>
+                <meta charset="utf-8" />
+                <title>${escapeHtml(report.title)}</title>
                 <style>
                     @media print {
                         body { margin: 0; padding: 20px; }
@@ -146,26 +174,23 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
                 </style>
             </head>
             <body>
-                <h1 style="font-size: 24px; margin-bottom: 8px;">${report.title}</h1>
+                <h1 style="font-size: 24px; margin-bottom: 8px;">${escapeHtml(report.title)}</h1>
                 <p style="color: #666; font-size: 14px; margin-bottom: 24px;">
-                    作者: ${report.author?.name || '匿名用户'} | 
-                    发布时间: ${format(new Date(report.createdAt), 'yyyy-MM-dd HH:mm')}
+                    作者: ${escapeHtml(report.author?.name || '匿名用户')} |
+                    发布时间: ${escapeHtml(format(new Date(report.createdAt), 'yyyy-MM-dd HH:mm'))}
                 </p>
                 <hr style="border: none; border-top: 1px solid #eee; margin-bottom: 24px;" />
                 ${report.content}
+                <script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script>
             </body>
             </html>
-        `);
-        printWindow.document.close();
+        `;
 
-        // Wait for content to load then trigger print
-        printWindow.onload = () => {
-            printWindow.print();
-        };
-        // Fallback for browsers that don't fire onload
-        setTimeout(() => {
-            printWindow.print();
-        }, 500);
+        const printWindow = openSandboxedWindow(report.title, printDoc, 'allow-scripts allow-modals');
+        if (!printWindow) {
+            toast({ variant: 'destructive', title: '下载失败', description: '请允许弹窗后重试。' });
+            return;
+        }
 
         toast({ title: '准备下载', description: '请在打印对话框中选择"保存为PDF"。' });
     };
@@ -268,7 +293,7 @@ export function ResearchDetailView({ report, onBack, currentUserId, onDelete }: 
                     srcDoc={report.content}
                     className="w-full h-full border-0 bg-white"
                     title={report.title}
-                    sandbox="allow-scripts allow-popups allow-forms"
+                    sandbox={REPORT_IFRAME_SANDBOX}
                     onLoad={() => setIsLoading(false)}
                 />
             </div>

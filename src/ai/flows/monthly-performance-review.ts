@@ -9,29 +9,39 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { aiActionFailure, guardAiAction, type AiActionResult } from '@/ai/action-guard';
 import { z } from 'zod';
 
+// 字段长度上限参照 trade_logs 表：symbol VarChar(50)、position_size VarChar(100)
 const TradingLogSchema = z.object({
-  tradeTime: z.string().describe('The time the trade was executed.'),
-  symbol: z.string().describe('The ticker symbol or name of the traded asset.'),
+  tradeTime: z.string().max(40).describe('The time the trade was executed.'),
+  symbol: z.string().max(50).describe('The ticker symbol or name of the traded asset.'),
   direction: z
     .enum(['Buy', 'Sell', 'Long', 'Short', 'Close'])
     .describe('The direction of the trade.'),
-  positionSize: z.string().describe('The position size in percentage or lots.'),
-  analysisAndPlan: z.string().describe('The trader’s core logic, mood, and plan (TP/SL) or post-trade review.'),
-  tradeResult: z.string().describe('The profit or loss of the trade.'),
+  positionSize: z.string().max(100).describe('The position size in percentage or lots.'),
+  analysisAndPlan: z.string().max(5_000).describe('The trader’s core logic, mood, and plan (TP/SL) or post-trade review.'),
+  tradeResult: z.string().max(50).describe('The profit or loss of the trade.'),
 });
+
+/** 每个月最多带入的交易记录条数 */
+const MONTHLY_LOGS_MAX = 500;
+/** 两个月数据序列化后的总长度上限（字符数），防止靠条数上限堆出超长输入 */
+const MONTHLY_INPUT_MAX_CHARS = 150_000;
 
 const MonthlyPerformanceReviewInputSchema = z.object({
   currentMonthLogs:
-    z.array(TradingLogSchema)
+    z.array(TradingLogSchema).max(MONTHLY_LOGS_MAX)
       .describe('The trading logs for the current month.'),
   previousMonthLogs:
-    z.array(TradingLogSchema)
+    z.array(TradingLogSchema).max(MONTHLY_LOGS_MAX)
       .describe('The trading logs for the previous month.'),
-  currentMonthPeriod: z.string().describe('The current month period being analyzed (e.g., "2024年1月").'),
-  previousMonthPeriod: z.string().describe('The previous month period being compared (e.g., "2023年12月").'),
-});
+  currentMonthPeriod: z.string().min(1).max(40).describe('The current month period being analyzed (e.g., "2024年1月").'),
+  previousMonthPeriod: z.string().min(1).max(40).describe('The previous month period being compared (e.g., "2023年12月").'),
+}).refine(
+  (v) => JSON.stringify(v).length <= MONTHLY_INPUT_MAX_CHARS,
+  { message: 'monthly input too large' }
+);
 
 export type MonthlyPerformanceReviewInput = z.infer<
   typeof MonthlyPerformanceReviewInputSchema
@@ -63,8 +73,14 @@ export type MonthlyPerformanceReviewOutput = z.infer<
 
 export async function monthlyPerformanceReview(
   input: MonthlyPerformanceReviewInput
-): Promise<MonthlyPerformanceReviewOutput> {
-  return monthlyPerformanceReviewFlow(input);
+): Promise<AiActionResult<MonthlyPerformanceReviewOutput>> {
+  const guard = await guardAiAction('monthly', MonthlyPerformanceReviewInputSchema, input);
+  if (!guard.ok) return guard;
+  try {
+    return { ok: true, data: await monthlyPerformanceReviewFlow(guard.input) };
+  } catch (error) {
+    return aiActionFailure('monthly', error);
+  }
 }
 
 const monthlyPerformanceReviewPrompt = ai.definePrompt({

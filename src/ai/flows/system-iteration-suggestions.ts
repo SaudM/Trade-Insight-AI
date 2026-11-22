@@ -9,14 +9,18 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { aiActionFailure, guardAiAction, type AiActionResult } from '@/ai/action-guard';
 import { z } from 'zod';
 
 const SuggestSystemIterationInputSchema = z.object({
   monthlyReport: z
     .string()
+    .min(1)
+    .max(20_000)
     .describe('The monthly trading performance report to analyze.'),
   previousMonthReport: z
     .string()
+    .max(20_000)
     .describe('The previous monthly trading performance report for comparison.'),
 });
 export type SuggestSystemIterationInput = z.infer<typeof SuggestSystemIterationInputSchema>;
@@ -32,8 +36,14 @@ export type SuggestSystemIterationOutput = z.infer<typeof SuggestSystemIteration
 
 export async function suggestSystemIteration(
   input: SuggestSystemIterationInput
-): Promise<SuggestSystemIterationOutput> {
-  return suggestSystemIterationFlow(input);
+): Promise<AiActionResult<SuggestSystemIterationOutput>> {
+  const guard = await guardAiAction('system-iteration', SuggestSystemIterationInputSchema, input);
+  if (!guard.ok) return guard;
+  try {
+    return { ok: true, data: await suggestSystemIterationFlow(guard.input) };
+  } catch (error) {
+    return aiActionFailure('system-iteration', error);
+  }
 }
 
 const prompt = ai.definePrompt({

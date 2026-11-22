@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
+import { sanitizePeriod } from '@/lib/query-bounds';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || '1y';
+    const period = sanitizePeriod(searchParams.get('period'), '1y');
 
     const baseUrl = process.env.HEATMAP_API_URL || 'http://localhost:8000';
-    const targetUrl = `${baseUrl}/strategies?period=${period}`;
+    const targetUrl = `${baseUrl}/strategies?period=${encodeURIComponent(period)}`;
 
     try {
         const response = await fetch(targetUrl, {

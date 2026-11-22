@@ -56,17 +56,15 @@ export function SignupForm() {
   });
 
   const createUserInDatabase = async (user: any, name: string) => {
-    // 使用PostgreSQL API创建用户记录
+    // 使用PostgreSQL API创建用户记录。身份由服务端校验 Firebase ID token 得出，请求体只传 name
+    const idToken = await user.getIdToken();
     const response = await fetch('/api/user', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
       },
-      body: JSON.stringify({
-        firebaseUid: user.uid,
-        email: user.email,
-        name: name,
-      }),
+      body: JSON.stringify({ name }),
     });
 
     if (!response.ok) {

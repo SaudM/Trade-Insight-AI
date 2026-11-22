@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { clampInt, QueryBounds } from '@/lib/query-bounds';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +22,13 @@ export async function GET(request: Request) {
     }
 
     const baseUrl = process.env.HEATMAP_API_URL || 'http://localhost:8000';
-    const params = new URLSearchParams({ keyword: keyword.trim() });
+    const params = new URLSearchParams({ keyword: keyword.trim().slice(0, 50) });
 
     const boardType = searchParams.get('board_type');
-    const limit = searchParams.get('limit') || '20';
-    if (boardType) params.set('board_type', boardType);
-    params.set('limit', limit);
+    // 每条结果还要再请求一次 trend，limit 上限收紧到 50
+    const limit = clampInt(searchParams.get('limit'), QueryBounds.sectorSearchLimit);
+    if (boardType) params.set('board_type', boardType.slice(0, 20));
+    params.set('limit', String(limit));
 
     const searchUrl = `${baseUrl}/api/v1/sectors/search?${params.toString()}`;
 

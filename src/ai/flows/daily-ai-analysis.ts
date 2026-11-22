@@ -9,11 +9,15 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { aiActionFailure, guardAiAction, type AiActionResult } from '@/ai/action-guard';
 import { z } from 'zod';
 
+/** 一天的交易记录拼成的文本上限（字符数） */
+const DAILY_TRADE_LOGS_MAX_CHARS = 30_000;
+
 const DailyTradeAnalysisInputSchema = z.object({
-  tradeLogs: z.string().describe('A comprehensive log of the day\'s trading activities, formatted as a multi-line string where each line is a trade. The logs are in Chinese.'),
-  analysisDate: z.string().describe('The specific trading date being analyzed in ISO format.'),
+  tradeLogs: z.string().min(1).max(DAILY_TRADE_LOGS_MAX_CHARS).describe('A comprehensive log of the day\'s trading activities, formatted as a multi-line string where each line is a trade. The logs are in Chinese.'),
+  analysisDate: z.string().min(1).max(40).describe('The specific trading date being analyzed in ISO format.'),
 });
 export type DailyTradeAnalysisInput = z.infer<typeof DailyTradeAnalysisInputSchema>;
 
@@ -27,19 +31,23 @@ const DailyTradeAnalysisOutputSchema = z.object({
 export type DailyTradeAnalysisOutput = z.infer<typeof DailyTradeAnalysisOutputSchema>;
 
 /**
- * 分析每日交易记录
+ * 分析每日交易记录（server action）
+ * 先校验登录、输入和频率，再调用模型。预期内的错误以 { ok: false, status } 返回。
  * @param input 包含交易日志和分析日期的输入参数
  * @returns 每日交易分析结果
  */
-export async function analyzeDailyTrades(input: DailyTradeAnalysisInput): Promise<DailyTradeAnalysisOutput> {
+export async function analyzeDailyTrades(input: DailyTradeAnalysisInput): Promise<AiActionResult<DailyTradeAnalysisOutput>> {
+  const guard = await guardAiAction('daily', DailyTradeAnalysisInputSchema, input);
+  if (!guard.ok) return guard;
+
   try {
-    console.log('开始每日交易分析，输入参数:', {
-      analysisDate: input.analysisDate,
-      tradeLogsLength: input.tradeLogs.length,
-      tradeLogsPreview: input.tradeLogs.substring(0, 200) + '...'
+    console.log('开始每日交易分析:', {
+      uid: guard.uid,
+      analysisDate: guard.input.analysisDate,
+      tradeLogsLength: guard.input.tradeLogs.length,
     });
 
-    const result = await dailyTradeAnalysisFlow(input);
+    const result = await dailyTradeAnalysisFlow(guard.input);
 
     console.log('每日交易分析完成，结果:', {
       summaryLength: result.summary?.length || 0,
@@ -49,17 +57,9 @@ export async function analyzeDailyTrades(input: DailyTradeAnalysisInput): Promis
       improvementSuggestionsLength: result.improvementSuggestions?.length || 0
     });
 
-    return result;
+    return { ok: true, data: result };
   } catch (error) {
-    console.error('每日交易分析失败:', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      input: {
-        analysisDate: input.analysisDate,
-        tradeLogsLength: input.tradeLogs.length
-      }
-    });
-    throw new Error(`每日交易分析失败: ${error instanceof Error ? error.message : String(error)}`);
+    return aiActionFailure('daily', error);
   }
 }
 

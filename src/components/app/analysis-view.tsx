@@ -23,6 +23,7 @@ import { ReportView } from './report-view';
 import { analyzeDailyTrades } from '@/ai/flows/daily-ai-analysis';
 import { weeklyPatternDiscovery } from '@/ai/flows/weekly-pattern-discovery';
 import { monthlyPerformanceReview } from '@/ai/flows/monthly-performance-review';
+import type { AiActionResult } from '@/ai/action-guard';
 import { BrainCircuit, Zap, HeartPulse, Lightbulb, Repeat, Trophy, Scaling, ListChecks, GitCompareArrows, AlertTriangle, Target, BookCheck, Telescope } from 'lucide-react';
 import { startOfWeek, startOfMonth, subMonths, format } from 'date-fns';
 import { useEffect, useState, useMemo } from 'react';
@@ -35,6 +36,14 @@ import { SelectContent, SelectItem } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
+
+/** AI server action 返回的预期内错误（未登录、输入不合法、超频），message 可以直接展示给用户 */
+class AiActionError extends Error {}
+
+function unwrapAiResult<T>(result: AiActionResult<T>): T {
+    if (!result.ok) throw new AiActionError(result.error);
+    return result.data;
+}
 
 /**
  * 组件：分析报告视图（AnalysisView）
@@ -161,7 +170,8 @@ export function AnalysisView({
             return result;
         } catch (error) {
             console.error(error);
-            toast({ variant: 'destructive', title: "分析生成失败", description: "请稍后重试" });
+            const description = error instanceof AiActionError ? error.message : "请稍后重试";
+            toast({ variant: 'destructive', title: "分析生成失败", description });
         } finally {
             setIsGenerating(false);
         }
@@ -190,10 +200,10 @@ export function AnalysisView({
                     `时间: ${log.tradeTime}, 标的: ${log.symbol}, 方向: ${log.direction}, 仓位大小: ${log.positionSize}, 盈亏: ${log.tradeResult}, 分析与计划: ${log.entryReason || log.exitReason || ''}`
                 ).join('\n');
 
-                const result = await analyzeDailyTrades({
+                const result = unwrapAiResult(await analyzeDailyTrades({
                     tradeLogs: logsString,
                     analysisDate: latestTradeDate.toLocaleDateString('zh-CN')
-                });
+                }));
 
                 const ensureString = (value: any): string => {
                     if (Array.isArray(value)) return value.join('\n');
@@ -239,11 +249,11 @@ export function AnalysisView({
                 analysisAndPlan: entryReason || exitReason || ''
             }));
             const logsString = JSON.stringify(cleanLogs, null, 2);
-            const result = await weeklyPatternDiscovery({
+            const result = unwrapAiResult(await weeklyPatternDiscovery({
                 tradingLogs: logsString,
                 weekStartDate: startOfCurrentWeek.toLocaleDateString('zh-CN'),
                 weekEndDate: endOfCurrentWeek.toLocaleDateString('zh-CN')
-            });
+            }));
 
             const ensureString = (value: any): string => {
                 if (Array.isArray(value)) return value.join('\n');
@@ -290,7 +300,8 @@ export function AnalysisView({
 
             const toPlainObject = (log: TradeLog) => {
                 const plainLog: any = { ...log };
-                plainLog.analysisAndPlan = log.entryReason || log.exitReason || '';
+                // 服务端每条备注上限 5000 字符，超长的截断，避免一条长备注导致整份月报失败
+                plainLog.analysisAndPlan = (log.entryReason || log.exitReason || '').slice(0, 5000);
                 delete plainLog.entryReason;
                 delete plainLog.exitReason;
                 delete plainLog.mindsetState;
@@ -304,12 +315,12 @@ export function AnalysisView({
                 return plainLog;
             };
 
-            const result = await monthlyPerformanceReview({
+            const result = unwrapAiResult(await monthlyPerformanceReview({
                 currentMonthLogs: currentMonthLogs.map(toPlainObject),
                 previousMonthLogs: previousMonthLogs.map(toPlainObject),
                 currentMonthPeriod: `${startOfCurrentMonth.getFullYear()}年${startOfCurrentMonth.getMonth() + 1}月`,
                 previousMonthPeriod: `${startOfPreviousMonth.getFullYear()}年${startOfPreviousMonth.getMonth() + 1}月`
-            });
+            }));
 
             const ensureString = (value: any): string => {
                 if (Array.isArray(value)) return value.join('\n');

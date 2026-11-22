@@ -11,11 +11,14 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { aiActionFailure, guardAiAction, type AiActionResult } from '@/ai/action-guard';
 import { z } from 'zod';
 
 const WeeklyImprovementPlanInputSchema = z.object({
   weeklySummary: z
     .string()
+    .min(1)
+    .max(20_000)
     .describe(
       'A summary of the weeks trading activity, including patterns, emotional state, and position sizing effectiveness.'
     ),
@@ -31,8 +34,14 @@ export type WeeklyImprovementPlanOutput = z.infer<typeof WeeklyImprovementPlanOu
 
 export async function weeklyImprovementPlan(
   input: WeeklyImprovementPlanInput
-): Promise<WeeklyImprovementPlanOutput> {
-  return weeklyImprovementPlanFlow(input);
+): Promise<AiActionResult<WeeklyImprovementPlanOutput>> {
+  const guard = await guardAiAction('weekly-improvement', WeeklyImprovementPlanInputSchema, input);
+  if (!guard.ok) return guard;
+  try {
+    return { ok: true, data: await weeklyImprovementPlanFlow(guard.input) };
+  } catch (error) {
+    return aiActionFailure('weekly-improvement', error);
+  }
 }
 
 const prompt = ai.definePrompt({

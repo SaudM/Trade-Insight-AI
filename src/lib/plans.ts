@@ -103,7 +103,8 @@ export const PLAN_LIST: PlanDef[] = [
 ];
 
 export function isValidPlanId(id: string): id is PlanId {
-  return id in PLANS;
+  // 用 hasOwnProperty：`in` 会沿原型链查找，'toString'、'constructor' 也会被当成合法套餐
+  return typeof id === 'string' && Object.prototype.hasOwnProperty.call(PLANS, id);
 }
 
 /** 服务端订单金额校验：允许 ±0.01 元的浮点误差 */

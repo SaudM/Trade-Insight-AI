@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ResearchReportAdapter } from '@/lib/adapters/research-report-adapter';
+import { clampInt, QueryBounds } from '@/lib/query-bounds';
 
 /**
  * 热力图数据代理接口
@@ -16,11 +17,12 @@ export async function GET(request: Request) {
     const baseUrl = process.env.HEATMAP_API_URL || 'http://localhost:8000';
     const url = new URL(`${baseUrl}/api/v1/analysis/heatmap`);
 
-    if (signalDate) url.searchParams.set('signal_date', signalDate);
-    if (signalType) url.searchParams.set('signal_type', signalType);
-    if (limit) url.searchParams.set('limit', limit);
+    if (signalDate) url.searchParams.set('signal_date', signalDate.slice(0, 40));
+    if (signalType) url.searchParams.set('signal_type', signalType.slice(0, 40));
+    // limit 夹到 Analyzer 允许的 1~200
+    if (limit) url.searchParams.set('limit', String(clampInt(limit, QueryBounds.heatmapLimit)));
     const strategyId = searchParams.get('strategy_id');
-    if (strategyId) url.searchParams.set('strategy_id', strategyId);
+    if (strategyId) url.searchParams.set('strategy_id', strategyId.slice(0, 64));
 
     try {
         // Parallel fetch: Heatmap (for rich data) and Recommendations (for hot board info)
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
 
         // Recommendations endpoint (contains related_hot_board data)
         const recUrl = new URL(`${baseUrl}/recommendations/`);
-        if (signalDate) recUrl.searchParams.set('date', signalDate); // Defines 'date' param as per user hint
+        if (signalDate) recUrl.searchParams.set('date', signalDate.slice(0, 40)); // Defines 'date' param as per user hint
         // Note: passing other params if necessary, but 'date' is the key filter for alignment.
 
         const recResponsePromise = fetch(recUrl.toString(), {

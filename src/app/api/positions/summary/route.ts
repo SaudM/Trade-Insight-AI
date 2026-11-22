@@ -6,27 +6,12 @@
  * - maxSellableQty: 最大可卖出股数（考虑冻结股数，若无配置则视为0）
  * - source: 数据来源说明
  *
- * 查询参数：uid 或 firebaseUid；symbol
+ * 查询参数：symbol。用户身份只取自登录会话，查询参数里的 uid / firebaseUid 一律忽略。
  */
 import { NextResponse } from 'next/server';
-import { UserAdapter } from '@/lib/adapters/user-adapter';
 import { TradeLogAdapter } from '@/lib/adapters/tradelog-adapter';
 import { requireUid } from '@/lib/api-auth';
 // 该接口当前不使用统一缓存键，避免无效键导致的类型错误；如需缓存，请在redis模块中新增专用键。
-
-/**
- * 解析用户ID（系统uid优先，其次firebaseUid）
- */
-async function resolveUserId(searchParams: URLSearchParams): Promise<string | null> {
-  const uid = searchParams.get('uid');
-  if (uid) return uid;
-  const firebaseUid = searchParams.get('firebaseUid');
-  if (firebaseUid) {
-    const user = await UserAdapter.getUserByFirebaseUid(firebaseUid);
-    return user?.id ?? null;
-  }
-  return null;
-}
 
 /**
  * 从字符串解析股数（兼容“100股/1手/纯数字”），无法解析则返回 NaN
@@ -39,7 +24,7 @@ function parseQuantity(positionSize?: string): number {
 }
 
 /**
- * GET /api/positions/summary?uid=xxx&symbol=阿里巴巴
+ * GET /api/positions/summary?symbol=阿里巴巴
  */
 export async function GET(request: Request) {
   try {

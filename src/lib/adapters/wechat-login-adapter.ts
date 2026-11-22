@@ -9,7 +9,7 @@ import { cache, CacheKeys } from '@/lib/redis';
 /**
  * 会话状态
  */
-export type SessionStatus = 'pending' | 'scanned' | 'confirmed' | 'expired' | 'not_bound';
+export type SessionStatus = 'pending' | 'scanned' | 'confirmed' | 'expired' | 'not_bound' | 'consumed';
 
 /**
  * 会话数据
@@ -282,6 +282,49 @@ export class WechatLoginAdapter {
     }
 
     return sessionData;
+  }
+
+  /**
+   * 用掉一个已确认的登录会话，返回对应的用户 ID。
+   *
+   * 只接受登录模式、状态为 confirmed、未过期的会话；用条件更新把状态改成 consumed，
+   * 同一个 ticket 并发登录时只有一个请求能成功。不满足条件时返回 null。
+   * @param ticket 二维码ticket
+   */
+  static async consumeConfirmedLoginSession(ticket: string): Promise<string | null> {
+    const now = new Date();
+    const session = await prisma.wechatLoginSession.findUnique({
+      where: { ticket },
+      select: { userId: true, status: true, bindingMode: true, expiresAt: true },
+    });
+
+    if (
+      !session ||
+      session.bindingMode ||
+      session.status !== 'confirmed' ||
+      !session.userId ||
+      session.expiresAt <= now
+    ) {
+      return null;
+    }
+
+    const { count } = await prisma.wechatLoginSession.updateMany({
+      where: {
+        ticket,
+        status: 'confirmed',
+        bindingMode: false,
+        userId: session.userId,
+        expiresAt: { gt: now },
+      },
+      data: { status: 'consumed' },
+    });
+
+    if (count !== 1) {
+      return null;
+    }
+
+    await cache.del(CacheKeys.wechatLoginSession(ticket));
+    return session.userId;
   }
 
   /**
