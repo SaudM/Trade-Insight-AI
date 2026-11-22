@@ -9,12 +9,14 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { aiActionFailure, guardAiAction, type AiActionResult } from '@/ai/action-guard';
 import { z } from 'zod';
 
 const WeeklyPatternDiscoveryInputSchema = z.object({
-  tradingLogs: z.string().describe('A JSON string of the week\'s trading logs.'),
-  weekStartDate: z.string().describe('The start date of the week being analyzed (Monday).'),
-  weekEndDate: z.string().describe('The end date of the week being analyzed (Sunday).'),
+  // 一周交易记录的 JSON 文本，上限和月报的总长度上限一致
+  tradingLogs: z.string().min(1).max(150_000).describe('A JSON string of the week\'s trading logs.'),
+  weekStartDate: z.string().min(1).max(40).describe('The start date of the week being analyzed (Monday).'),
+  weekEndDate: z.string().min(1).max(40).describe('The end date of the week being analyzed (Sunday).'),
 });
 
 export type WeeklyPatternDiscoveryInput = z.infer<
@@ -40,8 +42,14 @@ export type WeeklyPatternDiscoveryOutput = z.infer<
 
 export async function weeklyPatternDiscovery(
   input: WeeklyPatternDiscoveryInput
-): Promise<WeeklyPatternDiscoveryOutput> {
-  return weeklyPatternDiscoveryFlow(input);
+): Promise<AiActionResult<WeeklyPatternDiscoveryOutput>> {
+  const guard = await guardAiAction('weekly', WeeklyPatternDiscoveryInputSchema, input);
+  if (!guard.ok) return guard;
+  try {
+    return { ok: true, data: await weeklyPatternDiscoveryFlow(guard.input) };
+  } catch (error) {
+    return aiActionFailure('weekly', error);
+  }
 }
 
 const weeklyPatternDiscoveryPrompt = ai.definePrompt({

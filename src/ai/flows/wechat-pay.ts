@@ -9,28 +9,58 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { auth } from '@/auth';
+import { PLANS, isValidPlanId } from '@/lib/plans';
 import { z } from 'zod';
 import * as crypto from 'crypto';
 import axios from 'axios';
 
-export const WeChatPayInputSchema = z.object({
+/**
+ * 注意：线上下单走的是 POST /api/subscription/create（src/lib/wxpay.ts），会同时写订单表。
+ * 这个 server action 目前没有任何页面调用，保留是为了兼容；新代码不要用它。
+ *
+ * 客户端只能选套餐和支付方式。金额取服务端定价表 PLANS，下单用户取登录会话，
+ * 请求里传来的 price、userId 一律忽略。
+ */
+const WeChatPayInputSchema = z.object({
   planId: z.string().describe("The ID of the pricing plan."),
-  price: z.number().describe("The price of the plan in CNY."),
-  userId: z.string().describe("The user's unique ID."),
-  tradeType: z.enum(['JSAPI', 'NATIVE', 'H5']).describe("The type of trade."),
+  tradeType: z.enum(['NATIVE', 'H5']).describe("The type of trade."),
 });
 export type WeChatPayInput = z.infer<typeof WeChatPayInputSchema>;
 
-export const WeChatPayOutputSchema = z.object({
+const WeChatPayOutputSchema = z.object({
   paymentUrl: z.string().optional().describe("The URL for payment (code_url for NATIVE, h5_url for H5)."),
   outTradeNo: z.string().optional().describe("The unique order ID."),
   error: z.any().optional().describe("Error message if transaction creation fails."),
 });
 export type WeChatPayOutput = z.infer<typeof WeChatPayOutputSchema>;
 
+type WechatPayTransactionInput = {
+  planId: string;
+  price: number;
+  userId: string;
+  tradeType: 'NATIVE' | 'H5';
+};
 
 export async function wechatPay(input: WeChatPayInput): Promise<WeChatPayOutput> {
-  return createWechatPayTransaction(input);
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { error: '请先登录' };
+  }
+
+  const parsed = WeChatPayInputSchema.safeParse(input);
+  if (!parsed.success || !isValidPlanId(parsed.data.planId)) {
+    return { error: 'Invalid planId or tradeType' };
+  }
+  const { planId, tradeType } = parsed.data;
+
+  return createWechatPayTransaction({
+    planId,
+    price: PLANS[planId].price,
+    userId,
+    tradeType,
+  });
 }
 
 // Helper function to generate signature for WeChat Pay API v3
@@ -61,7 +91,7 @@ const createWechatPayTransaction = ai.defineFlow(
     inputSchema: WeChatPayInputSchema,
     outputSchema: WeChatPayOutputSchema,
   },
-  async (input) => {
+  async (input: WechatPayTransactionInput) => {
     // Build short, compliant out_trade_no (<=32 chars)
     const planMap: Record<string, string> = {
       monthly: 'M',
@@ -76,7 +106,7 @@ const createWechatPayTransaction = ai.defineFlow(
     const out_trade_no = `${pid}${uid}${ts}${rnd}`.slice(0, 32);
     const description = `交易笔记AI - ${input.planId} 订阅`;
     const amount = {
-        total: input.price * 100, // Amount in cents
+        total: Math.round(input.price * 100), // Amount in cents
         currency: 'CNY',
     };
     

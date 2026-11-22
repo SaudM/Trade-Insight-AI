@@ -262,6 +262,29 @@ class RedisClient {
   }
 
   /**
+   * 计数器自增（用于限流）。第一次写入时设置过期时间，窗口结束后自动清零。
+   * Redis 不可用时返回 null，由调用方决定降级策略。
+   */
+  async incrWithTtl(key: string, ttlSeconds: number, prefix?: string): Promise<number | null> {
+    try {
+      const isConnected = await this.ensureConnection();
+      if (!isConnected || !this.client) {
+        return null;
+      }
+
+      const cacheKey = this.generateKey(key, prefix);
+      const count = await this.client.incr(cacheKey);
+      if (count === 1) {
+        await this.client.expire(cacheKey, ttlSeconds);
+      }
+      return count;
+    } catch (error) {
+      console.error('Redis计数失败:', error);
+      return null;
+    }
+  }
+
+  /**
    * 关闭Redis连接
    */
   async disconnect(): Promise<void> {
@@ -315,6 +338,12 @@ export const cache = {
    * 获取缓存剩余时间
    */
   ttl: (key: string, prefix?: string) => redisClient.ttl(key, prefix),
+
+  /**
+   * 计数器自增并设置窗口过期时间（限流用），Redis 不可用时返回 null
+   */
+  incrWithTtl: (key: string, ttlSeconds: number, prefix?: string) =>
+    redisClient.incrWithTtl(key, ttlSeconds, prefix),
 
   /**
    * 检查连接状态
