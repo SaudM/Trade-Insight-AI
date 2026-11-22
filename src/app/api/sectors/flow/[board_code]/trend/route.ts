@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { clampInt, QueryBounds } from '@/lib/query-bounds';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,8 @@ export async function GET(
 ) {
     const { board_code: boardCode } = await params;
     const { searchParams } = new URL(request.url);
-    const days = searchParams.get('days') || '10';
+    // days 夹到 Analyzer 允许的 5~120
+    const days = clampInt(searchParams.get('days'), QueryBounds.sectorTrendDays);
 
     const baseUrl = process.env.HEATMAP_API_URL || 'http://localhost:8000';
     const targetUrl = `${baseUrl}/api/v1/sectors/flow/${encodeURIComponent(boardCode)}/trend?days=${days}`;

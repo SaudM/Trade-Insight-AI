@@ -1,19 +1,35 @@
-
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { sendPasswordResetEmail } from '@/lib/mail';
+import { consumeRateLimit, getClientIp, tooManyRequests } from '@/lib/rate-limit';
 import crypto from 'crypto';
+
+// 11-22 有人反复调用本接口：按 IP 和按邮箱各限一次
+const IP_RULE = { name: 'forgot-password:ip', limit: 5, windowSeconds: 15 * 60 };
+const EMAIL_RULE = { name: 'forgot-password:email', limit: 3, windowSeconds: 60 * 60 };
+
+const BodySchema = z.object({
+    email: z.string().trim().min(3).max(254),
+});
 
 export async function POST(req: Request) {
     try {
-        const { email } = await req.json();
+        const ipLimit = await consumeRateLimit(IP_RULE, getClientIp(req));
+        if (!ipLimit.allowed) return tooManyRequests(ipLimit);
 
-        if (!email) {
+        const parsed = BodySchema.safeParse(await req.json().catch(() => null));
+        if (!parsed.success) {
             return NextResponse.json(
                 { error: 'Email is required' },
                 { status: 400 }
             );
         }
+        const { email } = parsed.data;
+
+        // 邮箱维度的限流不区分邮箱是否存在，不会泄露注册信息
+        const emailLimit = await consumeRateLimit(EMAIL_RULE, email.toLowerCase());
+        if (!emailLimit.allowed) return tooManyRequests(emailLimit);
 
         // Find user by email
         const user = await prisma.user.findUnique({

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { clampInt, QueryBounds } from '@/lib/query-bounds';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +13,14 @@ export async function GET(
     const baseUrl = process.env.HEATMAP_API_URL || 'http://localhost:8000';
     const url = new URL(`${baseUrl}/strategies/${encodeURIComponent(key)}/trades`);
 
-    const forwardParams = ['page', 'page_size', 'exit_reason', 'symbol', 'start_date', 'end_date'];
+    // 分页参数先夹到 Analyzer 允许的范围内再转发
+    url.searchParams.set('page', String(clampInt(searchParams.get('page'), QueryBounds.tradesPage)));
+    url.searchParams.set('page_size', String(clampInt(searchParams.get('page_size'), QueryBounds.tradesPageSize)));
+
+    const forwardParams = ['exit_reason', 'symbol', 'start_date', 'end_date'];
     forwardParams.forEach(p => {
         const v = searchParams.get(p);
-        if (v) url.searchParams.set(p, v);
+        if (v) url.searchParams.set(p, v.slice(0, 64));
     });
 
     try {

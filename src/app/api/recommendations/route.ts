@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { clampInt, QueryBounds } from '@/lib/query-bounds';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,10 +8,12 @@ export async function GET(request: Request) {
     const baseUrl = process.env.HEATMAP_API_URL || 'http://localhost:8000';
     const targetUrl = new URL(`${baseUrl}/recommendations/`);
 
-    // Forward all search params
-    searchParams.forEach((value, key) => {
-        targetUrl.searchParams.append(key, value);
-    });
+    // 只转发 Analyzer 认识的参数；limit 先夹到 1~500
+    for (const key of ['date', 'start_date', 'end_date']) {
+        const value = searchParams.get(key);
+        if (value) targetUrl.searchParams.set(key, value.slice(0, 40));
+    }
+    targetUrl.searchParams.set('limit', String(clampInt(searchParams.get('limit'), QueryBounds.recommendationsLimit)));
 
     try {
         const response = await fetch(targetUrl.toString(), {
